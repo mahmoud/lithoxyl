@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import time
 
 class Message(object):
-    def __init__(self, name, logger=None):
+    def __init__(self, name, level=None, logger=None, **kwargs):
         self.name = name
-        self.status = None
-        self.data = {}
+        self.level = level
+        self.status = kwargs.pop('status', None)
+        self.data = kwargs.pop('data', {})  # TODO: payload?
 
     def success(self):
         pass
@@ -21,6 +23,7 @@ class Message(object):
 
     def _complete(self, status):
         self.status = status
+        self.logger.enqueue(self)
 
 
 class Logger(object):
