@@ -2,42 +2,56 @@
 
 import time
 
+DEBUG = 20
+INFO = 50
+CRITICAL = 90
+
+
 class Message(object):
     def __init__(self, name, level=None, logger=None, **kwargs):
         self.name = name
         self.level = level
         self.status = kwargs.pop('status', None)
         self.data = kwargs.pop('data', {})  # TODO: payload?
+        self.start_time = kwargs.pop('start_time', time.time())
+        self.end_time = kwargs.pop('end_time', None)
 
-    def success(self):
-        pass
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
-    def warn(self):
-        pass
+    def success(self, message):
+        self._complete('success')
 
-    def fail(self):
-        pass
+    def warning(self, message):
+        self._complete('warning')
 
-    def exception(self):
-        pass
+    def fail(self, message):  # TODO: failure?
+        self._complete('fail')
 
-    def _complete(self, status):
+    def exception(self, exc_obj, tb_obj):
+        # TODO: format exc message
+        # TODO: structure tb obj?
+        self._complete('exception')
+
+    def _complete(self, status, message):
         self.status = status
         self.logger.enqueue(self)
 
 
 class Logger(object):
-    def __init__(self, sinks):
-        pass
+    def __init__(self, sinks, **kwargs):
+        self.sinks = sinks or []
+        self.module = kwargs.pop('module', None)
+        # TODO: get module
 
     def add_sink(self, sink):
-        pass
+        self.sinks.append(sink)
 
     def debug(self, name):
-        pass
+        return Message(name, level=DEBUG, logger=self)
 
     def info(self, name):
-        pass
+        return Message(name, level=INFO, logger=self)
 
     def critical(self, name):
-        pass
+        return Message(name, level=CRITICAL, logger=self)
