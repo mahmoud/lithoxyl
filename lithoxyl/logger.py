@@ -11,9 +11,10 @@ class Message(object):
     _is_trans = None
     _defer_publish = False
 
-    def __init__(self, name, level=None, logger=None, **kwargs):
+    def __init__(self, name, level=None, **kwargs):
         self.name = name
         self.level = level
+        self.logger = kwargs.pop('logger', None)
         self.status = kwargs.pop('status', None)
         self.message = kwargs.pop('message', None)
         self.data = kwargs.pop('data', {})  # TODO: payload?
@@ -40,7 +41,8 @@ class Message(object):
     def _complete(self, status, message):
         self.status = status
         self.message = message
-        if not self._defer_publish:
+        if not self._defer_publish and self.logger:
+            # TODO: should logger be required?
             self.logger.enqueue(self)
 
     def __enter__(self):
@@ -58,15 +60,24 @@ class Message(object):
             self._complete(self.status, self.message)
 
 
-class Logger(object):
+class BaseLogger(object):
     def __init__(self, name, sinks, **kwargs):
         self.name = name
         self.sinks = sinks or []
         self.module = kwargs.pop('module', None)
         # TODO: get module
 
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs)
+
     def add_sink(self, sink):
+        # TODO: raise on sink not having a handle function
         self.sinks.append(sink)
+
+    def enqueue(self, message):
+        # TODO: need a convention for handling starts
+        for sink in self.sinks:
+            sink.handle(message)
 
     def debug(self, name):
         return Message(name, level=DEBUG, logger=self)
