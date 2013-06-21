@@ -8,6 +8,9 @@ CRITICAL = 90
 
 
 class Message(object):
+    _is_trans = None
+    _defer_publish = False
+
     def __init__(self, name, level=None, logger=None, **kwargs):
         self.name = name
         self.level = level
@@ -20,22 +23,36 @@ class Message(object):
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
     def success(self, message):
-        self._complete('success')
+        self._complete('success', message)
 
     def warning(self, message):
-        self._complete('warning')
+        self._complete('warning', message)
 
     def fail(self, message):  # TODO: failure?
-        self._complete('fail')
+        self._complete('fail', message)
 
-    def exception(self, exc_obj, tb_obj):
-        # TODO: format exc message
+    def exception(self, exc_type, exc_val, tb_obj):
+        # TODO: make real exc message
         # TODO: structure tb obj?
-        self._complete('exception')
+        self._complete('exception', '%r, %r' % (exc_type, exc_val))
 
     def _complete(self, status, message):
         self.status = status
-        self.logger.enqueue(self)
+        if not self._defer_publish:
+            self.logger.enqueue(self)
+
+    def __enter__(self):
+        self._is_trans = True
+        self._defer_publish = True
+        # TODO: reset start_time here?
+        return self
+
+    def __exit__(self, exc_type, exc_val, tb):
+        self._defer_publish = False
+        if exc_type:
+            self.exception(exc_type, exc_val, tb)
+        elif self.status is None:
+            self.success()
 
 
 class Logger(object):
