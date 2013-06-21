@@ -39,7 +39,8 @@ class Message(object):
 
 
 class Logger(object):
-    def __init__(self, sinks, **kwargs):
+    def __init__(self, name, sinks, **kwargs):
+        self.name = name
         self.sinks = sinks or []
         self.module = kwargs.pop('module', None)
         # TODO: get module
