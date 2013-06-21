@@ -87,3 +87,28 @@ class BaseLogger(object):
 
     def critical(self, name):
         return Message(name, level=CRITICAL, logger=self)
+
+
+class AccumSink(object):
+    def __init__(self):
+        self.messages = []
+
+    def handle(self, message):
+        self.messages.append(message)
+
+
+def main():
+    acc = AccumSink()
+    log = BaseLogger('test', [acc])
+    test(log)
+    test(log)
+    import pdb;pdb.set_trace()
+
+
+def test(logger):
+    with logger.debug('hi') as t:
+        t.success('yay')
+
+
+if __name__ == '__main__':
+    main()
