@@ -15,6 +15,7 @@ class Message(object):
         self.name = name
         self.level = level
         self.status = kwargs.pop('status', None)
+        self.message = kwargs.pop('message', None)
         self.data = kwargs.pop('data', {})  # TODO: payload?
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
@@ -38,12 +39,12 @@ class Message(object):
 
     def _complete(self, status, message):
         self.status = status
+        self.message = message
         if not self._defer_publish:
             self.logger.enqueue(self)
 
     def __enter__(self):
-        self._is_trans = True
-        self._defer_publish = True
+        self._is_trans = self._defer_publish = True
         # TODO: reset start_time here?
         return self
 
@@ -52,7 +53,9 @@ class Message(object):
         if exc_type:
             self.exception(exc_type, exc_val, tb)
         elif self.status is None:
-            self.success()
+            self.success(self.message)
+        else:
+            self._complete(self.status, self.message)
 
 
 class Logger(object):
