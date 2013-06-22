@@ -22,7 +22,7 @@ class Message(object):
         self.end_time = kwargs.pop('end_time', None)
 
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs)
+            self.data.update(kwargs)
 
     def success(self, message):
         self._complete('success', message)
@@ -63,36 +63,58 @@ class Message(object):
 
 class BaseLogger(object):
     def __init__(self, name, sinks, **kwargs):
-        sinks = sinks or []
+        # TODO: get module
         self.module = kwargs.pop('module', None)
         self.name = name or self.module
-        # TODO: get module
-
+        self.sinks = sinks
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
+    @property
+    def sinks(self):
+        return self._all_sinks
+
+    @sinks.setter
+    def sinks(self, sinks):
+        sinks = sinks or []
+        self._all_sinks = []
+        self._handlers = []
+        self._start_handlers = []
+        for s in sinks:
+            self.add_sink(s)
+
     def add_sink(self, sink):
-        # TODO: raise on sink not having a handle function
-        self.sinks.append(sink)
+        if sink in self._all_sinks:
+            return
+        self._all_sinks.append(sink)
+        handle_f = getattr(sink, 'handle', None)
+        if callable(handle_f):
+            self._handlers.append(handle_f)
+        handle_start_f = getattr(sink, 'handle_start', None)
+        if callable(handle_start_f):
+            self._start_handlers.append(handle_start_f)
 
     def enqueue(self, message):
         # TODO: need a convention for handling starts
-        for sink in self.sinks:
-            sink.handle(message)
+        for hfunc in self._handlers:
+            hfunc(message)
 
     def enqueue_start(self, message):
         # TODO: need a convention for handling starts
-        for sink in self.sinks:
-            sink.handle_start(message)
+        for shfunc in self._start_handlers:
+            shfunc(message)
 
-    def debug(self, name):
-        return Message(name, level=DEBUG, logger=self)
+    def debug(self, name, **kw):
+        kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
+        return Message(**kw)
 
-    def info(self, name):
-        return Message(name, level=INFO, logger=self)
+    def info(self, name, **kw):
+        kw['name'], kw['level'], kw['logger'] = name, INFO, self
+        return Message(**kw)
 
-    def critical(self, name):
-        return Message(name, level=CRITICAL, logger=self)
+    def critical(self, name, **kw):
+        kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
+        return Message(**kw)
 
 
 class AccumSink(object):
@@ -111,6 +133,7 @@ def main():
     log = BaseLogger('test', [acc])
     test(log)
     test(log)
+    print acc.messages
     import pdb;pdb.set_trace()
 
 
