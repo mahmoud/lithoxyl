@@ -48,6 +48,7 @@ class Message(object):
     def __enter__(self):
         self._is_trans = self._defer_publish = True
         # TODO: reset start_time here?
+        self.logger.enqueue_start(self)
         return self
 
     def __exit__(self, exc_type, exc_val, tb):
@@ -62,9 +63,9 @@ class Message(object):
 
 class BaseLogger(object):
     def __init__(self, name, sinks, **kwargs):
-        self.name = name
-        self.sinks = sinks or []
+        sinks = sinks or []
         self.module = kwargs.pop('module', None)
+        self.name = name or self.module
         # TODO: get module
 
         if kwargs:
@@ -79,6 +80,11 @@ class BaseLogger(object):
         for sink in self.sinks:
             sink.handle(message)
 
+    def enqueue_start(self, message):
+        # TODO: need a convention for handling starts
+        for sink in self.sinks:
+            sink.handle_start(message)
+
     def debug(self, name):
         return Message(name, level=DEBUG, logger=self)
 
@@ -92,6 +98,9 @@ class BaseLogger(object):
 class AccumSink(object):
     def __init__(self):
         self.messages = []
+
+    def handle_start(self, message):
+        pass
 
     def handle(self, message):
         self.messages.append(message)
