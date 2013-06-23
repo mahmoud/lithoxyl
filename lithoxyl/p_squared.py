@@ -19,9 +19,8 @@ DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        99, 99.5, 99.8, 99.9, 99.99)
 
 
-class AbstractQuantileAccumulator(object):
-    # ABCMeta? lol. Just sketching out an API for now
-    def __init__(self, q_points=DEFAULT_PERCENTILES, **whatever):
+class QuantileAccumulator(object):
+    def __init__(self, q_points=DEFAULT_PERCENTILES):
         try:
             qps = sorted([float(x) for x in set(q_points or [])])
             if not qps or not all([0 <= x <= 100 for x in qps]):
@@ -30,19 +29,41 @@ class AbstractQuantileAccumulator(object):
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
         else:
             self._q_points = qps
+
+        self._data = []
+        self._is_sorted = True
+        self._count = 0
         self._min = None  # -0.0?
         self._max = None
 
-    def add(self, val):
-        self.do_the_lalalala()
+    def _sort(self):
+        if self._is_sorted:
+            return
+        self._data.sort()
+        self._is_sorted = True
+
+    def add(self, val, idx=None):
+        if idx is None:
+            idx = -1
+        self._data.insert(idx, val)
+        self._is_sorted = False
+        self._count += 1
+        if val < self._min:
+            self._min = val
+        if val > self._max:
+            self._max = val
 
     def get_quantiles(self):
         return self.all_quantile_value_pairs
 
     def get_histogram(self):
         # namedtuple may be in order here:
-        # need list of: start_quant, end_quant, start_val, end_val, count
+        # need list of: start_q, end_q, start_val, end_val, count
         return
+
+    @property
+    def count(self):
+        return self._count
 
     @property
     def min(self):
@@ -58,52 +79,8 @@ class AbstractQuantileAccumulator(object):
 
     @property
     def median(self):
-        pass
-
-
-class BasicAccumulator(object):
-    def __init__(self, q_points=DEFAULT_PERCENTILES):
-        self._data = []
-        self._is_sorted = True
-        self._count = 0
-
-        self._min = -0.0
-        self._max = -0.0
-
-    def add(self, val, idx=None):
-        if idx is None:
-            idx = -1
-        self._data.insert(idx, val)
-        self._is_sorted = False
-        self._count += 1
-        if val < self._min:
-            self._min = val
-        if val > self._max:
-            self._max = val
-
-    def _sort(self):
-        if self._is_sorted:
-            return
-        self._data.sort()
-        self._is_sorted = True
-
-    @property
-    def count(self):
-        return self._count
-
-    @property
-    def min(self):
-        return self._min
-
-    @property
-    def max(self):
-        return self._max
-
-    @property
-    def median(self):
         return self._get_percentile(50)
 
-    @property
     def quartiles(self):
         gp = self._get_percentiles
         return gp(25), gp(50), gp(75)
@@ -123,14 +100,14 @@ class BasicAccumulator(object):
             raise ValueError("it's percentile, not something-else-tile")
         self._sort()
         data = self._data
-        idx = (float(percentile) / 100) * len(data)
+        idx = (percentile / 100.0) * len(data)
         idx_f, idx_c = int(floor(idx)), min(int(ceil(idx)), len(data) - 1)
         return (data[idx_f] + data[idx_c]) / 2.0
 
 
 class P2Accumulator(object):
     """
-   TODO
+    TODO
     ----
 
     * API
