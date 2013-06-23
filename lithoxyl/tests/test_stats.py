@@ -46,3 +46,15 @@ def test_quantacc_basic(data=None):
     assert qa.median == _statsutils.median(data)
     q1, q2, q3 = qa.quartiles
     assert q1 < q2 < q3
+    return True
+
+
+def test_quantacc():
+    for name, data in test_sets.items():
+        qa = QuantileAccumulator()
+        for v in data:
+            qa.add(v)
+        assert qa.median == _statsutils.median(data)
+        q1, q2, q3 = qa.quartiles
+        assert q1 < q2 < q3
+        #print; import pprint; pprint.pprint(qa.get_quantiles())

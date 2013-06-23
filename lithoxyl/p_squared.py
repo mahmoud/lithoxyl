@@ -33,8 +33,8 @@ class QuantileAccumulator(object):
         self._data = []
         self._is_sorted = True
         self._count = 0
-        self._min = None  # -0.0?
-        self._max = None
+        self._min = float('inf')
+        self._max = float('-inf')
 
     def _sort(self):
         if self._is_sorted:
@@ -97,7 +97,7 @@ class QuantileAccumulator(object):
     @property
     def trimean(self):
         qs = self.quartiles
-        return (qs[0] + (2 * qs[1]) + qs[2]) / 4
+        return (qs[0] + (2 * qs[1]) + qs[2]) / 4.0
 
     def _get_percentile(self, percentile=50):
         if not (0 < percentile < 100):
