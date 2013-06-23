@@ -13,6 +13,11 @@ Copyright 2013, 3-clause BSD License
 """
 
 from math import copysign, floor, ceil
+from collections import namedtuple
+
+HistogramCell = namedtuple('HistogramCell',
+                           'q_range val_range count ratio')
+
 
 DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        75, 80, 85, 90, 95, 98,
@@ -61,8 +66,12 @@ class QuantileAccumulator(object):
 
     def get_histogram(self):
         # namedtuple may be in order here:
-        # need list of: start_q, end_q, start_val, end_val, count
-        return
+        # need list of: start_q, end_q, start_val, end_val, count, rel_count
+        ret = []
+        quants = self.get_quantiles()
+        for sq, eq in zip(quants, quants[1:]):
+            pass
+        return ret
 
     @property
     def count(self):
