@@ -109,6 +109,11 @@ class BasicAccumulator(object):
         return gp(25), gp(50), gp(75)
 
     @property
+    def iqr(self):
+        gp = self._get_percentiles
+        return gp(75) - gp(25)
+
+    @property
     def trimean(self):
         qs = self.quartiles
         return (qs[0] + (2 * qs[1]) + qs[2]) / 4
