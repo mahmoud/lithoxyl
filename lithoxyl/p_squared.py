@@ -19,6 +19,42 @@ DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        99, 99.5, 99.8, 99.9, 99.99)
 
 
+class AbstractAccumulator(object):
+    # ABCMeta? lol. Just sketching out an API for now
+    def __init__(self, **whatever):
+        self._data = []
+        pass
+
+    def add(self, val):
+        self.do_the_lalalala()
+
+    def get_quantiles(self):
+        return self.all_quantile_value_pairs
+
+    def get_histogram(self):
+        # namedtuple may be in order here:
+        # need list of: start_quant, end_quant, start_val, end_val, count
+        return
+
+    # all the properties will be cached properties, invalidated by
+    # data changes
+
+    @property
+    def min(self):
+        return self._min
+
+    # and so on for max, median, quartiles, mean, and variance
+    # (skewness and kurtosis, too?)
+
+    @property
+    def median(self):
+        return self._median
+
+    @property
+    def max(self):
+        return self._max
+
+
 class P2Accumulator(object):
     """
     TODO
@@ -121,7 +157,7 @@ def test_random():
     import time
     nsamples = 10000
     vals = [random.random() for i in range(nsamples)]
-    m = Measure()
+    m = P2Accumulator()
     try:
         start = time.time()
         for e in vals:
