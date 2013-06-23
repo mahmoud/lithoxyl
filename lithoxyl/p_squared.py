@@ -54,7 +54,10 @@ class QuantileAccumulator(object):
             self._max = val
 
     def get_quantiles(self):
-        return self.all_quantile_value_pairs
+        ret = [(0.0, self.min)]
+        ret.extend([(q, self._get_percentile(q)) for q in self._q_points])
+        ret.append((100.0, self.max))
+        return ret
 
     def get_histogram(self):
         # namedtuple may be in order here:
@@ -82,12 +85,12 @@ class QuantileAccumulator(object):
         return self._get_percentile(50)
 
     def quartiles(self):
-        gp = self._get_percentiles
+        gp = self._get_percentile
         return gp(25), gp(50), gp(75)
 
     @property
     def iqr(self):
-        gp = self._get_percentiles
+        gp = self._get_percentile
         return gp(75) - gp(25)
 
     @property
@@ -113,6 +116,7 @@ class P2Accumulator(object):
     * API
     * fix case where min is requested but _start hasn't been called
     * duplicitous self refs
+    * Off-by-two error? 99.9 and 99.99 aren't being returned
     """
     def __init__(self, percentiles=DEFAULT_PERCENTILES):
         self.first_n = []
@@ -173,13 +177,13 @@ class P2Accumulator(object):
                                   right[0], right[1], self.count, self.max,
                                   self.points[-1][0] / 100.0, scale)
 
-    def get_percentiles(self):
+    def get_quantiles(self):
         data = dict([(e[0], e[1][1]) for e in self.points])
         data["mean"] = self.sum / self.count
         return data
 
     def __repr__(self):
-        return "Measure(%r)" % (self.get_percentiles(),)
+        return "Measure(%r)" % (self.get_quantiles(),)
 
 
 def _nxt(left_n, left_q, cur_n, cur_q, right_n, right_q, quantile, scale):
@@ -220,7 +224,7 @@ def test_random():
         import pdb
         traceback.print_exc()
         pdb.post_mortem()
-    p = m.get_percentiles()
+    p = m.get_quantiles()
     for k, v in p.items():
         if k == "mean":
             continue
@@ -232,4 +236,4 @@ def test_random():
 if __name__ == "__main__":
     m1 = test_random()
     import pprint
-    pprint.pprint(m1.get_percentiles())
+    pprint.pprint(m1.get_quantiles())
