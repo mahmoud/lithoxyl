@@ -47,7 +47,7 @@ class Message(object):
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        # TODO: reset start_time here?
+
         self.logger.enqueue_start(self)
         return self
 
