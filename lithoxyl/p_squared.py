@@ -12,7 +12,7 @@ Implemented by Kurt Rose and Mahmoud Hashemi (mostly Kurt Rose).
 Copyright 2013, 3-clause BSD License
 """
 
-from math import copysign
+from math import copysign, floor, ceil
 
 DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        75, 80, 85, 90, 95, 98,
@@ -23,7 +23,6 @@ class AbstractAccumulator(object):
     # ABCMeta? lol. Just sketching out an API for now
     def __init__(self, **whatever):
         self._data = []
-        pass
 
     def add(self, val):
         self.do_the_lalalala()
@@ -55,9 +54,96 @@ class AbstractAccumulator(object):
         return self._max
 
 
+class BasicAccumulator(object):
+    def __init__(self, q_points=DEFAULT_PERCENTILES):
+        try:
+            self._q_points = sorted([float(x) for x in set(q_points or [])])
+        except:
+            raise ValueError('invalid quantile point(s): %r' % (q_points,))
+        self._data = []
+        self._is_sorted = True
+        self._count = 0
+
+        self._mean = -0.0
+        self._min = -0.0
+        self._max = -0.0
+        self._variance = -0.0
+        self._m2 = -0.0
+
+    def add(self, val, idx=None):
+        if idx is None:
+            idx = -1
+        self._data.insert(idx, val)
+        self._is_sorted = False
+        self._count += 1
+        if val < self._min:
+            self._min = val
+        if val > self._max:
+            self._max = val
+        self._update_moments(val)
+
+    def _update_moments(self, val):
+        delta = val - self._mean
+        self._mean = self._mean + (delta / self._count)
+        self._m2 = self._m2 + delta * (val - self._mean)
+
+    def _sort(self):
+        if self._is_sorted:
+            return
+        self._data.sort()
+        self._is_sorted = True
+
+    @property
+    def count(self):
+        return self._count
+
+    @property
+    def min(self):
+        return self._min
+
+    @property
+    def max(self):
+        return self._max
+
+    @property
+    def median(self):
+        return self._get_percentile(50)
+
+    @property
+    def quartiles(self):
+        gp = self._get_percentiles
+        return gp(25), gp(50), gp(75)
+
+    @property
+    def mean(self):
+        return self._mean
+
+    @property
+    def variance(self):
+        return self._m2 / (self.count - 1)
+
+    @property
+    def std_dev(self):
+        return self.variance ** 0.5
+
+    @property
+    def trimean(self):
+        qs = self.quartiles
+        return (qs[0] + (2 * qs[1]) + qs[2]) / 4
+
+    def _get_percentile(self, percentile=50):
+        if not (0 < percentile < 100):
+            raise ValueError("it's percentile, not something-else-tile")
+        self._sort()
+        data = self._data
+        idx = (float(percentile) / 100) * len(data)
+        idx_f, idx_c = int(floor(idx)), min(int(ceil(idx)), len(data) - 1)
+        return (data[idx_f] + data[idx_c]) / 2.0
+
+
 class P2Accumulator(object):
     """
-    TODO
+   TODO
     ----
 
     * API
