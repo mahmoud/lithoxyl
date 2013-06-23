@@ -57,4 +57,7 @@ def test_quantacc():
         assert qa.median == _statsutils.median(data)
         q1, q2, q3 = qa.quartiles
         assert q1 < q2 < q3
-        #print; import pprint; pprint.pprint(qa.get_quantiles())
+        hist = qa.get_histogram()
+        assert len(hist) == len(qa._q_points) + 1  # TODO: throwaway test
+        #print; import pprint; pprint.pprint(hist)
+        #print sum([x.count for x in hist]), 'histogram item count'

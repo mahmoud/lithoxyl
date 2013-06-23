@@ -16,7 +16,7 @@ from math import copysign, floor, ceil
 from collections import namedtuple
 
 HistogramCell = namedtuple('HistogramCell',
-                           'q_range val_range count ratio')
+                           'q_range val_range ratio count')
 
 
 DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
@@ -65,12 +65,31 @@ class QuantileAccumulator(object):
         return ret
 
     def get_histogram(self):
-        # namedtuple may be in order here:
-        # need list of: start_q, end_q, start_val, end_val, count, rel_count
+        """\
+        This convenience method gives back an estimated histogram, based
+        on quantiles from get_quantiles(). It's mostly just a utility
+        for rendering graphs; it's no more accurate than
+        get_quantiles(), and probably even less so for very small
+        dataset-size-to-bucket-count ratios.
+
+        TODO: Because it stores observations, this BasicAccumulator
+        could actually give back a real histogram, too.
+        """
         ret = []
-        quants = self.get_quantiles()
-        for sq, eq in zip(quants, quants[1:]):
-            pass
+        qwantz = self.get_quantiles()
+        total_count = self.count
+        for sq, eq in zip(qwantz, qwantz[1:]):
+            q_range = start_q, end_q = sq[0], eq[0]
+            val_range = start_val, end_val = sq[1], eq[1]
+            ratio = (end_q - start_q) / 100.0
+            count = int(ratio * total_count)
+            if total_count < len(qwantz):
+                if end_val > start_val:
+                    count += 1  # not exactly, but sorta.
+            else:
+                if start_q == 0.0 or end_q == 100.0:
+                    count += 1  # make range inclusive
+            ret.append(HistogramCell(q_range, val_range, ratio, count))
         return ret
 
     @property
@@ -117,7 +136,7 @@ class QuantileAccumulator(object):
         idx_f, idx_c = int(floor(idx)), int(ceil(idx))
         if idx_f == idx_c:
             return data[idx_f]
-        return (data[idx_f] * (idx - idx_f)) + (data[idx_c] * (idx_c - idx))
+        return (data[idx_f] * (idx_c - idx)) + (data[idx_c] * (idx - idx_f))
 
 
 class P2Accumulator(object):
