@@ -4,7 +4,7 @@ import os
 import random
 
 from moment import MomentAccumulator
-from p_squared import QuantileAccumulator
+from p_squared import QuantileAccumulator, P2QuantileAccumulator
 import _statsutils
 
 
@@ -61,3 +61,22 @@ def test_quantacc():
         assert len(hist) == len(qa._q_points) + 1  # TODO: throwaway test
         #print; import pprint; pprint.pprint(hist)
         #print sum([x.count for x in hist]), 'histogram item count'
+
+
+def test_p2quantacc():
+    for name, data in test_sets.items():
+        qa = QuantileAccumulator()
+        p2qa = P2QuantileAccumulator()
+        for i, v in enumerate(data):
+            p2qa.add(v)
+            qa.add(v)
+            if i and i % 1000 == 0:
+                _assert_round_cmp(qa.median,
+                                  p2qa.median,
+                                  mag=1,
+                                  name='%s median' % name)
+                print i, qa.median, p2qa.median
+        _assert_round_cmp(qa.median,
+                          p2qa.median,
+                          mag=2,
+                          name='%s median' % name)

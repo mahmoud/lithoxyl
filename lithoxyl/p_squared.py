@@ -139,7 +139,7 @@ class QuantileAccumulator(object):
         return (data[idx_f] * (idx_c - idx)) + (data[idx_c] * (idx - idx_f))
 
 
-class P2Accumulator(object):
+class P2QuantileAccumulator(object):
     """
     TODO
     ----
@@ -154,6 +154,10 @@ class P2Accumulator(object):
         self.count = 0
         self.percentiles = percentiles
 
+    @property
+    def median(self):
+        return self.get_quantiles()[50.0]
+
     def _start(self):
         first_n = sorted(self.first_n)
         self.min = first_n[0]
@@ -161,7 +165,7 @@ class P2Accumulator(object):
         vals = [[i + 1, first_n[i]] for i in range(1, len(first_n) - 1)]
         self.points = zip(self.percentiles, vals)
 
-    def add_val(self, val):
+    def add(self, val):
         self.count += 1
 
         if len(self.first_n) < len(self.percentiles) + 2:
