@@ -19,10 +19,19 @@ DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        99, 99.5, 99.8, 99.9, 99.99)
 
 
-class AbstractAccumulator(object):
+class AbstractQuantileAccumulator(object):
     # ABCMeta? lol. Just sketching out an API for now
-    def __init__(self, **whatever):
-        self._data = []
+    def __init__(self, q_points=DEFAULT_PERCENTILES, **whatever):
+        try:
+            qps = sorted([float(x) for x in set(q_points or [])])
+            if not qps or not all([0 <= x <= 100 for x in qps]):
+                raise ValueError()
+        except:
+            raise ValueError('invalid quantile point(s): %r' % (q_points,))
+        else:
+            self._q_points = qps
+        self._min = None  # -0.0?
+        self._max = None
 
     def add(self, val):
         self.do_the_lalalala()
@@ -35,40 +44,31 @@ class AbstractAccumulator(object):
         # need list of: start_quant, end_quant, start_val, end_val, count
         return
 
-    # all the properties will be cached properties, invalidated by
-    # data changes
-
     @property
     def min(self):
         return self._min
-
-    # and so on for max, median, quartiles, mean, and variance
-    # (skewness and kurtosis, too?)
-
-    @property
-    def median(self):
-        return self._median
 
     @property
     def max(self):
         return self._max
 
+    @property
+    def range(self):
+        return self._min, self._max
+
+    @property
+    def median(self):
+        pass
+
 
 class BasicAccumulator(object):
     def __init__(self, q_points=DEFAULT_PERCENTILES):
-        try:
-            self._q_points = sorted([float(x) for x in set(q_points or [])])
-        except:
-            raise ValueError('invalid quantile point(s): %r' % (q_points,))
         self._data = []
         self._is_sorted = True
         self._count = 0
 
-        self._mean = -0.0
         self._min = -0.0
         self._max = -0.0
-        self._variance = -0.0
-        self._m2 = -0.0
 
     def add(self, val, idx=None):
         if idx is None:
@@ -80,12 +80,6 @@ class BasicAccumulator(object):
             self._min = val
         if val > self._max:
             self._max = val
-        self._update_moments(val)
-
-    def _update_moments(self, val):
-        delta = val - self._mean
-        self._mean = self._mean + (delta / self._count)
-        self._m2 = self._m2 + delta * (val - self._mean)
 
     def _sort(self):
         if self._is_sorted:
@@ -113,18 +107,6 @@ class BasicAccumulator(object):
     def quartiles(self):
         gp = self._get_percentiles
         return gp(25), gp(50), gp(75)
-
-    @property
-    def mean(self):
-        return self._mean
-
-    @property
-    def variance(self):
-        return self._m2 / (self.count - 1)
-
-    @property
-    def std_dev(self):
-        return self.variance ** 0.5
 
     @property
     def trimean(self):
