@@ -103,10 +103,12 @@ class QuantileAccumulator(object):
         if not (0 < percentile < 100):
             raise ValueError("it's percentile, not something-else-tile")
         self._sort()
-        data = self._data
-        idx = (percentile / 100.0) * len(data)
-        idx_f, idx_c = int(floor(idx)), min(int(ceil(idx)), len(data) - 1)
-        return (data[idx_f] + data[idx_c]) / 2.0
+        data, n = self._data, len(self._data)
+        idx = percentile / 100.0 * (n - 1)
+        idx_f, idx_c = int(floor(idx)), int(ceil(idx))
+        if idx_f == idx_c:
+            return data[idx_f]
+        return (data[idx_f] * (idx - idx_f)) + (data[idx_c] * (idx_c - idx))
 
 
 class P2Accumulator(object):
