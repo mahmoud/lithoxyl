@@ -4,6 +4,7 @@ import os
 import random
 
 from moment import MomentAccumulator
+from p_squared import QuantileAccumulator
 import _statsutils
 
 
@@ -35,3 +36,13 @@ def test_momentacc():
             ctl_val = getattr(_statsutils, m_name)(data)
             _assert_round_cmp(ctl_val, ma_val, name=m_name)
     return True
+
+
+def test_quantacc_basic(data=None):
+    data = data or range(31)
+    qa = QuantileAccumulator()
+    for v in data:
+        qa.add(v)
+    assert qa.median == _statsutils.median(data)
+    q1, q2, q3 = qa.quartiles
+    assert q1 < q2 < q3
