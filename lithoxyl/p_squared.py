@@ -84,6 +84,7 @@ class QuantileAccumulator(object):
     def median(self):
         return self._get_percentile(50)
 
+    @property
     def quartiles(self):
         gp = self._get_percentile
         return gp(25), gp(50), gp(75)
@@ -120,7 +121,6 @@ class P2Accumulator(object):
     """
     def __init__(self, percentiles=DEFAULT_PERCENTILES):
         self.first_n = []
-        self.sum = 0
         self.count = 0
         self.percentiles = percentiles
 
@@ -133,7 +133,6 @@ class P2Accumulator(object):
 
     def add_val(self, val):
         self.count += 1
-        self.sum += val
 
         if len(self.first_n) < len(self.percentiles) + 2:
             self.first_n.append(val)
@@ -179,7 +178,6 @@ class P2Accumulator(object):
 
     def get_quantiles(self):
         data = dict([(e[0], e[1][1]) for e in self.points])
-        data["mean"] = self.sum / self.count
         return data
 
     def __repr__(self):
@@ -226,8 +224,6 @@ def test_random():
         pdb.post_mortem()
     p = m.get_quantiles()
     for k, v in p.items():
-        if k == "mean":
-            continue
         if 0.9 > (k / 100.0) / v > 1.1:
             print "problem: %s is %s, should be %s" % (k, v, k / 100.0)
     return m
