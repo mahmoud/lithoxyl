@@ -27,8 +27,8 @@ class MomentAccumulator(object):
     """
     def __init__(self):
         self._count = 0
-        self._min = -0.0
-        self._max = -0.0
+        self._min = float('inf')
+        self._max = float('-inf')
         self._mean = -0.0
         self._m2 = -0.0
         self._m3 = -0.0
@@ -38,7 +38,9 @@ class MomentAccumulator(object):
         # TODO: keep max/min? not strictly necessary here.
         if val > self._max:
             self._max = val
-        if val < self._min:  # TODO: can be optimized out
+            if self._count == 0:
+                self._min = val
+        elif val < self._min:
             self._min = val
 
         self._count += 1
