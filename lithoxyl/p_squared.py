@@ -200,7 +200,7 @@ class P2Estimator(object):
         initial = sorted(data[:len_init])
         self.min = initial[0]
         self.max = initial[-1]
-        vals = [[i + 2, x] for i, x in enumerate(initial[1:-2])]
+        vals = [[i + 2, x] for i, x in enumerate(initial[1:-1])]
         self._points = zip(self._q_points, vals)  # TODO: marks?
         self._lookup = dict(self._points)
 
@@ -240,7 +240,7 @@ class P2Estimator(object):
             if right[0] == count:
                 right[0] -= 1
         # handle the rest of the points
-        for i in range(len(points) - 2, -1, -1):
+        for i in reversed(range(0, len(points) - 1)):
             point = points[i][1]
             if val <= point[1]:
                 point[0] += 1
@@ -248,7 +248,8 @@ class P2Estimator(object):
                     point[0] -= 1
         # left-most point is a special case
         left = points[0][1]
-        left[1], left[0] = _nxt(1, cur_min, left[0], left[1],
+        left[1], left[0] = _nxt(1, cur_min,
+                                left[0], left[1],
                                 points[1][1][0], points[1][1][1],
                                 points[0][0] / 100.0, scale)
         # update estimated locations of percentiles
@@ -256,12 +257,14 @@ class P2Estimator(object):
             prev = points[i - 1][1]
             point = points[i][1]
             nxt = points[i + 1][1]
-            point[1], point[0] = _nxt(prev[0], prev[1], point[0],
-                                      point[1], nxt[0], nxt[1],
+            point[1], point[0] = _nxt(prev[0], prev[1],
+                                      point[0], point[1],
+                                      nxt[0], nxt[1],
                                       points[i][0] / 100.0, scale)
         # right-most point is a special case
         right[1], right[0] = _nxt(points[-2][1][0], points[-2][1][1],
-                                  right[0], right[1], count, cur_max,
+                                  right[0], right[1],
+                                  count, cur_max,
                                   points[-1][0] / 100.0, scale)
 
     def _get_quantile(self, q):
@@ -293,13 +296,12 @@ class P2Estimator(object):
         return cur_q, cur_n
 
 
-def test_random(nsamples=100000):
-    # test random.random() values; uniformly distributed between 0 and 1,
-    # so 50th percentils ie 0.5, etc
+def test_random(vals=None, nsamples=100000):
     import random
     import time
     from pprint import pprint
-    vals = [random.random() for i in range(nsamples)]
+    if not vals:
+        vals = [random.random() for i in range(100000)]
     try:
         start = time.time()
         m = P2QuantileAccumulator(vals)
@@ -331,4 +333,6 @@ def test_random(nsamples=100000):
 
 
 if __name__ == "__main__":
-    m1 = test_random()
+    import json
+    vals = json.load(open('tmp_test.json'))
+    m1 = test_random(vals)
