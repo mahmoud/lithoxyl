@@ -155,7 +155,7 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
     def __init__(self, data=None):
         super(P2QuantileAccumulator, self).__init__()
         data = data or []
-        self._q_points = P2_PRAG
+        self._q_points = P2_PRO
         self._tmp_acc = QuantileAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None
@@ -201,6 +201,8 @@ class P2Estimator(object):
         self._points = pts = zip(self._q_points, vals)  # TODO: marks?
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
+        self._back_tuples = list(reversed(zip(vals, vals[1:])))
+        self._quads = zip(self._q_points, vals, vals[1:], vals[2:])
 
         for i in xrange(len_qps, len_data):
             self.add(data[i])
@@ -231,22 +233,18 @@ class P2Estimator(object):
         elif val > cur_max:
             self._max_point[1] = cur_max = val
 
-        for i in reversed(range(0, len(points) - 1)):
-            point = points[i][1]
+        for point, nxt_point in self._back_tuples:
             if val <= point[1]:
                 point[0] += 1
-                if point[0] == points[i + 1][1][0]:
+                if point[0] == nxt_point[0]:
                     point[0] -= 1
 
         # update estimated locations of percentiles
-        for i in range(1, len(points) - 1):
-            prev = points[i - 1][1]
-            point = points[i][1]
-            nxt = points[i + 1][1]
+        for qp, prev, point, nxt in self._quads:
             point[1], point[0] = _nxt(prev[0], prev[1],
                                       point[0], point[1],
                                       nxt[0], nxt[1],
-                                      points[i][0] / 100.0, prev_count)
+                                      qp / 100.0, prev_count)
 
     def _get_quantile(self, q):
         try:
