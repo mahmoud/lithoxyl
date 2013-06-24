@@ -216,20 +216,22 @@ class P2Estimator(object):
     def _nxt(left_n, left_q, cur_n, cur_q, right_n, right_q, quantile, scale):
         # calculate desired position
         d = int(scale * quantile + 1 - cur_n)
-        if d:
-            d = copysign(1, d)  # clamp d at +/- 1
-            if left_n < cur_n + d < right_n:  # try parabolic eqn
-                nxt_q = (cur_q + (d / (right_n - left_n)) *
-                         ((cur_n - left_n + d) * (right_q - cur_q) /
-                          (right_n - cur_n) +
-                          (right_n - cur_n - d) * (cur_q - left_q) /
-                          (cur_n - left_n)))
-                if not (left_q < nxt_q < right_q):  # fall back on linear eqn
-                    if d == 1:
-                        nxt_q = cur_q + (right_q - cur_q) / (right_n - cur_n)
-                    elif d == -1:
-                        nxt_q = cur_q - (left_q - cur_q) / (left_n - cur_n)
-                return nxt_q, cur_n + d
+        if not d:
+            return cur_q, cur_n
+
+        d = copysign(1, d)  # clamp d at +/- 1
+        if left_n < cur_n + d < right_n:  # try parabolic eqn
+            nxt_q = (cur_q + (d / (right_n - left_n)) *
+                     ((cur_n - left_n + d) * (right_q - cur_q) /
+                      (right_n - cur_n) +
+                      (right_n - cur_n - d) * (cur_q - left_q) /
+                      (cur_n - left_n)))
+            if not (left_q < nxt_q < right_q):  # fall back on linear eqn
+                if d == 1:
+                    nxt_q = cur_q + (right_q - cur_q) / (right_n - cur_n)
+                elif d == -1:
+                    nxt_q = cur_q - (left_q - cur_q) / (left_n - cur_n)
+            return nxt_q, cur_n + d
         return cur_q, cur_n
 
 
@@ -274,11 +276,12 @@ def test_random():
         if 0.99 > (k / 100.0) / v > 1.01:
             print "problem: %s is %s, should be %s" % (k, v, k / 100.0)
 
+    from pprint import pprint
     start = time.time()
     qa = QuantileAccumulator()
     for val in vals:
         qa.add(val)
-    qa.get_quantiles()
+    pprint(qa.get_quantiles())
     duration = time.time() - start
     tmpl = "QA processed %d measurements in %f seconds (%f ms each)"
     print tmpl % (nsamples, duration, 1000 * duration / nsamples)
