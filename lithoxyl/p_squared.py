@@ -19,9 +19,11 @@ HistogramCell = namedtuple('HistogramCell',
                            'q_range val_range ratio count')
 
 
-DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
-                       75, 80, 85, 90, 95, 98,
-                       99, 99.5, 99.8, 99.9, 99.99)
+P2_MIN = (25.0, 50.0, 75.0)
+P2_PRAG = (1.0, 5.0, 25.0, 50.0, 75.0, 90.0, 95.0, 99.0)
+P2_PRO = (0.1, 1, 2, 5, 10, 25, 50,
+          75, 80, 85, 90, 95, 98,
+          99, 99.5, 99.8, 99.9, 99.99)
 
 
 class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
@@ -153,7 +155,7 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
     def __init__(self, data=None):
         super(P2QuantileAccumulator, self).__init__()
         data = data or []
-        self._q_points = DEFAULT_PERCENTILES
+        self._q_points = P2_PRAG
         self._tmp_acc = QuantileAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None
@@ -209,13 +211,16 @@ class P2Estimator(object):
     def _process_q_points(q_points):
         try:
             qps = sorted([float(x) for x in set(q_points or [])])
+            if qps[0] == 0.0:
+                qps = qps[1:]
+            if qps[-1] == 100.0:
+                qps = qps[:-1]
             if not qps or not all([0 <= x <= 100 for x in qps]):
                 raise ValueError()
         except:
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
         else:
-            # TODO: pop off 0 and 100?
-            return qps
+            return tuple(qps)
 
     def add(self, val):
         self._count += 1
@@ -288,12 +293,12 @@ class P2Estimator(object):
         return cur_q, cur_n
 
 
-def test_random():
+def test_random(nsamples=100000):
     # test random.random() values; uniformly distributed between 0 and 1,
     # so 50th percentils ie 0.5, etc
     import random
     import time
-    nsamples = 100000
+    from pprint import pprint
     vals = [random.random() for i in range(nsamples)]
     try:
         start = time.time()
@@ -302,6 +307,7 @@ def test_random():
         duration = time.time() - start
         tmpl = "P2QA processed %d measurements in %f seconds (%f ms each)"
         print tmpl % (nsamples, duration, 1000 * duration / nsamples)
+        pprint(p)
     except:
         import traceback
         import pdb
@@ -312,7 +318,6 @@ def test_random():
         if 0.99 > (k / 100.0) / v > 1.01:
             print "problem: %s is %s, should be %s" % (k, v, k / 100.0)
 
-    from pprint import pprint
     start = time.time()
     qa = QuantileAccumulator()
     for val in vals:
@@ -327,5 +332,3 @@ def test_random():
 
 if __name__ == "__main__":
     m1 = test_random()
-    import pprint
-    pprint.pprint(m1.get_quantiles())
