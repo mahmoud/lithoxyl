@@ -189,22 +189,20 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
 class P2Estimator(object):
     def __init__(self, q_points, data):
         self._q_points = self._process_q_points(q_points)
+        self._q_points = (0.0,) + self._q_points + (100.0,)
         len_data, len_qps = len(data), len(self._q_points)
-        len_init = len_qps + 2
-        if len_data < len_init:
+        if len_data < len_qps:
             msg = ('expected %d or more initial points for '
-                   '%d quantiles (got %d)' % (len_init, len_qps, len_data))
+                   '%d quantiles (got %d)' % (len_qps, len_qps - 2, len_data))
             raise ValueError(msg)
 
-        self._count = 0
-        initial = sorted(data[:len_init])
-        self.min = initial[0]
-        self.max = initial[-1]
-        vals = [[i + 2, x] for i, x in enumerate(initial[1:-1])]
-        self._points = zip(self._q_points, vals)  # TODO: marks?
-        self._lookup = dict(self._points)
+        initial = sorted(data[:len_qps])
+        vals = [[i + 1, x] for i, x in enumerate(initial)]
+        self._points = pts = zip(self._q_points, vals)  # TODO: marks?
+        self._min_point, self._max_point = pts[0][1], pts[-1][1]
+        self._lookup = dict(pts)
 
-        for i in xrange(len_init, len_data):
+        for i in xrange(len_qps, len_data):
             self.add(data[i])
 
     @staticmethod
@@ -223,22 +221,22 @@ class P2Estimator(object):
             return tuple(qps)
 
     def add(self, val):
-        self._count += 1
-
-        if val < self.min:
-            self.min = val
-        elif val > self.max:
-            self.max = val
-        cur_min, cur_max = self.min, self.max
-        count, scale = self._count, self._count - 1
         points, _nxt = self._points, self._nxt
+        prev_count = self._max_point[0]
+        self._max_point[0] = prev_count + 1
+
+        cur_min, cur_max = self._min_point[1], self._max_point[1]
+        if val < cur_min:
+            self._min_point[1] = cur_min = val
+        elif val > cur_max:
+            self._max_point[1] = cur_max = val
 
         # right-most point is stopping case; handle first
-        right = points[-1][1]
-        if val <= right[1]:
-            right[0] += 1
-            if right[0] == count:
-                right[0] -= 1
+        #right = points[-1][1]
+        #if val <= right[1]:
+        #    right[0] += 1
+        #    if right[0] == cur_count:
+        #        right[0] -= 1
         # handle the rest of the points
         for i in reversed(range(0, len(points) - 1)):
             point = points[i][1]
@@ -247,11 +245,11 @@ class P2Estimator(object):
                 if point[0] == points[i + 1][1][0]:
                     point[0] -= 1
         # left-most point is a special case
-        left = points[0][1]
-        left[1], left[0] = _nxt(1, cur_min,
-                                left[0], left[1],
-                                points[1][1][0], points[1][1][1],
-                                points[0][0] / 100.0, scale)
+        #left = points[0][1]
+        #left[1], left[0] = _nxt(1, cur_min,
+        #                        left[0], left[1],
+        #                        points[1][1][0], points[1][1][1],
+        #                        points[0][0] / 100.0, prev_count)
         # update estimated locations of percentiles
         for i in range(1, len(points) - 1):
             prev = points[i - 1][1]
@@ -260,12 +258,12 @@ class P2Estimator(object):
             point[1], point[0] = _nxt(prev[0], prev[1],
                                       point[0], point[1],
                                       nxt[0], nxt[1],
-                                      points[i][0] / 100.0, scale)
+                                      points[i][0] / 100.0, prev_count)
         # right-most point is a special case
-        right[1], right[0] = _nxt(points[-2][1][0], points[-2][1][1],
-                                  right[0], right[1],
-                                  count, cur_max,
-                                  points[-1][0] / 100.0, scale)
+        #right[1], right[0] = _nxt(points[-2][1][0], points[-2][1][1],
+        #                          right[0], right[1],
+        #                          cur_count, cur_max,
+        #                          points[-1][0] / 100.0, prev_count)
 
     def _get_quantile(self, q):
         try:
@@ -335,4 +333,4 @@ def test_random(vals=None, nsamples=100000):
 if __name__ == "__main__":
     import json
     vals = json.load(open('tmp_test.json'))
-    m1 = test_random(vals)
+    m1 = test_random()  # vals)
