@@ -9,9 +9,9 @@ class MomentAccumulator(object):
 
     It operates using online approaches, and does not store
     observations. As a result, it uses a more-or-less fixed amount of
-    memory, but higher insertion cost. Also, because this is using
-    simple Python doubles, it is likely to build up a good amount of
-    floating point drift. If that's not good enough, use an
+    memory, but has a higher insertion cost. Also, because this is
+    using simple Python doubles, it is likely to build up a good
+    amount of floating point drift. If that's not good enough, use an
     accumulator that stores observations, make a Decimal version, or
     use NumPy, I guess.
 
@@ -23,7 +23,6 @@ class MomentAccumulator(object):
     there's only one data point. I would use NaN, but in Python (2 and
     3), NaN's repr() does not round-trip. I might revisit this
     interface optimization later.
-
     """
     def __init__(self):
         self._count = 0

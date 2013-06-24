@@ -60,7 +60,7 @@ class QuantileAccumulator(object):
 
     def get_quantiles(self):
         ret = [(0.0, self.min)]
-        ret.extend([(q, self._get_percentile(q)) for q in self._q_points])
+        ret.extend([(q, self._get_quantile(q)) for q in self._q_points])
         ret.append((100.0, self.max))
         return ret
 
@@ -110,26 +110,26 @@ class QuantileAccumulator(object):
 
     @property
     def median(self):
-        return self._get_percentile(50)
+        return self._get_quantile(50)
 
     @property
     def quartiles(self):
-        gp = self._get_percentile
-        return gp(25), gp(50), gp(75)
+        gq = self._get_quantile
+        return gq(25), gq(50), gq(75)
 
     @property
     def iqr(self):
-        gp = self._get_percentile
-        return gp(75) - gp(25)
+        gq = self._get_quantile
+        return gq(75) - gq(25)
 
     @property
     def trimean(self):
         qs = self.quartiles
         return (qs[0] + (2 * qs[1]) + qs[2]) / 4.0
 
-    def _get_percentile(self, percentile=50):
+    def _get_quantile(self, percentile=50):
         if not (0 < percentile < 100):
-            raise ValueError("it's percentile, not something-else-tile")
+            raise ValueError('expected a value in range 0-100 (non-inclusive)')
         self._sort()
         data, n = self._data, len(self._data)
         idx = percentile / 100.0 * (n - 1)
@@ -144,8 +144,9 @@ class P2Estimator(object):
         len_data, len_qp = len(data), len(q_points)
         len_init = len_qp + 2
         if len_data < len_init:
-            tmpl = 'expected %d or more data points for %d quantiles (got %d)'
-            raise ValueError(tmpl % (len_init, len_qp, len_data))
+            msg = ('expected %d or more initial points for '
+                   '%d quantiles (got %d)' % (len_init, len_qp, len_data))
+            raise ValueError(msg)
         try:
             qps = sorted([float(x) for x in set(q_points or [])])
             if not qps or not all([0 <= x <= 100 for x in qps]):
@@ -211,6 +212,9 @@ class P2Estimator(object):
     def get_quantiles(self):
         data = dict([(e[0], e[1][1]) for e in self._points])
         return data
+
+    def _get_quantile(self, q):
+        pass
 
     @staticmethod
     def _nxt(left_n, left_q, cur_n, cur_q, right_n, right_q, quantile, scale):
