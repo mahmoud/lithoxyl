@@ -24,43 +24,23 @@ DEFAULT_PERCENTILES = (0.1, 1, 2, 5, 10, 25, 50,
                        99, 99.5, 99.8, 99.9, 99.99)
 
 
-class QuantileAccumulator(object):
-    def __init__(self, q_points=DEFAULT_PERCENTILES):
-        try:
-            qps = sorted([float(x) for x in set(q_points or [])])
-            if not qps or not all([0 <= x <= 100 for x in qps]):
-                raise ValueError()
-        except:
-            raise ValueError('invalid quantile point(s): %r' % (q_points,))
-        else:
-            self._q_points = qps
-
-        self._data = []
-        self._is_sorted = True
+class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
+    def __init__(self):
         self._count = 0
         self._min = float('inf')
         self._max = float('-inf')
 
-    def _sort(self):
-        if self._is_sorted:
-            return
-        self._data.sort()
-        self._is_sorted = True
-
     def add(self, val, idx=None):
-        if idx is None:
-            idx = -1
-        self._data.insert(idx, val)
-        self._is_sorted = False
         self._count += 1
         if val < self._min:
             self._min = val
         if val > self._max:
             self._max = val
 
-    def get_quantiles(self):
+    def get_quantiles(self, q_points=None):
+        q_points = q_points or []
         ret = [(0.0, self.min)]
-        ret.extend([(q, self._get_quantile(q)) for q in self._q_points])
+        ret.extend([(q, self._get_quantile(q)) for q in q_points])
         ret.append((100.0, self.max))
         return ret
 
@@ -127,26 +107,106 @@ class QuantileAccumulator(object):
         qs = self.quartiles
         return (qs[0] + (2 * qs[1]) + qs[2]) / 4.0
 
-    def _get_quantile(self, percentile=50):
-        if not (0 < percentile < 100):
+
+class QuantileAccumulator(BaseQuantileAccumulator):
+    def __init__(self, data=None, cap=None):
+        super(QuantileAccumulator, self).__init__()
+        self._data = []
+        self._is_sorted = True
+        if cap is None:
+            self._cap = float('inf')
+        elif cap is True:
+            self._cap = 2 ** 14
+        else:
+            self._cap = int(cap)
+        data = data or []
+        for v in data:
+            self.add(v)
+
+    def _sort(self):
+        if self._is_sorted:
+            return
+        self._data.sort()
+        self._is_sorted = True
+
+    def add(self, val):
+        self._data.append(val)
+        self._is_sorted = False
+        super(QuantileAccumulator, self).add(val)
+
+    def _get_quantile(self, q=50):
+        if not (0 < q < 100):
             raise ValueError('expected a value in range 0-100 (non-inclusive)')
         self._sort()
         data, n = self._data, len(self._data)
-        idx = percentile / 100.0 * (n - 1)
+        idx = q / 100.0 * (n - 1)
         idx_f, idx_c = int(floor(idx)), int(ceil(idx))
         if idx_f == idx_c:
             return data[idx_f]
         return (data[idx_f] * (idx_c - idx)) + (data[idx_c] * (idx - idx_f))
 
 
+class P2QuantileAccumulator(BaseQuantileAccumulator):
+    # TODO: configurable qps
+    # TODO: preprocess qps
+
+    def __init__(self, data=None):
+        super(P2QuantileAccumulator, self).__init__()
+        data = data or []
+        self._q_points = DEFAULT_PERCENTILES
+        self._tmp_acc = QuantileAccumulator(cap=None)
+        self._thresh = len(self._q_points) + 2
+        self._est = None
+
+        for v in data:
+            self.add(v)
+
+    def add(self, val):
+        if self._est is None:
+            ta = self._tmp_acc
+            ta.add(val)
+            if ta.count >= self._thresh:
+                self._est = P2Estimator(self._q_points, ta._data)
+                self._tmp_acc = None
+            return
+        else:
+            self._est.add(val)
+        super(P2QuantileAccumulator, self).add(val)
+
+    def get_quantiles(self, q_points=None):
+        q_points = q_points or self._q_points[:-1]  # blargh hack
+        return super(P2QuantileAccumulator, self).get_quantiles(q_points)
+
+    def _get_quantile(self, q):
+        try:
+            return self._est._get_quantile(q)
+        except AttributeError:
+            return self._tmp_acc._get_quantile(q)
+
+
 class P2Estimator(object):
     def __init__(self, q_points, data):
-        len_data, len_qp = len(data), len(q_points)
-        len_init = len_qp + 2
+        self._q_points = self._process_q_points(q_points)
+        len_data, len_qps = len(data), len(self._q_points)
+        len_init = len_qps + 2
         if len_data < len_init:
             msg = ('expected %d or more initial points for '
-                   '%d quantiles (got %d)' % (len_init, len_qp, len_data))
+                   '%d quantiles (got %d)' % (len_init, len_qps, len_data))
             raise ValueError(msg)
+
+        self._count = 0
+        initial = sorted(data[:len_init])
+        self.min = initial[0]
+        self.max = initial[-1]
+        vals = [[i + 2, x] for i, x in enumerate(initial[1:-2])]
+        self._points = zip(self._q_points, vals)  # TODO: marks?
+        self._lookup = dict(self._points)
+
+        for i in xrange(len_init, len_data):
+            self.add(data[i])
+
+    @staticmethod
+    def _process_q_points(q_points):
         try:
             qps = sorted([float(x) for x in set(q_points or [])])
             if not qps or not all([0 <= x <= 100 for x in qps]):
@@ -155,17 +215,7 @@ class P2Estimator(object):
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
         else:
             # TODO: pop off 0 and 100?
-            self._q_points = qps
-
-        self._count = 0
-        initial = sorted(data[:len_init])
-        self.min = initial[0]
-        self.max = initial[-1]
-        vals = [[i + 2, x] for i, x in enumerate(initial[1:-2])]
-        self._points = zip(self._q_points, vals)  # TODO: marks?
-
-        for i in xrange(len_init, len_data):
-            self.add(data[i])
+            return qps
 
     def add(self, val):
         self._count += 1
@@ -209,12 +259,11 @@ class P2Estimator(object):
                                   right[0], right[1], count, cur_max,
                                   points[-1][0] / 100.0, scale)
 
-    def get_quantiles(self):
-        data = dict([(e[0], e[1][1]) for e in self._points])
-        return data
-
     def _get_quantile(self, q):
-        pass
+        try:
+            return self._lookup[float(q)][1]
+        except KeyError:
+            raise ValueError('quantile not tracked: %r' % q)
 
     @staticmethod
     def _nxt(left_n, left_q, cur_n, cur_q, right_n, right_q, quantile, scale):
@@ -239,20 +288,6 @@ class P2Estimator(object):
         return cur_q, cur_n
 
 
-class P2QuantileAccumulator(object):
-    """
-    TODO
-    ----
-
-    * API
-    * fix case where min is requested but _start hasn't been called
-    * duplicitous self refs
-    * Off-by-two error? 99.9 and 99.99 aren't being returned
-    """
-    def __init__(self, percentiles=DEFAULT_PERCENTILES):
-        pass
-
-
 def test_random():
     # test random.random() values; uniformly distributed between 0 and 1,
     # so 50th percentils ie 0.5, etc
@@ -262,10 +297,7 @@ def test_random():
     vals = [random.random() for i in range(nsamples)]
     try:
         start = time.time()
-        #m = P2QuantileAccumulator()  # DEFAULT_PERCENTILES, vals)
-        #for val in sorted(vals):
-        #    m.add(val)
-        m = P2Estimator(DEFAULT_PERCENTILES, sorted(vals))
+        m = P2QuantileAccumulator(vals)
         p = m.get_quantiles()
         duration = time.time() - start
         tmpl = "P2QA processed %d measurements in %f seconds (%f ms each)"
@@ -276,7 +308,7 @@ def test_random():
         traceback.print_exc()
         pdb.post_mortem()
         raise
-    for k, v in p.items():
+    for k, v in p:
         if 0.99 > (k / 100.0) / v > 1.01:
             print "problem: %s is %s, should be %s" % (k, v, k / 100.0)
 

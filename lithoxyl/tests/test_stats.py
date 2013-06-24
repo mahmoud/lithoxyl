@@ -58,7 +58,7 @@ def test_quantacc():
         q1, q2, q3 = qa.quartiles
         assert q1 < q2 < q3
         hist = qa.get_histogram()
-        assert len(hist) == len(qa._q_points) + 1  # TODO: throwaway test
+        assert hist
         #print; import pprint; pprint.pprint(hist)
         #print sum([x.count for x in hist]), 'histogram item count'
 
