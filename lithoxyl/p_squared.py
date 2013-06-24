@@ -231,25 +231,13 @@ class P2Estimator(object):
         elif val > cur_max:
             self._max_point[1] = cur_max = val
 
-        # right-most point is stopping case; handle first
-        #right = points[-1][1]
-        #if val <= right[1]:
-        #    right[0] += 1
-        #    if right[0] == cur_count:
-        #        right[0] -= 1
-        # handle the rest of the points
         for i in reversed(range(0, len(points) - 1)):
             point = points[i][1]
             if val <= point[1]:
                 point[0] += 1
                 if point[0] == points[i + 1][1][0]:
                     point[0] -= 1
-        # left-most point is a special case
-        #left = points[0][1]
-        #left[1], left[0] = _nxt(1, cur_min,
-        #                        left[0], left[1],
-        #                        points[1][1][0], points[1][1][1],
-        #                        points[0][0] / 100.0, prev_count)
+
         # update estimated locations of percentiles
         for i in range(1, len(points) - 1):
             prev = points[i - 1][1]
@@ -259,11 +247,6 @@ class P2Estimator(object):
                                       point[0], point[1],
                                       nxt[0], nxt[1],
                                       points[i][0] / 100.0, prev_count)
-        # right-most point is a special case
-        #right[1], right[0] = _nxt(points[-2][1][0], points[-2][1][1],
-        #                          right[0], right[1],
-        #                          cur_count, cur_max,
-        #                          points[-1][0] / 100.0, prev_count)
 
     def _get_quantile(self, q):
         try:
