@@ -170,7 +170,7 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
     def __init__(self, data=None):
         super(P2QuantileAccumulator, self).__init__()
         data = data or []
-        self._q_points = P2_PRO
+        self._q_points = P2_PRAG
         self._tmp_acc = QuantileAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None
@@ -217,7 +217,8 @@ class P2Estimator(object):
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
         self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
-        self._quads = zip(self._q_points[1:], vals, vals[1:], vals[2:])
+        qp_divs = [q / 100.0 for q in self._q_points]
+        self._quads = zip(qp_divs[1:], vals, vals[1:], vals[2:])
 
         for i in xrange(len_qps, len_data):
             self.add(data[i])
@@ -254,9 +255,9 @@ class P2Estimator(object):
                     point[0] -= 1
 
         # update estimated locations of percentiles
-        for qp, left, cur, right in self._quads:
-            (ln, lq), (cn, cq), (rn, rq) = left, cur, right
-            d = int(prev_count * (qp / 100.0) + 1 - cn)
+        for qpdiv, (ln, lq), cur, (rn, rq) in self._quads:
+            cn, cq = cur
+            d = int(prev_count * qpdiv + 1 - cn)
             if not d:
                 continue
             d = 1.0 if d > 0 else -1.0  # clamped at +-1
@@ -311,7 +312,7 @@ def test_random(vals=None, nsamples=100000):
         qa.add(val)
         #if i and i % 1000:
         #    qa.get_quantiles()
-    pd = qa.get_quantiles(P2_PRO)
+    pd = qa.get_quantiles(P2_PRAG)
     pprint(pd)
     for k, v in pd:
         if not k:
