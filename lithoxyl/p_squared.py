@@ -12,6 +12,9 @@ Implemented by Kurt Rose and Mahmoud Hashemi.
 Copyright 2013, 3-clause BSD License
 """
 
+import array
+import random
+
 from math import copysign, floor, ceil
 from collections import namedtuple
 
@@ -113,7 +116,8 @@ class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
 class QuantileAccumulator(BaseQuantileAccumulator):
     def __init__(self, data=None, cap=None):
         super(QuantileAccumulator, self).__init__()
-        self._data = []
+        self._typecode = 'f'  # TODO
+        self._data = array.array(self._typecode)
         self._is_sorted = True
         if cap is None:
             self._cap = float('inf')
@@ -128,13 +132,23 @@ class QuantileAccumulator(BaseQuantileAccumulator):
     def _sort(self):
         if self._is_sorted:
             return
-        self._data.sort()
+        if callable(getattr(self._data, 'sort', None)):
+            self._data.sort()
+        else:
+            self._data = array.array(self._typecode, sorted(self._data))
         self._is_sorted = True
 
     def add(self, val):
-        self._data.append(val)
-        self._is_sorted = False
-        super(QuantileAccumulator, self).add(val)
+        if self._count < self._cap:
+            self._data.append(val)
+            self._is_sorted = False
+            super(QuantileAccumulator, self).add(val)
+        else:
+            idx = random.randint(0, self._count)
+            if idx < self._cap:
+                self._data[idx] = val
+                self._is_sorted = False
+                super(QuantileAccumulator, self).add(val)
 
     def _get_quantile(self, q=50):
         if not (0 < q < 100):
@@ -151,6 +165,7 @@ class QuantileAccumulator(BaseQuantileAccumulator):
 class P2QuantileAccumulator(BaseQuantileAccumulator):
     # TODO: configurable qps
     # TODO: preprocess qps
+    # TODO: fix min/max, etc.
 
     def __init__(self, data=None):
         super(P2QuantileAccumulator, self).__init__()
@@ -176,7 +191,7 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
         super(P2QuantileAccumulator, self).add(val)
 
     def get_quantiles(self, q_points=None):
-        q_points = q_points or self._q_points[:-1]  # blargh hack
+        q_points = q_points or self._q_points  # blargh hack
         return super(P2QuantileAccumulator, self).get_quantiles(q_points)
 
     def _get_quantile(self, q):
@@ -201,8 +216,8 @@ class P2Estimator(object):
         self._points = pts = zip(self._q_points, vals)  # TODO: marks?
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
-        self._back_tuples = list(reversed(zip(vals, vals[1:])))
-        self._quads = zip(self._q_points, vals, vals[1:], vals[2:])
+        self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
+        self._quads = zip(self._q_points[1:], vals, vals[1:], vals[2:])
 
         for i in xrange(len_qps, len_data):
             self.add(data[i])
@@ -223,7 +238,6 @@ class P2Estimator(object):
             return tuple(qps)
 
     def add(self, val):
-        points, _nxt = self._points, self._nxt
         prev_count = self._max_point[0]
         self._max_point[0] = prev_count + 1
 
@@ -240,11 +254,23 @@ class P2Estimator(object):
                     point[0] -= 1
 
         # update estimated locations of percentiles
-        for qp, prev, point, nxt in self._quads:
-            point[1], point[0] = _nxt(prev[0], prev[1],
-                                      point[0], point[1],
-                                      nxt[0], nxt[1],
-                                      qp / 100.0, prev_count)
+        for qp, left, cur, right in self._quads:
+            (ln, lq), (cn, cq), (rn, rq) = left, cur, right
+            d = int(prev_count * (qp / 100.0) + 1 - cn)
+            if not d:
+                continue
+            d = 1.0 if d > 0 else -1.0  # clamped at +-1
+            if not (ln < cn + d < rn):
+                continue
+            nq = (cq + (d / (rn - ln)) *  # hooray parabolic
+                  ((cn - ln + d) * (rq - cq) / (rn - cn) +
+                   (rn - cn - d) * (cq - lq) / (cn - ln)))
+            if not (lq < nq < rq):  # fall back on linear eqn
+                if d == 1:
+                    nq = cq + (rq - cq) / (rn - cn)
+                elif d == -1:
+                    nq = cq - (lq - cq) / (ln - cn)
+            cur[0], cur[1] = cn + d, nq
 
     def _get_quantile(self, q):
         try:
@@ -252,35 +278,13 @@ class P2Estimator(object):
         except KeyError:
             raise ValueError('quantile not tracked: %r' % q)
 
-    @staticmethod
-    def _nxt(left_n, left_q, cur_n, cur_q, right_n, right_q, quantile, scale):
-        # calculate desired position
-        d = int(scale * quantile + 1 - cur_n)
-        if not d:
-            return cur_q, cur_n
-
-        d = copysign(1, d)  # clamp d at +/- 1
-        if left_n < cur_n + d < right_n:  # try parabolic eqn
-            nxt_q = (cur_q + (d / (right_n - left_n)) *
-                     ((cur_n - left_n + d) * (right_q - cur_q) /
-                      (right_n - cur_n) +
-                      (right_n - cur_n - d) * (cur_q - left_q) /
-                      (cur_n - left_n)))
-            if not (left_q < nxt_q < right_q):  # fall back on linear eqn
-                if d == 1:
-                    nxt_q = cur_q + (right_q - cur_q) / (right_n - cur_n)
-                elif d == -1:
-                    nxt_q = cur_q - (left_q - cur_q) / (left_n - cur_n)
-            return nxt_q, cur_n + d
-        return cur_q, cur_n
-
 
 def test_random(vals=None, nsamples=100000):
     import random
     import time
     from pprint import pprint
     if not vals:
-        vals = [random.random() for i in range(100000)]
+        vals = [random.random() for i in range(nsamples)]
     try:
         start = time.time()
         m = P2QuantileAccumulator(vals)
@@ -296,14 +300,24 @@ def test_random(vals=None, nsamples=100000):
         pdb.post_mortem()
         raise
     for k, v in p:
-        if 0.99 > (k / 100.0) / v > 1.01:
-            print "problem: %s is %s, should be %s" % (k, v, k / 100.0)
+        if not k:
+            continue
+        if not 0.95 < v / (k / 100.0) < 1.05:
+            print "problem: %s is %s, should be ~%s" % (k, v, k / 100.0)
 
     start = time.time()
     qa = QuantileAccumulator()
-    for val in vals:
+    for i, val in enumerate(vals):
         qa.add(val)
-    pprint(qa.get_quantiles())
+        #if i and i % 1000:
+        #    qa.get_quantiles()
+    pd = qa.get_quantiles(P2_PRO)
+    pprint(pd)
+    for k, v in pd:
+        if not k:
+            continue
+        if not 0.95 < v / (k / 100.0) < 1.05:
+            print "problem: %s is %s, should be ~%s" % (k, v, k / 100.0)
     duration = time.time() - start
     tmpl = "QA processed %d measurements in %f seconds (%f ms each)"
     print tmpl % (nsamples, duration, 1000 * duration / nsamples)
@@ -314,4 +328,4 @@ def test_random(vals=None, nsamples=100000):
 if __name__ == "__main__":
     import json
     vals = json.load(open('tmp_test.json'))
-    m1 = test_random()  # vals)
+    m1 = test_random(vals)
