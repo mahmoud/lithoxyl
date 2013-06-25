@@ -87,7 +87,7 @@ class P2Estimator(object):
             cur[0], cur[1] = cn + d, nq
 
     def get_quantiles(self):
-        return [list(x[1]) for x in self._points]
+        return [(x[0], x[1][1]) for x in self._points]
 
     def _get_quantile(self, q):
         try:
@@ -101,11 +101,12 @@ def test_random(vals=None, nsamples=100000):
     import time
     from pprint import pprint
     random.seed(12345)
+    qp = (1.0, 5.0, 25.0, 50.0, 75.0, 90.0, 95.0, 99.0)
     if not vals:
         vals = [random.random() for i in range(nsamples)]
     try:
         start = time.time()
-        m = P2Estimator(vals)
+        m = P2Estimator(q_points=qp, data=vals)
         p = m.get_quantiles()
         duration = time.time() - start
         tmpl = ("P2Estimator processed %d measurements "
