@@ -54,7 +54,7 @@ def test_quantacc():
         qa = QuantileAccumulator()
         for v in data:
             qa.add(v)
-        assert qa.median == _statsutils.median(data)
+        _assert_round_cmp(qa.median, _statsutils.median(data), mag=6)
         q1, q2, q3 = qa.quartiles
         assert q1 < q2 < q3
         hist = qa.get_histogram()
