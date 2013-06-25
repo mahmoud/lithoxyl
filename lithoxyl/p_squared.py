@@ -15,7 +15,7 @@ Copyright 2013, 3-clause BSD License
 import array
 import random
 
-from math import copysign, floor, ceil
+from math import floor, ceil
 from collections import namedtuple
 
 HistogramCell = namedtuple('HistogramCell',
@@ -163,14 +163,10 @@ class QuantileAccumulator(BaseQuantileAccumulator):
 
 
 class P2QuantileAccumulator(BaseQuantileAccumulator):
-    # TODO: configurable qps
-    # TODO: preprocess qps
-    # TODO: fix min/max, etc.
-
-    def __init__(self, data=None):
+    def __init__(self, data=None, q_points=P2_PRAG):
         super(P2QuantileAccumulator, self).__init__()
         data = data or []
-        self._q_points = P2_PRAG
+        self._q_points = P2Estimator._process_q_points(q_points)
         self._tmp_acc = QuantileAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None
@@ -213,7 +209,7 @@ class P2Estimator(object):
 
         initial = sorted(data[:len_qps])
         vals = [[i + 1, x] for i, x in enumerate(initial)]
-        self._points = pts = zip(self._q_points, vals)  # TODO: marks?
+        self._points = pts = zip(self._q_points, vals)
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
         self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
@@ -231,7 +227,7 @@ class P2Estimator(object):
                 qps = qps[1:]
             if qps[-1] == 100.0:
                 qps = qps[:-1]
-            if not qps or not all([0 <= x <= 100 for x in qps]):
+            if not qps or not all([0 < x < 100 for x in qps]):
                 raise ValueError()
         except:
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
@@ -269,7 +265,7 @@ class P2Estimator(object):
             if not (lq < nq < rq):  # fall back on linear eqn
                 if d == 1:
                     nq = cq + (rq - cq) / (rn - cn)
-                elif d == -1:
+                else:
                     nq = cq - (lq - cq) / (ln - cn)
             cur[0], cur[1] = cn + d, nq
 
@@ -284,6 +280,7 @@ def test_random(vals=None, nsamples=100000):
     import random
     import time
     from pprint import pprint
+    random.seed(12345)
     if not vals:
         vals = [random.random() for i in range(nsamples)]
     try:
@@ -327,6 +324,4 @@ def test_random(vals=None, nsamples=100000):
 
 
 if __name__ == "__main__":
-    import json
-    vals = json.load(open('tmp_test.json'))
-    m1 = test_random(vals)
+    test_random()
