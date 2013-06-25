@@ -4,7 +4,7 @@ import os
 import random
 
 from moment import MomentAccumulator
-from p_squared import QuantileAccumulator, P2QuantileAccumulator
+from quantile import QuantileAccumulator, P2QuantileAccumulator
 import _statsutils
 
 
