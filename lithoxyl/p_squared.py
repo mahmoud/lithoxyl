@@ -43,13 +43,13 @@ class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
             self._max = val
 
     def get_quantiles(self, q_points=None):
-        q_points = q_points or []
+        q_points = q_points or P2_PRAG
         ret = [(0.0, self.min)]
         ret.extend([(q, self._get_quantile(q)) for q in q_points])
         ret.append((100.0, self.max))
         return ret
 
-    def get_histogram(self):
+    def get_histogram(self, q_points=None):
         """\
         This convenience method gives back an estimated histogram, based
         on quantiles from get_quantiles(). It's mostly just a utility
@@ -61,7 +61,7 @@ class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
         could actually give back a real histogram, too.
         """
         ret = []
-        qwantz = self.get_quantiles()
+        qwantz = self.get_quantiles(q_points)
         total_count = self.count
         for sq, eq in zip(qwantz, qwantz[1:]):
             q_range = start_q, end_q = sq[0], eq[0]
@@ -187,7 +187,7 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
         super(P2QuantileAccumulator, self).add(val)
 
     def get_quantiles(self, q_points=None):
-        q_points = q_points or self._q_points  # blargh hack
+        q_points = q_points or self._q_points
         return super(P2QuantileAccumulator, self).get_quantiles(q_points)
 
     def _get_quantile(self, q):
@@ -289,8 +289,8 @@ def test_random(vals=None, nsamples=100000):
         p = m.get_quantiles()
         duration = time.time() - start
         tmpl = "P2QA processed %d measurements in %f seconds (%f ms each)"
-        print tmpl % (nsamples, duration, 1000 * duration / nsamples)
         pprint(p)
+        print tmpl % (nsamples, duration, 1000 * duration / nsamples)
     except:
         import traceback
         import pdb
@@ -302,25 +302,7 @@ def test_random(vals=None, nsamples=100000):
             continue
         if not 0.95 < v / (k / 100.0) < 1.05:
             print "problem: %s is %s, should be ~%s" % (k, v, k / 100.0)
-
-    start = time.time()
-    qa = QuantileAccumulator()
-    for i, val in enumerate(vals):
-        qa.add(val)
-        #if i and i % 1000:
-        #    qa.get_quantiles()
-    pd = qa.get_quantiles(P2_PRAG)
-    pprint(pd)
-    for k, v in pd:
-        if not k:
-            continue
-        if not 0.95 < v / (k / 100.0) < 1.05:
-            print "problem: %s is %s, should be ~%s" % (k, v, k / 100.0)
-    duration = time.time() - start
-    tmpl = "QA processed %d measurements in %f seconds (%f ms each)"
-    print tmpl % (nsamples, duration, 1000 * duration / nsamples)
-
-    return m
+    return
 
 
 if __name__ == "__main__":

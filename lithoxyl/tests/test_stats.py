@@ -76,7 +76,20 @@ def test_p2quantacc():
                                   mag=1,
                                   name='%s median' % name)
                 print i, qa.median, p2qa.median
+
         _assert_round_cmp(qa.median,
                           p2qa.median,
                           mag=2,
                           name='%s median' % name)
+
+
+def test_acc_random():
+    data = test_sets['random.random 0.0-1.0']
+
+    qa = QuantileAccumulator(data)
+    capqa = QuantileAccumulator(data, cap=True)
+    p2qa = P2QuantileAccumulator(data)
+    for acc in (qa, capqa, p2qa):
+        for qp, v in acc.get_quantiles():
+            if qp > 0:
+                assert 0.95 < v / (qp / 100.0) < 1.05
