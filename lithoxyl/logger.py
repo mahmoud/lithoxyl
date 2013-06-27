@@ -38,9 +38,20 @@ class Message(object):
         # TODO: structure tb obj?
         self._complete('exception', '%r, %r' % (exc_type, exc_val))
 
+    @property
+    def duration(self):
+        if self.end_time:
+            return self.end_time - self.start_time
+        elif self._is_trans:
+            return time.time() - self.start_time
+        else:
+            return 0.0
+
     def _complete(self, status, message):
         self.status = status
         self.message = message
+        if self._is_trans:
+            self.end_time = time.time()
         if not self._defer_publish and self.logger:
             # TODO: should logger be required?
             self.logger.enqueue(self)
