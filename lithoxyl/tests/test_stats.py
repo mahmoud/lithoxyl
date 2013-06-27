@@ -75,7 +75,7 @@ def test_p2quantacc():
                                   p2qa.median,
                                   mag=1,
                                   name='%s median' % name)
-                print i, qa.median, p2qa.median
+                #print i, qa.median, p2qa.median
 
         _assert_round_cmp(qa.median,
                           p2qa.median,
