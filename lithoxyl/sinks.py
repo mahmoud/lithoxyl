@@ -3,6 +3,17 @@
 import sys
 import json
 
+"""
+* Make a "classic" Handler-pattern Sink (filter + format string + emit)
+
+Format String TODOs:
+
+* Should compound field names (e.g., {x[y]}) be supported?
+* Bolton to autoconvert anonymous positional args to named positional
+  args and allow mixing (not to be encouraged though)
+
+"""
+
 
 class AggSink(object):
     "A 'dummy' sink that just aggregates the messages."
