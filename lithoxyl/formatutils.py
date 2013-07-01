@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+from string import Formatter
 from collections import namedtuple
 
 
@@ -28,6 +29,34 @@ def infer_positional_format_args(fstr):
     return ret
 
 
+def get_format_args(fstr):
+    # TODO: memoize
+    formatter = Formatter()
+    fargs, fkwargs, _dedup = [], [], set()
+
+    def _add_arg(argname):
+        if argname not in _dedup:
+            _dedup.add(argname)
+            try:
+                fargs.append(int(argname))
+            except ValueError:
+                fkwargs.append(argname)
+
+    for lit, fname, fspec, conv in formatter.parse(fstr):
+        if fname is not None:
+            try:
+                base_fname = re.split('[.[]', fname)[0]  # TODO: not perfect
+                assert base_fname
+            except (IndexError, AssertionError):
+                raise ValueError('encountered anonymous positional argument')
+            _add_arg(fname)
+            for sublit, subfname, _, _ in formatter.parse(fspec):
+                # TODO: positional and anon args not allowed here.
+                if subfname is not None:
+                    _add_arg(subfname)
+    return fargs, fkwargs
+
+
 PFAT = namedtuple("PositionalFormatArgTest", "fstr arg_vals res")
 
 
@@ -44,5 +73,23 @@ def test_pos_infer():
         assert converted.format(*args) == res
 
 
+_TEST_TMPLS = ["example 1: {hello}",
+               "example 2: {hello:*10}",
+               "example 3: {hello:*{width}}",
+               "example 4: {hello:{fchar}{width}}, {width}",
+               "example 5: {0}, {1}, {2}, {1}",
+               "example 6: {}, {}, {}, {1}"]
+
+
+def test_get_fstr_args():
+    results = []
+    for t in _TEST_TMPLS:
+        inferred_t = infer_positional_format_args(t)
+        res = get_format_args(inferred_t)
+        results.append(res)
+    return results
+
+
 if __name__ == '__main__':
     test_pos_infer()
+    test_get_fstr_args()
