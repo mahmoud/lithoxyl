@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import re
+from collections import namedtuple
 
 
-_ANON_TESTS = [('{} {} {}', ('hi', 'hello', 'bye')),
-               ('{:d} {}', (1, 2)),
-               ('{!s} {!r}', ('str', 'repr')),
-               ('{[hi]}, {.compile!r}', ({'hi': 'hello'}, re)),
-               ('{{joek}} ({} {})', ('so', 'funny'))]
-
-
-_pos_farg_re = re.compile('({{)|'  # escaped open-brace
-                          '(}})|'  # escaped close-brace
+_pos_farg_re = re.compile('({{)|'         # escaped open-brace
+                          '(}})|'         # escaped close-brace
                           '({[:!.\[}])')  # anon positional format arg
 
 
@@ -34,10 +28,20 @@ def infer_positional_format_args(fstr):
     return ret
 
 
+PFAT = namedtuple("PositionalFormatArgTest", "fstr arg_vals res")
+
+
+_PFATS = [PFAT('{} {} {}', ('hi', 'hello', 'bye'), "hi hello bye"),
+          PFAT('{:d} {}', (1, 2), "1 2"),
+          PFAT('{!s} {!r}', ('str', 'repr'), "str 'repr'"),
+          PFAT('{[hi]}, {.__name__!r}', ({'hi': 'hi'}, re), "hi, 're'"),
+          PFAT('{{joek}} ({} {})', ('so', 'funny'), "{joek} (so funny)")]
+
+
 def test_pos_infer():
-    for i, (tmpl, args) in enumerate(_ANON_TESTS):
+    for i, (tmpl, args, res) in enumerate(_PFATS):
         converted = infer_positional_format_args(tmpl)
-        assert tmpl.format(*args) == converted.format(*args)
+        assert converted.format(*args) == res
 
 
 if __name__ == '__main__':
