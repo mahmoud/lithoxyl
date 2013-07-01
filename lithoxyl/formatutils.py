@@ -29,27 +29,36 @@ def infer_positional_format_args(fstr):
     return ret
 
 
+_INTCHARS = 'bcdoxXn'
+_FLOATCHARS = 'eEfFgGn%'
+_TYPE_MAP = dict([(x, int) for x in _INTCHARS] +
+                 [(x, float) for x in _FLOATCHARS])
+
+
 def get_format_args(fstr):
     # TODO: memoize
     formatter = Formatter()
     fargs, fkwargs, _dedup = [], [], set()
 
-    def _add_arg(argname):
+    def _add_arg(argname, type_char='s'):
         if argname not in _dedup:
             _dedup.add(argname)
+            argtype = _TYPE_MAP.get(type_char, str)  # TODO: unicode
             try:
-                fargs.append(int(argname))
+                fargs.append((int(argname), argtype))
             except ValueError:
-                fkwargs.append(argname)
+                fkwargs.append((argname, argtype))
 
     for lit, fname, fspec, conv in formatter.parse(fstr):
         if fname is not None:
+            type_char = fspec[-1:]
             try:
-                base_fname = re.split('[.[]', fname)[0]  # TODO: not perfect
+                # TODO: doesn't handle compound lookups
+                base_fname = re.split('[.[]', fname)[0]
                 assert base_fname
             except (IndexError, AssertionError):
                 raise ValueError('encountered anonymous positional argument')
-            _add_arg(fname)
+            _add_arg(fname, type_char)
             for sublit, subfname, _, _ in formatter.parse(fspec):
                 # TODO: positional and anon args not allowed here.
                 if subfname is not None:
@@ -77,7 +86,7 @@ _TEST_TMPLS = ["example 1: {hello}",
                "example 2: {hello:*10}",
                "example 3: {hello:*{width}}",
                "example 4: {hello:{fchar}{width}}, {width}",
-               "example 5: {0}, {1}, {2}, {1}",
+               "example 5: {0}, {1:d}, {2:f}, {1}",
                "example 6: {}, {}, {}, {1}"]
 
 
@@ -86,6 +95,7 @@ def test_get_fstr_args():
     for t in _TEST_TMPLS:
         inferred_t = infer_positional_format_args(t)
         res = get_format_args(inferred_t)
+        print res
         results.append(res)
     return results
 
