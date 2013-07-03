@@ -1,10 +1,31 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 
 DEBUG = 20
 INFO = 50
 CRITICAL = 90
+
+
+class Callpoint(object):
+    __slots__ = ('module_name', 'module_path', 'func_name', 'lineno', 'lasti')
+
+    def __init__(self, module_name, module_path, func_name, lineno, lasti):
+        self.module_name = module_name
+        self.module_path = module_path
+        self.func_name = func_name
+        self.lineno = lineno
+        self.lasti = lasti
+
+    @classmethod
+    def from_frame(cls, frame):
+        module_name = frame.f_globals.get('__name__', '')
+        module_path = frame.f_code.co_filename
+        func_name = frame.f_code.co_name
+        lineno = frame.f_lineno
+        lasti = frame.f_lasti
+        return cls(module_name, module_path, func_name, lineno, lasti)
 
 
 class Message(object):
@@ -20,6 +41,11 @@ class Message(object):
         self.data = kwargs.pop('data', {})  # TODO: payload?
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
+
+        frame = kwargs.pop('frame', None)
+        if frame is None:
+            frame = sys._getframe(1)
+        self.callpoint = Callpoint.from_frame(frame)
 
         if kwargs:
             self.data.update(kwargs)
@@ -115,12 +141,15 @@ class BaseLogger(object):
 
     def debug(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
+        kw['frame'] = sys._getframe(1)
         return Message(**kw)
 
     def info(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, INFO, self
+        kw['frame'] = sys._getframe(1)
         return Message(**kw)
 
     def critical(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
+        kw['frame'] = sys._getframe(1)
         return Message(**kw)
