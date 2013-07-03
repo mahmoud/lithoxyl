@@ -9,23 +9,31 @@ CRITICAL = 90
 
 
 class Callpoint(object):
-    __slots__ = ('module_name', 'module_path', 'func_name', 'lineno', 'lasti')
+    __slots__ = ('func_name', 'lineno', 'module_name', 'module_path', 'lasti')
 
     def __init__(self, module_name, module_path, func_name, lineno, lasti):
-        self.module_name = module_name
-        self.module_path = module_path
         self.func_name = func_name
         self.lineno = lineno
+        self.module_name = module_name
+        self.module_path = module_path
         self.lasti = lasti
 
     @classmethod
     def from_frame(cls, frame):
-        module_name = frame.f_globals.get('__name__', '')
-        module_path = frame.f_code.co_filename
         func_name = frame.f_code.co_name
         lineno = frame.f_lineno
+        module_name = frame.f_globals.get('__name__', '')
+        module_path = frame.f_code.co_filename
         lasti = frame.f_lasti
         return cls(module_name, module_path, func_name, lineno, lasti)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        args = [repr(getattr(self, s, None)) for s in self.__slots__]
+        if not any(args):
+            return super(Callpoint, self).__repr__()
+        else:
+            return '%s(%s)' % (cn, ', '.join(args))
 
 
 class Message(object):

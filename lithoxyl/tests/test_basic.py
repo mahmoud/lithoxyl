@@ -36,3 +36,4 @@ def test_callpoint_info():
     assert t.callpoint.func_name == 'do_debug_trans'
     assert t.callpoint.lineno > 0
     assert t.callpoint.lasti > 0
+    assert repr(t)
