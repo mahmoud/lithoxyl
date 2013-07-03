@@ -11,6 +11,7 @@ TODO
 * removal of global level constants?
 * default-on fixed header for formatter
 * concurrency association IDs
+* Callpoint for transaction-completion call, too (status call)
 
 Sinks
 -----
