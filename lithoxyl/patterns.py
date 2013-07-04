@@ -16,7 +16,7 @@ for creating a formatted message, along with desirability wrt Lithoxyl:
  * args - all the args - no
  * asctime - formatted time - yes, but no. time formats should be more
  explicit
- * created - time.time() of record creation - yes, (Message.start_time)
+ * created - time.time() of record creation - yes, (Record.start_time)
  * exc_info - exception tuple or none - yes
  * filename - filename of module issuing the logging call - maybe/probably
  * funcName - name of function making the call - maybe/probably

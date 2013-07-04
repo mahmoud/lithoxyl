@@ -36,7 +36,7 @@ class Callpoint(object):
             return '%s(%s)' % (cn, ', '.join(args))
 
 
-class Message(object):
+class Record(object):
     _is_trans = None
     _defer_publish = False
 
@@ -139,25 +139,25 @@ class BaseLogger(object):
         if callable(handle_start_f):
             self._start_handlers.append(handle_start_f)
 
-    def enqueue(self, message):
+    def enqueue(self, record):
         for hfunc in self._handlers:
-            hfunc(message)
+            hfunc(record)
 
-    def enqueue_start(self, message):
+    def enqueue_start(self, record):
         for shfunc in self._start_handlers:
-            shfunc(message)
+            shfunc(record)
 
     def debug(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
         kw['frame'] = sys._getframe(1)
-        return Message(**kw)
+        return Record(**kw)
 
     def info(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, INFO, self
         kw['frame'] = sys._getframe(1)
-        return Message(**kw)
+        return Record(**kw)
 
     def critical(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
         kw['frame'] = sys._getframe(1)
-        return Message(**kw)
+        return Record(**kw)
