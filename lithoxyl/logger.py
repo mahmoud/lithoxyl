@@ -49,6 +49,7 @@ class Record(object):
         self.data = kwargs.pop('data', {})  # TODO: payload?
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
+        self.warnings = []
 
         frame = kwargs.pop('frame', None)
         if frame is None:
@@ -61,8 +62,8 @@ class Record(object):
     def success(self, message):
         self._complete('success', message)
 
-    def warning(self, message):
-        self._complete('warning', message)
+    def warn(self, message):
+        self.warnings.append(message)
 
     def fail(self, message):  # TODO: failure?
         self._complete('fail', message)
