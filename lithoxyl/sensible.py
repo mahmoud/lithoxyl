@@ -1,5 +1,30 @@
 # -*- coding: utf-8 -*-
 
+"""
+
+SensibleLogger has two sinks:
+
+ * (1) statistical (counter or stats aggregator)
+ * (1) persistent (stream/file)
+
+For each combination of level and status, choose whether to count or
+count+log. The following matrix shows the default log level:
+
++------------+-------+-------+---------+
+|level/status|success|failure|exception|
++------------+-------+-------+---------+
+|debug       | count | count |   log   |
++------------+-------+-------+---------+
+|info        | count |  log  |   log   |
++------------+-------+-------+---------+
+|critical    |  log  |  log  |   log   |
++------------+-------+-------+---------+
+
+Higher verbosity moves the spread of "log" actions diagonally up and
+to the left, and lower verbosity, down and to the right.
+
+"""
+
 
 class ThresholdFilter(object):
     def __init__(self, **kwargs):
