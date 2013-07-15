@@ -52,9 +52,11 @@ def get_format_args(fstr):
     for lit, fname, fspec, conv in formatter.parse(fstr):
         if fname is not None:
             type_char = fspec[-1:]
+            fname_list = re.split('[.[]', fname)
+            if len(fname_list) > 1:
+                raise ValueError('encountered compound format arg: %r' % fname)
             try:
-                # TODO: doesn't handle compound lookups
-                base_fname = re.split('[.[]', fname)[0]
+                base_fname = fname_list[0]
                 assert base_fname
             except (IndexError, AssertionError):
                 raise ValueError('encountered anonymous positional argument')
