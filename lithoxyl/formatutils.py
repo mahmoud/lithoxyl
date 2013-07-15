@@ -10,6 +10,29 @@ _pos_farg_re = re.compile('({{)|'         # escaped open-brace
                           '({[:!.\[}])')  # anon positional format arg
 
 
+def construct_format_field_str(fname, fspec, conv):
+    if fname is None:
+        return ''
+    ret = '{' + fname
+    if conv:
+        ret += '!' + conv
+    if fspec:
+        ret += ':' + fspec
+    ret += '}'
+    return ret
+
+
+def split_format_str(fstr):
+    ret = []
+    for lit, fname, fspec, conv in fstr._formatter_parser():
+        if fname is None:
+            ret.append((lit, None))
+            continue
+        field_str = construct_format_field_str(fname, fspec, conv)
+        ret.append((lit, field_str))
+    return ret
+
+
 def infer_positional_format_args(fstr):
     # TODO: memoize
     ret, max_anon = '', 0
@@ -33,6 +56,7 @@ _INTCHARS = 'bcdoxXn'
 _FLOATCHARS = 'eEfFgGn%'
 _TYPE_MAP = dict([(x, int) for x in _INTCHARS] +
                  [(x, float) for x in _FLOATCHARS])
+_TYPE_MAP['s'] = str
 
 
 def get_format_args(fstr):
@@ -68,6 +92,33 @@ def get_format_args(fstr):
     return fargs, fkwargs
 
 
+def get_format_field_list(fstr):
+    ret = []
+    formatter = Formatter()
+    for lit, fname, fspec, conv in formatter.parse(fstr):
+        if fname is None:
+            ret.append((lit, None))
+            continue
+        field_str = construct_format_field_str(fname, fspec, conv)
+        path_list = re.split('[.[]', fname)  # TODO
+        base_name = path_list[0]
+        subpath = path_list[1:]
+        subfields = []
+        for sublit, subfname, _, _ in formatter.parse(fspec):
+            if subfname is not None:
+                subfields.append(subfname)
+        subfields = tuple(subfields)
+        type_char = fspec[-1:]
+        type_func = _TYPE_MAP.get(type_char, str)  # TODO: unicode
+        ret.append(FormatField(fname, base_name, type_func,
+                               subpath, subfields, field_str))
+    return ret
+
+
+FormatField = namedtuple("FormatField",
+                         "name base_name type_func"
+                         " subpath subfields field_str")
+
 PFAT = namedtuple("PositionalFormatArgTest", "fstr arg_vals res")
 
 
@@ -87,7 +138,7 @@ def test_pos_infer():
 _TEST_TMPLS = ["example 1: {hello}",
                "example 2: {hello:*10}",
                "example 3: {hello:*{width}}",
-               "example 4: {hello:{fchar}{width}}, {width}",
+               "example 4: {hello!r:{fchar}{width}}, {width}, yes",
                "example 5: {0}, {1:d}, {2:f}, {1}",
                "example 6: {}, {}, {}, {1}"]
 
@@ -102,6 +153,26 @@ def test_get_fstr_args():
     return results
 
 
+def test_split_fstr():
+    results = []
+    for t in _TEST_TMPLS:
+        res = split_format_str(t)
+        print res
+        results.append(res)
+    return results
+
+
+def test_field_list():
+    results = []
+    for t in _TEST_TMPLS:
+        res = get_format_field_list(t)
+        #print res
+        results.append(res)
+    return results
+
+
 if __name__ == '__main__':
+    test_split_fstr()
     test_pos_infer()
     test_get_fstr_args()
+    test_field_list()
