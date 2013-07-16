@@ -28,6 +28,7 @@ to the left, and lower verbosity, down and to the right.
 
 class ThresholdFilter(object):
     def __init__(self, **kwargs):
+        # TODO: filter for warnings?
         # TODO: on-bind lookup behaviors?
         # TODO: add "default" response?
         self.event_kw_vals = {}
@@ -43,6 +44,45 @@ class ThresholdFilter(object):
             return record.level >= self.event_thresh_map[record.status]
         except KeyError:
             return False
+
+
+class Formatter(object):
+    def __init__(self, format_str, defaults):
+        self.raw_format_str = format_str
+        self.defaults = dict(defaults)
+
+
+Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+Formatter('{iso8601_time} - {logger_name} - {level_name} - {record_type}')
+
+
+BUILTINS = {'logger_name': '',
+            'logger_id': '',
+            'record_type': '',  # TODO: record_name?
+            'record_id': '',
+            'record_status': '',
+            'level_name': '',
+            'level_number': '',
+            'message': '',
+            'raw_message': '',
+            'start_timestamp': '',
+            'end_timestamp': '',
+            'start_iso8601': '',
+            'end_iso8601': '',
+            'duration_secs': '',
+            'duration_msecs': '',
+            'module_name': '',
+            'module_path': '',
+            'func_name': '',
+            'line_number': '',
+            'exc_type': '',
+            'exc_message': '',
+            'exc_tb_str': '',
+            'exc_tb_dict': '',
+            'process_id': ''}  # TODO: pid?
+
+
+
 
 
 class SensibleSink(object):
