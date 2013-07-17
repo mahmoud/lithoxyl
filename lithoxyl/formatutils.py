@@ -110,14 +110,14 @@ def get_format_field_list(fstr):
         subfields = tuple(subfields)
         type_char = fspec[-1:]
         type_func = _TYPE_MAP.get(type_char, str)  # TODO: unicode
-        ret.append(FormatField(fname, base_name, type_func,
-                               subpath, subfields, field_str))
+        ret.append(FormatBaseField(fname, base_name, type_func,
+                                   subpath, subfields, field_str))
     return ret
 
 
-FormatField = namedtuple("FormatField",
-                         "name base_name type_func"
-                         " subpath subfields field_str")
+FormatBaseField = namedtuple("FormatBaseField",
+                             "name base_name type_func"
+                             " subpath subfields field_str")
 
 PFAT = namedtuple("PositionalFormatArgTest", "fstr arg_vals res")
 
