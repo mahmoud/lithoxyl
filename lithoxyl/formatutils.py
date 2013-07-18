@@ -115,9 +115,57 @@ def get_format_field_list(fstr):
     return ret
 
 
+def tokenize_format_str(fstr):
+    ret = []
+    formatter = Formatter()
+    for lit, fname, fspec, conv in formatter.parse(fstr):
+        if lit:
+            ret.append(lit)
+        if fname is None:
+            continue
+        ret.append(BaseFormatField(fname, fspec, conv))
+    return ret
+
+
 FormatBaseField = namedtuple("FormatBaseField",
                              "name base_name type_func"
                              " subpath subfields field_str")
+
+
+class BaseFormatField(object):
+    def __init__(self, fname, fspec='', conv=None):
+        self.fname = fname
+        self.fspec = fspec
+        self.fstr = construct_format_field_str(fname, fspec, conv)
+
+        self.path_list = re.split('[.[]', fname)  # TODO
+        self.base_name = self.path_list[0]
+        self.subpath = self.path_list[1:]
+        self.subfields = []
+        for sublit, subfname, _, _ in fspec._formatter_parser():
+            if subfname is not None:
+                self.subfields.append(subfname)
+        self.type_char = fspec[-1:]
+        self.type_func = _TYPE_MAP.get(self.type_char, str)
+        self.conv = conv
+        self.conv_func = None  # TODO
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        args = [self.fname]
+        if self.conv is not None:
+            args.extend([self.fspec, self.conv])
+        elif self.fspec != '':
+            args.append(self.fspec)
+        args_repr = ', '.join([repr(a) for a in args])
+        return '%s(%s)' % (cn, args_repr)
+
+    def __str__(self):
+        return self.fstr
+
+
+
+# tests follow
 
 PFAT = namedtuple("PositionalFormatArgTest", "fstr arg_vals res")
 
@@ -148,7 +196,7 @@ def test_get_fstr_args():
     for t in _TEST_TMPLS:
         inferred_t = infer_positional_format_args(t)
         res = get_format_args(inferred_t)
-        print res
+        #print res
         results.append(res)
     return results
 
@@ -157,7 +205,7 @@ def test_split_fstr():
     results = []
     for t in _TEST_TMPLS:
         res = split_format_str(t)
-        print res
+        #print res
         results.append(res)
     return results
 
@@ -171,7 +219,17 @@ def test_field_list():
     return results
 
 
+def test_tokenize_format_str():
+    results = []
+    for t in _TEST_TMPLS:
+        res = tokenize_format_str(t)
+        print ''.join([str(r) for r in res])
+        results.append(res)
+    return results
+
+
 if __name__ == '__main__':
+    test_tokenize_format_str()
     test_split_fstr()
     test_pos_infer()
     test_get_fstr_args()
