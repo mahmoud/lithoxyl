@@ -26,6 +26,7 @@ to the left, and lower verbosity, down and to the right.
 """
 
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
+from json import dumps as escape_str
 
 
 class ThresholdFilter(object):
@@ -76,10 +77,7 @@ class Formatter(object):
     def format_record(self, record):
         items = {}
         for fname, field in self.field_map.items():
-            try:
-                items[fname] = field.getter(record)
-            except:
-                items[fname] = field.default
+            items[fname] = field.get_escaped(record)
         try:
             ret = self.format_str.format(**items)
         except:
@@ -106,9 +104,19 @@ class FormatField(BaseFormatField):
         self.default = default or _TYPE_MAP[self.type_char]()
         if not isinstance(self.default, _TYPE_MAP[self.type_char]):
             raise TypeError('type mismatch in FormatField %r' % fname)
+        self.quote_output = quote
         if quote is None:
             is_numeric = isinstance(self.default, (int, float))
             self.quote_output = not is_numeric
+
+    def get_escaped(self, *a, **kw):
+        try:
+            ret = self.getter(*a, **kw)
+        except:
+            ret = self.default
+        if self.quote_output:
+            ret = escape_str(ret)
+        return ret
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -123,8 +131,8 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('logger_id', 'd', lambda r: id(r.logger)),  # TODO
                 FF('record_name', 's', lambda r: r.name),
                 FF('record_id', 'd', lambda r: id(r)),  # TODO
-                FF('record_status', 's', lambda r: r.status),
-                FF('record_status_char', 's', lambda r: r.status[0].upper()),
+                FF('record_status', 's', lambda r: r.status, quote=False),
+                FF('record_status_char', 's', lambda r: r.status[0].upper(), quote=False),
                 FF('level_name', 's', lambda r: r.level),  # TODO
                 FF('level_number', 'd', lambda r: r.level),
                 FF('message', 's', lambda r: r.message),
@@ -150,11 +158,11 @@ FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 
 '{start_time!iso_8601}'
 #Formatter('{userthing:%d} {start_iso8601} - {logger_name} - {record_name}')
-forming = Formatter('{start_timestamp} - {logger_name} - {record_name}')
+forming = Formatter('{record_status_char} {start_timestamp} - {logger_name} - {record_status} - {record_name}')
 
 from logger import Record, DEBUG
 
-riker = Record('hello_thomas', DEBUG)
+riker = Record('"hello"_thomas', DEBUG).success('')
 
 print repr(forming.format_record(riker))
 
