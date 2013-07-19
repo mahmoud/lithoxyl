@@ -90,57 +90,49 @@ class Formatter(object):
 from formatutils import _TYPE_MAP, BaseFormatField
 
 
-DEFAULT_FMT_SPEC = {int: 'd',
-                    float: 'f',
-                    str: 's'}
-
-
 class FormatField(BaseFormatField):
-    def __init__(self, fname, type_func, getter, fmt_spec=''):
-        fmt_spec = fmt_spec or DEFAULT_FMT_SPEC[type_func]
-        # TODO: do we need that? -^
-        super(FormatField, self).__init__(fname, fmt_spec)
-        self.type_func = type_func
+    def __init__(self, fname, fspec, getter=None, default=None):
+        super(FormatField, self).__init__(fname, fspec)
         self.getter = getter
 
-        self.default = type_func()  # TODO
-        if not issubclass(type_func, _TYPE_MAP[self.type_char]):
+        self.default = default or _TYPE_MAP[self.type_char]()
+        if not isinstance(self.default, _TYPE_MAP[self.type_char]):
             raise TypeError('type mismatch in FormatField %r' % fname)
 
     def __repr__(self):
         cn = self.__class__.__name__
-        return '%s(%r, %r, %r)' % (cn, self.fname, self.type_func, self.getter)
+        return '%s(%r, %r, %r)' % (cn, self.fname, self.fspec, self.getter)
 
 
 FF = FormatField
 
 
 # default, fmt_specs
-FMT_BUILTINS = [FF('logger_name', str, lambda r: r.logger.name),
-                FF('logger_id', int, lambda r: id(r.logger)),  # TODO
-                FF('record_name', str, lambda r: r.name),
-                FF('record_id', int, lambda r: id(r)),  # TODO
-                FF('record_status', str, lambda r: r.status),
-                FF('record_status_char', str, lambda r: r.status[0].upper()),
-                FF('level_name', str, lambda r: r.level),  # TODO
-                FF('level_number', float, lambda r: r.level),
-                FF('message', str, lambda r: r.message),
-                FF('raw_message', str, lambda r: r.message),  # TODO
-                FF('start_timestamp', float, lambda r: r.start_time),
-                FF('end_timestamp', float, lambda r: r.end_time),
-                FF('start_iso8601', str, lambda r: r),
-                FF('end_iso8601', str, lambda r: r),
-                FF('duration_secs', float, lambda r: r.duration),
-                FF('duration_msecs', float, lambda r: r.duration * 1000.0),
-                FF('module_name', str, lambda r: r.callpoint.module_name),
-                FF('module_path', str, lambda r: r.callpoint.module_path),
-                FF('func_name', str, lambda r: r.callpoint.func_name),
-                FF('line_number', int, lambda r: r.callpoint.lineno),
-                FF('exc_type', str, lambda r: 'TODO'),
-                FF('exc_message', str, lambda r: 'TODO'),
-                FF('exc_tb_str', str, lambda r: 'TODO'),
-                FF('exc_tb_dict', str, lambda r: 'TODO'),
-                FF('process_id', int, lambda r: 'TODO')]
+FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
+                FF('logger_id', 'd', lambda r: id(r.logger)),  # TODO
+                FF('record_name', 's', lambda r: r.name),
+                FF('record_id', 'd', lambda r: id(r)),  # TODO
+                FF('record_status', 's', lambda r: r.status),
+                FF('record_status_char', 's', lambda r: r.status[0].upper()),
+                FF('level_name', 's', lambda r: r.level),  # TODO
+                FF('level_number', 'd', lambda r: r.level),
+                FF('message', 's', lambda r: r.message),
+                FF('raw_message', 's', lambda r: r.message),  # TODO
+                FF('start_timestamp', 'g', lambda r: r.start_time),
+                FF('end_timestamp', 'g', lambda r: r.end_time),
+                FF('start_iso8601', 's', lambda r: 'TODO'),
+                FF('end_iso8601', 's', lambda r: 'TODO'),
+                FF('duration_secs', '.3f', lambda r: r.duration),
+                FF('duration_msecs', '.3f', lambda r: r.duration * 1000.0),
+                FF('module_name', 's', lambda r: r.callpoint.module_name),
+                FF('module_path', 's', lambda r: r.callpoint.module_path),
+                FF('func_name', 's', lambda r: r.callpoint.func_name),
+                FF('line_number', 'd', lambda r: r.callpoint.lineno),
+                FF('exc_type', 's', lambda r: 'TODO'),
+                FF('exc_message', 's', lambda r: 'TODO'),
+                FF('exc_tb_str', 's', lambda r: 'TODO'),
+                FF('exc_tb_dict', 's', lambda r: 'TODO'),
+                FF('process_id', 'd', lambda r: 'TODO')]
 
 
 FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
