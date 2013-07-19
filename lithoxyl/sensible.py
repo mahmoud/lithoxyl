@@ -46,19 +46,39 @@ class ThresholdFilter(object):
             return False
 
 
+from formatutils import tokenize_format_str
+
+
 class Formatter(object):
-    def __init__(self, format_str, defaults):
+    def __init__(self, format_str, defaults=None, getters=None):
         self.raw_format_str = format_str
-        self.defaults = dict(defaults)
+        getters = dict(getters or {})
+        self.defaults = dict(defaults or {})
+        self.field_map = {}
+        self.token_chain = []
+        self.format_str = ''
+        base_fields = tokenize_format_str(format_str)
+        for bf in base_fields:
+            try:
+                ff = FMT_BUILTIN_MAP[bf.fname]
+            except AttributeError:
+                continue
+            except KeyError:
+                ff = 'TODO'
+                raise
+                #ff = FormatField(bf.fname, '', '')
+            #finally:
+            #    self.format_str += str(ff)
+            self.field_map[ff.name] = ff
+        import pdb;pdb.set_trace()
 
 
-Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-Formatter('{iso8601_time} - {logger_name} - {level_name} - {record_name}')
+# Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 # name, type, getter(record),
 
-from formatutils import _TYPE_MAP
+from formatutils import _TYPE_MAP, BaseFormatField
 
 
 DEFAULT_FMT_SPEC = {int: 'd',
@@ -74,14 +94,21 @@ class FormatField(object):
         self.fmt_spec = fmt_spec or DEFAULT_FMT_SPEC[type_func]
         # TODO: do we need that? -^
 
+        self.default = type_func()  # TODO
+
         fmt_char = self.fmt_spec[-1:]
         if not issubclass(type_func, _TYPE_MAP[fmt_char]):
             raise TypeError('type mismatch in FormatField %r' % name)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '%s(%r, %r, %r)' % (cn, self.name, self.type_func, self.getter)
 
 
 FF = FormatField
 
 
+# default, fmt_specs
 FMT_BUILTINS = [FF('logger_name', str, lambda r: r.logger.name),
                 FF('logger_id', int, lambda r: id(r.logger)),  # TODO
                 FF('record_name', str, lambda r: r.name),
@@ -91,36 +118,29 @@ FMT_BUILTINS = [FF('logger_name', str, lambda r: r.logger.name),
                 FF('level_name', str, lambda r: r.level),  # TODO
                 FF('level_number', float, lambda r: r.level),
                 FF('message', str, lambda r: r.message),
-                FF('raw_message', str, lambda r: r.message)]  # TODO
+                FF('raw_message', str, lambda r: r.message),  # TODO
+                FF('start_timestamp', float, lambda r: r.start_time),
+                FF('end_timestamp', float, lambda r: r.end_time),
+                FF('start_iso8601', str, lambda r: r),
+                FF('end_iso8601', str, lambda r: r),
+                FF('duration_secs', float, lambda r: r.duration),
+                FF('duration_msecs', float, lambda r: r.duration * 1000.0),
+                FF('module_name', str, lambda r: r.callpoint.module_name),
+                FF('module_path', str, lambda r: r.callpoint.module_path),
+                FF('func_name', str, lambda r: r.callpoint.func_name),
+                FF('line_number', int, lambda r: r.callpoint.lineno),
+                FF('exc_type', str, lambda r: 'TODO'),
+                FF('exc_message', str, lambda r: 'TODO'),
+                FF('exc_tb_str', str, lambda r: 'TODO'),
+                FF('exc_tb_dict', str, lambda r: 'TODO'),
+                FF('process_id', int, lambda r: 'TODO')]
 
 
-BUILTINS = {'logger_name': '',
-            'logger_id': '',
-            'record_name': '',  # TODO: record_name?
-            'record_id': '',
-            'record_status': '',
-            'level_name': '',
-            'level_number': '',
-            'message': '',
-            'raw_message': '',
-            'start_timestamp': '',
-            'end_timestamp': '',
-            'start_iso8601': '',
-            'end_iso8601': '',
-            'duration_secs': '',
-            'duration_msecs': '',
-            'module_name': '',
-            'module_path': '',
-            'func_name': '',
-            'line_number': '',
-            'exc_type': '',
-            'exc_message': '',
-            'exc_tb_str': '',
-            'exc_tb_dict': '',
-            'process_id': ''}  # TODO: pid?
+FMT_BUILTIN_MAP = dict([(f.name, f) for f in FMT_BUILTINS])
 
-
-
+'{start_time!iso_8601}'
+#Formatter('{userthing:%d} {start_iso8601} - {logger_name} - {record_name}')
+Formatter('{start_iso8601} - {logger_name} - {record_name}')
 
 
 class SensibleSink(object):
