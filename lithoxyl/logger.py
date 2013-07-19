@@ -60,18 +60,19 @@ class Record(object):
             self.data.update(kwargs)
 
     def success(self, message):
-        self._complete('success', message)
+        return self._complete('success', message)
 
     def warn(self, message):
         self.warnings.append(message)
+        return self
 
     def fail(self, message):  # TODO: failure?
-        self._complete('fail', message)
+        return self._complete('fail', message)
 
     def exception(self, exc_type, exc_val, tb_obj):
         # TODO: make real exc message
         # TODO: structure tb obj?
-        self._complete('exception', '%r, %r' % (exc_type, exc_val))
+        return self._complete('exception', '%r, %r' % (exc_type, exc_val))
 
     @property
     def duration(self):
@@ -90,6 +91,7 @@ class Record(object):
         if not self._defer_publish and self.logger:
             # TODO: should logger be required?
             self.logger.enqueue(self)
+        return self
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
