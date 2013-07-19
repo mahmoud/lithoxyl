@@ -60,6 +60,8 @@ class Formatter(object):
         for bf in base_fields:
             # TODO: if anonymous and/or positional, raise
             # TODO: no subfields allowed, either
+            # TODO: and no compound things, gershdernit
+            # TODO: try the field out on its own default, to be sure
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
                 self.format_str += str(ff)
