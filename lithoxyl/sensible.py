@@ -59,6 +59,7 @@ class Formatter(object):
         self.format_str = ''
         base_fields = tokenize_format_str(format_str)
         for bf in base_fields:
+            # TODO: if anonymous and/or positional, raise
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
             except AttributeError:
@@ -67,10 +68,18 @@ class Formatter(object):
                 ff = 'TODO'
                 raise
                 #ff = FormatField(bf.fname, '', '')
-            #finally:
-            #    self.format_str += str(ff)
-            self.field_map[ff.name] = ff
-        import pdb;pdb.set_trace()
+            finally:
+                self.format_str += str(bf)
+            self.field_map[ff.fname] = ff
+
+    def format_record(self, record):
+        items = {}
+        for fname, field in self.field_map.items():
+            try:
+                items[fname] = field.getter(record)
+            except:
+                items[fname] = field.default
+        return self.format_str.format(**items)
 
 
 # Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -86,23 +95,21 @@ DEFAULT_FMT_SPEC = {int: 'd',
                     str: 's'}
 
 
-class FormatField(object):
-    def __init__(self, name, type_func, getter, fmt_spec=None):
-        self.name = name
+class FormatField(BaseFormatField):
+    def __init__(self, fname, type_func, getter, fmt_spec=''):
+        fmt_spec = fmt_spec or DEFAULT_FMT_SPEC[type_func]
+        # TODO: do we need that? -^
+        super(FormatField, self).__init__(fname, fmt_spec)
         self.type_func = type_func
         self.getter = getter
-        self.fmt_spec = fmt_spec or DEFAULT_FMT_SPEC[type_func]
-        # TODO: do we need that? -^
 
         self.default = type_func()  # TODO
-
-        fmt_char = self.fmt_spec[-1:]
-        if not issubclass(type_func, _TYPE_MAP[fmt_char]):
-            raise TypeError('type mismatch in FormatField %r' % name)
+        if not issubclass(type_func, _TYPE_MAP[self.type_char]):
+            raise TypeError('type mismatch in FormatField %r' % fname)
 
     def __repr__(self):
         cn = self.__class__.__name__
-        return '%s(%r, %r, %r)' % (cn, self.name, self.type_func, self.getter)
+        return '%s(%r, %r, %r)' % (cn, self.fname, self.type_func, self.getter)
 
 
 FF = FormatField
@@ -136,11 +143,17 @@ FMT_BUILTINS = [FF('logger_name', str, lambda r: r.logger.name),
                 FF('process_id', int, lambda r: 'TODO')]
 
 
-FMT_BUILTIN_MAP = dict([(f.name, f) for f in FMT_BUILTINS])
+FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 
 '{start_time!iso_8601}'
 #Formatter('{userthing:%d} {start_iso8601} - {logger_name} - {record_name}')
-Formatter('{start_iso8601} - {logger_name} - {record_name}')
+forming = Formatter('{start_timestamp} - {logger_name} - {record_name}')
+
+from logger import Record, DEBUG
+
+riker = Record('hello_thomas', DEBUG)
+
+print repr(forming.format_record(riker))
 
 
 class SensibleSink(object):
