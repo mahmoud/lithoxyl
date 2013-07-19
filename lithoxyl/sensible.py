@@ -25,6 +25,8 @@ to the left, and lower verbosity, down and to the right.
 
 """
 
+from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
+
 
 class ThresholdFilter(object):
     def __init__(self, **kwargs):
@@ -46,9 +48,6 @@ class ThresholdFilter(object):
             return False
 
 
-from formatutils import tokenize_format_str
-
-
 class Formatter(object):
     def __init__(self, format_str, defaults=None, getters=None):
         self.raw_format_str = format_str
@@ -60,16 +59,16 @@ class Formatter(object):
         base_fields = tokenize_format_str(format_str)
         for bf in base_fields:
             # TODO: if anonymous and/or positional, raise
+            # TODO: no subfields allowed, either
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
+                self.format_str += str(ff)
             except AttributeError:
-                continue
+                self.format_str += bf
             except KeyError:
                 ff = 'TODO'
                 raise
                 #ff = FormatField(bf.fname, '', '')
-            finally:
-                self.format_str += str(bf)
             self.field_map[ff.fname] = ff
 
     def format_record(self, record):
@@ -79,25 +78,35 @@ class Formatter(object):
                 items[fname] = field.getter(record)
             except:
                 items[fname] = field.default
-        return self.format_str.format(**items)
-
-
-# Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-# name, type, getter(record),
-
-from formatutils import _TYPE_MAP, BaseFormatField
+        try:
+            ret = self.format_str.format(**items)
+        except:
+            # safe mode
+            ret = ''
+            for token in self.token_chain:
+                try:
+                    fname = token.fname
+                except AttributeError:
+                    ret += token
+                    continue
+                try:
+                    cur = token.fstr.format(**{fname: items[fname]})
+                except:
+                    cur = token.fstr.format(**{fname: token.default})
+                ret += cur
+        return ret
 
 
 class FormatField(BaseFormatField):
-    def __init__(self, fname, fspec, getter=None, default=None):
+    def __init__(self, fname, fspec, getter=None, default=None, quote=None):
         super(FormatField, self).__init__(fname, fspec)
         self.getter = getter
-
         self.default = default or _TYPE_MAP[self.type_char]()
         if not isinstance(self.default, _TYPE_MAP[self.type_char]):
             raise TypeError('type mismatch in FormatField %r' % fname)
+        if quote is None:
+            is_numeric = isinstance(self.default, (int, float))
+            self.quote_output = not is_numeric
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -118,8 +127,8 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('level_number', 'd', lambda r: r.level),
                 FF('message', 's', lambda r: r.message),
                 FF('raw_message', 's', lambda r: r.message),  # TODO
-                FF('start_timestamp', 'g', lambda r: r.start_time),
-                FF('end_timestamp', 'g', lambda r: r.end_time),
+                FF('start_timestamp', '.14g', lambda r: r.start_time),
+                FF('end_timestamp', '.14g', lambda r: r.end_time),
                 FF('start_iso8601', 's', lambda r: 'TODO'),
                 FF('end_iso8601', 's', lambda r: 'TODO'),
                 FF('duration_secs', '.3f', lambda r: r.duration),
