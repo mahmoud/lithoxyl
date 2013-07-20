@@ -25,6 +25,7 @@ to the left, and lower verbosity, down and to the right.
 
 """
 import time
+import datetime
 from json import dumps as escape_str
 
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
@@ -124,13 +125,29 @@ class FormatField(BaseFormatField):
         return '%s(%r, %r, %r)' % (cn, self.fname, self.fspec, self.getter)
 
 
-def timestamp2iso8601(timestamp, local=False):
+def timestamp2iso8601_noms(timestamp, local=False):
+    """
+    with time.strftime(), one would have to do fractional
+    seconds/milliseconds manually, because the timetuple used doesn't
+    include data necessary to support the %f flag.
+
+    This function is about twice as fast as datetime.strftime(),
+    however. That's nothing compared to time.time()
+    vs. datetime.now(), which is two orders of magnitude faster.
+    """
     tformat = '%Y-%m-%d %H:%M:%S'
     if local:
         tstruct = time.localtime(timestamp)
     else:
         tstruct = time.gmtime(timestamp)
     return time.strftime(tformat, tstruct)
+
+
+def timestamp2iso8601(timestamp, local=False, tformat=None):
+    #TODO: local support
+    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f'
+    dt = datetime.datetime.fromtimestamp(timestamp)
+    return dt.strftime(tformat)
 
 
 # default, fmt_specs
