@@ -24,9 +24,10 @@ Higher verbosity moves the spread of "log" actions diagonally up and
 to the left, and lower verbosity, down and to the right.
 
 """
+import time
+from json import dumps as escape_str
 
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
-from json import dumps as escape_str
 
 
 class ThresholdFilter(object):
@@ -123,10 +124,17 @@ class FormatField(BaseFormatField):
         return '%s(%r, %r, %r)' % (cn, self.fname, self.fspec, self.getter)
 
 
-FF = FormatField
+def timestamp2iso8601(timestamp, local=False):
+    tformat = '%Y-%m-%d %H:%M:%S'
+    if local:
+        tstruct = time.localtime(timestamp)
+    else:
+        tstruct = time.gmtime(timestamp)
+    return time.strftime(tformat, tstruct)
 
 
 # default, fmt_specs
+FF = FormatField
 FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('logger_id', 'd', lambda r: id(r.logger)),  # TODO
                 FF('record_name', 's', lambda r: r.name),
@@ -139,8 +147,10 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('raw_message', 's', lambda r: r.message),  # TODO
                 FF('start_timestamp', '.14g', lambda r: r.start_time),
                 FF('end_timestamp', '.14g', lambda r: r.end_time),
-                FF('start_iso8601', 's', lambda r: 'TODO'),
-                FF('end_iso8601', 's', lambda r: 'TODO'),
+                FF('start_iso8601', 's', lambda r: timestamp2iso8601(r.start_time)),
+                FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
+                FF('start_local_iso8601', 's', lambda r: timestamp2iso8601(r.start_time, local=True)),
+                FF('end_local_iso8601', 's', lambda r: timestamp2iso8601(r.end_time, local=True)),
                 FF('duration_secs', '.3f', lambda r: r.duration),
                 FF('duration_msecs', '.3f', lambda r: r.duration * 1000.0),
                 FF('module_name', 's', lambda r: r.callpoint.module_name),
@@ -158,7 +168,8 @@ FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 
 '{start_time!iso_8601}'
 #Formatter('{userthing:%d} {start_iso8601} - {logger_name} - {record_name}')
-forming = Formatter('{record_status_char} {start_timestamp} - {logger_name} - {record_status} - {record_name}')
+forming = Formatter('{record_status_char} {start_timestamp} - {start_local_iso8601}'
+                    ' - {logger_name} - {record_status} - {record_name}')
 
 from logger import Record, DEBUG
 
