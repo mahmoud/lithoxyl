@@ -28,6 +28,7 @@ import time
 import datetime
 from json import dumps as escape_str
 
+from tzutils import UTC, LocalTZ
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
 
 
@@ -144,10 +145,12 @@ def timestamp2iso8601_noms(timestamp, local=False):
 
 
 def timestamp2iso8601(timestamp, local=False, tformat=None):
-    #TODO: local support
-    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f'
-    dt = datetime.datetime.fromtimestamp(timestamp)
-    return dt.strftime(tformat)
+    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
+    if local:
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=LocalTZ)
+    else:
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+    return dt.isoformat(' ')
 
 
 # default, fmt_specs
@@ -186,7 +189,7 @@ FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 '{start_time!iso_8601}'
 #Formatter('{userthing:%d} {start_iso8601} - {logger_name} - {record_name}')
 forming = Formatter('{record_status_char} {start_timestamp} - {start_local_iso8601}'
-                    ' - {logger_name} - {record_status} - {record_name}')
+                    ' - {start_iso8601} - {logger_name} - {record_status} - {record_name}')
 
 from logger import Record, DEBUG
 
