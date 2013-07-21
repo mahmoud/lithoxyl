@@ -115,6 +115,8 @@ class Formatter(object):
                 ret += cur
         return ret
 
+    __call__ = format_record
+
 
 def timestamp2iso8601_noms(timestamp, local=False):
     """
