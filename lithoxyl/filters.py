@@ -44,8 +44,3 @@ class ThresholdFilter(object):
             return record.level >= self.event_thresh_map[record.status]
         except KeyError:
             return False
-
-
-class SensibleSink(object):
-    def __init__(self, filters=None, formatter=None, emitter=None):
-        pass
