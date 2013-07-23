@@ -82,6 +82,8 @@ class Formatter(object):
             # TODO: no subfields allowed, either
             # TODO: and no compound things, gershdernit
             # TODO: try the field out on its own default, to be sure
+            # TODO: assert that there's whitespace or some static marker
+            #       between all fields (or only all unquote fields?)
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
                 self.format_str += str(ff)
