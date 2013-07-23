@@ -18,7 +18,7 @@ def test_logger_success(trans_count=2):
     log = BaseLogger('test_logger', [acc])
     for i in range(trans_count):
         do_debug_trans(log)
-    assert len(acc.messages) == trans_count
+    assert len(acc.records) == trans_count
 
 
 def test_structured(trans_count=5):

@@ -10,13 +10,13 @@ from formatters import Formatter
 class AggSink(object):
     "A 'dummy' sink that just aggregates the messages."
     def __init__(self):
-        self.messages = []
+        self.records = []
 
-    def handle_start(self, message):
+    def handle_start(self, record):
         pass
 
-    def handle(self, message):
-        self.messages.append(message)
+    def handle(self, record):
+        self.records.append(record)
 
 
 _MSG_ATTRS = ('name', 'level', 'status', 'message',
@@ -27,10 +27,10 @@ class StructuredFileSink(object):
     def __init__(self, fileobj=None):
         self.fileobj = fileobj or sys.stdout
 
-    def handle(self, message):
-        msg_data = dict(message.data)
+    def handle(self, record):
+        msg_data = dict(record.extras)
         for attr in _MSG_ATTRS:
-            msg_data[attr] = getattr(message, attr, None)
+            msg_data[attr] = getattr(record, attr, None)
         json_str = json.dumps(msg_data, sort_keys=True)
         self.fileobj.write(json_str)
         self.fileobj.write('\n')
@@ -61,7 +61,6 @@ if __name__ == '__main__':
     with log.debug('hi_task') as t:
         t.warn('everything ok?')
         t.success('doin great')
-
 
 
 """

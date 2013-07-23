@@ -42,7 +42,7 @@ class Record(object):
         self.logger = kwargs.pop('logger', None)
         self.status = kwargs.pop('status', None)
         self.message = kwargs.pop('message', None)
-        self.data = kwargs.pop('data', {})  # TODO: payload?
+        self.extras = kwargs.pop('extras', {})
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
         self.warnings = []
@@ -53,7 +53,7 @@ class Record(object):
         self.callpoint = Callpoint.from_frame(frame)
 
         if kwargs:
-            self.data.update(kwargs)
+            self.extras.update(kwargs)
 
     def success(self, message):
         return self._complete('success', message)
@@ -62,8 +62,8 @@ class Record(object):
         self.warnings.append(message)
         return self
 
-    def fail(self, message):  # TODO: failure?
-        return self._complete('fail', message)
+    def failure(self, message):
+        return self._complete('failure', message)
 
     def exception(self, exc_type, exc_val, tb_obj):
         # TODO: make real exc message
@@ -91,7 +91,6 @@ class Record(object):
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-
         self.logger.enqueue_start(self)
         return self
 
