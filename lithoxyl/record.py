@@ -46,6 +46,7 @@ class Record(object):
         self.extras = kwargs.pop('extras', {})
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
+        self.duration = kwargs.pop('duration', 0.0)
         self.warnings = []
 
         frame = kwargs.pop('frame', None)
@@ -57,6 +58,7 @@ class Record(object):
             self.extras.update(kwargs)
 
     def success(self, message):
+        # TODO: autogenerate success message
         return self._complete('success', message)
 
     def warn(self, message):
@@ -83,20 +85,15 @@ class Record(object):
         else:
             self.extras[key] = value
 
-    @property
-    def duration(self):
-        if self.end_time:
-            return self.end_time - self.start_time
-        elif self._is_trans:
-            return time.time() - self.start_time
-        else:
-            return 0.0
+    def get_elapsed_time(self):
+        return time.time() - self.start_time
 
     def _complete(self, status, message):
         self.status = status
         self.message = message
         if self._is_trans:
             self.end_time = time.time()
+            self.duration = self.end_time - self.start_time
         if not self._defer_publish and self.logger:
             # TODO: should logger be required?
             self.logger.enqueue(self)
