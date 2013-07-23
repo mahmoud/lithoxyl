@@ -42,6 +42,7 @@ class Record(object):
         self.logger = kwargs.pop('logger', None)
         self.status = kwargs.pop('status', None)
         self.message = kwargs.pop('message', None)
+        self.raw_message = kwargs.pop('raw_message', None)
         self.extras = kwargs.pop('extras', {})
         self.start_time = kwargs.pop('start_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
@@ -69,6 +70,18 @@ class Record(object):
         # TODO: make real exc message
         # TODO: structure tb obj?
         return self._complete('exception', '%r, %r' % (exc_type, exc_val))
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            return self.extras[key]
+
+    def __setitem__(self, key, value):
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            self.extras[key] = value
 
     @property
     def duration(self):
