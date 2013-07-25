@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from logger import Record, DEBUG
-from formatters import Formatter
+from formatters import Formatter, RecordFormatter
 
 template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
@@ -32,3 +32,15 @@ def test_individual_fields():
             output = forming.format_record(record)
             assert output == result
     return
+
+
+def test_rec_formatter():
+    rec = Record('Wharf')
+    recf = RecordFormatter(rec)
+    rec.success('Mr. Wolf')
+
+    print recf.format(template)
+    template2 = template + ' - {rank}'
+    print recf.format(template2, rank='lieutenant')
+    template3 = template2 + ' - {stank}'
+    print recf.format(template3, rank='lieutenant')
