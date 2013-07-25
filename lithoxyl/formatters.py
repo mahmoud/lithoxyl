@@ -2,10 +2,49 @@
 
 import time
 import datetime
+from operator import itemgetter
 from json import dumps as escape_str
 
 from tzutils import UTC, LocalTZ
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
+
+
+class RecordFormatter(object):
+    builtin_field_list = []  # TODO
+    builtin_field_map = {}  # TODO
+
+    def __init__(self, record):
+        self.record = record
+
+    def format(self, format_str, *args, **kwargs):
+        # TODO: if 2.6, fix up positional args
+        # process format_str
+        # ensure there are enough positional args
+        # populate value dict
+        # format()
+        # TODO: field-by-field mode on exception.
+        base_fields = tokenize_format_str(format_str)
+        pos_count = 0
+        value_dict = dict(kwargs)
+        field_map = {}  # tmp
+        for bf in base_fields:
+            try:
+                ff = FMT_BUILTIN_MAP[bf.fname]
+            except AttributeError:
+                continue
+            except KeyError:
+                if not bf.base_name or bf.base_name.isdigit():
+                    pos_count += 1
+                    # TODO: save type of pos args
+                    continue
+                ff = FormatField(bf.fname, bf.fspec or 's',
+                                 itemgetter(bf.fname), quote=False)
+            field_map[ff.fname] = ff  # tmp
+            if ff.fname not in value_dict:
+                value_dict[ff.fname] = ff.get_escaped(self.record)
+        if len(args) < pos_count:
+            raise Exception("that's a problem")
+        return format_str.format(*args, **value_dict)
 
 
 class FormatField(BaseFormatField):
@@ -45,7 +84,7 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('level_name', 's', lambda r: r.level),  # TODO
                 FF('level_number', 'd', lambda r: r.level),
                 FF('message', 's', lambda r: r.message),
-                FF('raw_message', 's', lambda r: r.message),  # TODO
+                FF('raw_message', 's', lambda r: r.raw_message),
                 FF('start_timestamp', '.14g', lambda r: r.start_time),
                 FF('end_timestamp', '.14g', lambda r: r.end_time),
                 FF('start_iso8601', 's', lambda r: timestamp2iso8601(r.start_time)),
