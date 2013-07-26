@@ -35,6 +35,17 @@ def test_individual_fields():
 
 
 def test_rec_formatter():
+    """
+    * no args/kwargs
+    * sufficient, correct args/kwargs
+    * anonymous args
+    * missing kwarg
+    * missing arg
+    * type mismatch args
+    * type mismatch kwargs
+    * usage of "builtin"
+    """
+
     rec = Record('Wharf')
     recf = RecordFormatter(rec)
     rec.success('Mr. Wolf')
@@ -44,3 +55,5 @@ def test_rec_formatter():
     print recf.format(template2, rank='lieutenant')
     template3 = template2 + ' - {stank}'
     print recf.format(template3, rank='lieutenant')
+    print recf.format(template3, 'dank', rank='lieutenant')
+    print recf.format(template3 + ' - <{}>', rank='lieutenant')
