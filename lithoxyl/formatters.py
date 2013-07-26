@@ -26,6 +26,7 @@ class RecordFormatter(object):
         base_fields = tokenize_format_str(format_str)
         pos_count = 0
         value_dict = dict(kwargs)
+        pos_args = list(args)
         field_map = {}  # tmp
         for bf in base_fields:
             try:
@@ -35,6 +36,8 @@ class RecordFormatter(object):
             except KeyError:
                 if not bf.base_name or bf.base_name.isdigit():
                     pos_count += 1
+                    if len(pos_args) < pos_count:
+                        pos_args.append(bf.type_func())
                     # TODO: save type of pos args
                     continue
                 ff = FormatField(bf.fname, bf.fspec or 's',
@@ -42,9 +45,7 @@ class RecordFormatter(object):
             field_map[ff.fname] = ff  # tmp
             if ff.fname not in value_dict:
                 value_dict[ff.fname] = ff.get_escaped(self.record)
-        if len(args) < pos_count:
-            raise Exception("that's a problem")
-        return format_str.format(*args, **value_dict)
+        return format_str.format(*pos_args, **value_dict)
 
 
 class FormatField(BaseFormatField):
