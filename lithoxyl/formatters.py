@@ -48,7 +48,10 @@ class RecordFormatter(object):
                                  itemgetter(bf.fname), quote=False)
             field_map[ff.fname] = ff  # tmp
             if ff.fname not in value_dict:
-                value_dict[ff.fname] = ff.get_escaped(self.record)
+                try:
+                    value_dict[ff.fname] = ff.getter(self.record)
+                except:
+                    value_dict[ff.fname] = ff.type_func()
         return format_str.format(*pos_args, **value_dict)
 
 
@@ -56,17 +59,24 @@ class FormatField(BaseFormatField):
     def __init__(self, fname, fspec, getter=None, default=None, quote=None):
         super(FormatField, self).__init__(fname, fspec)
         self.getter = getter
-        self.default = default or _TYPE_MAP[self.type_char]()
-        if not isinstance(self.default, _TYPE_MAP[self.type_char]):
-            raise TypeError('type mismatch in FormatField %r' % fname)
+        self._raw_default = default
+        if default is None:
+            self.default = self.fstr
+        elif isinstance(default, str):
+            self.default = default
+        else:
+            raise TypeError('default expected str or None, not %r' % default)
         self.quote_output = quote
         if quote is None:
-            is_numeric = isinstance(self.default, (int, float))
+            is_numeric = issubclass(self.type_func, (int, float))
             self.quote_output = not is_numeric
+        print self.fname, self.quote_output
 
-    def get_escaped(self, *a, **kw):
+    def get_formatted(self, *a, **kw):
         try:
-            ret = self.getter(*a, **kw)
+            val = self.getter(*a, **kw)
+            ret = self.fstr.format(**{self.fname: val})
+            # TODO: handle positionals
         except:
             ret = self.default
         if self.quote_output:
@@ -141,24 +151,23 @@ class Formatter(object):
 
     def format_record(self, record):
         items = {}
-        for fname, field in self.field_map.items():
-            items[fname] = field.get_escaped(record)
         try:
-            ret = self.format_str.format(**items)
+            for fname, field in self.field_map.items():
+                items[fname] = field.getter(record)  # TODO
+            return self.format_str.format(**items)
         except:
-            # safe mode
-            ret = ''
-            for token in self.token_chain:
-                try:
-                    fname = token.fname
-                except AttributeError:
-                    ret += token
-                    continue
-                try:
-                    cur = token.fstr.format(**{fname: items[fname]})
-                except:
-                    cur = token.fstr.format(**{fname: token.default})
-                ret += cur
+            pass
+            # switch to safe mode
+
+        ret = ''
+        for token in self.token_chain:
+            try:
+                fname = token.fname
+            except AttributeError:
+                ret += token
+                continue
+            cur = token.get_formatted(record)
+            ret += cur
         return ret
 
     __call__ = format_record
