@@ -18,16 +18,20 @@ class RecordFormatter(object):
 
     def format(self, format_str, *args, **kwargs):
         # TODO: if 2.6, fix up positional args
-        # process format_str
-        # ensure there are enough positional args
-        # populate value dict
+        # tokenize format_str into BaseFormatFields
+        # FormatField either comes from args, kwargs, builtin, or record itemgetter
+        # (TODO: default needs to become a string)
         # format()
-        # TODO: field-by-field mode on exception.
+        try:
+            return format_str.format(*args, **kwargs)
+        except:
+            pass
         base_fields = tokenize_format_str(format_str)
         pos_count = 0
         value_dict = dict(kwargs)
         pos_args = list(args)
         field_map = {}  # tmp
+        ret = ''
         for bf in base_fields:
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
