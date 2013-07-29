@@ -27,32 +27,25 @@ class RecordFormatter(object):
         except:
             pass
         base_fields = tokenize_format_str(format_str)
-        pos_count = 0
-        value_dict = dict(kwargs)
-        pos_args = list(args)
-        field_map = {}  # tmp
         ret = ''
         for bf in base_fields:
             try:
                 ff = FMT_BUILTIN_MAP[bf.fname]
+                ret += ff.get_formatted(self.record)
             except AttributeError:
+                ret += bf
                 continue
             except KeyError:
-                if not bf.base_name or bf.base_name.isdigit():
-                    pos_count += 1
-                    if len(pos_args) < pos_count:
-                        pos_args.append(bf.type_func())
-                    # TODO: save type of pos args
-                    continue
-                ff = FormatField(bf.fname, bf.fspec or 's',
-                                 itemgetter(bf.fname), quote=False)
-            field_map[ff.fname] = ff  # tmp
-            if ff.fname not in value_dict:
                 try:
-                    value_dict[ff.fname] = ff.getter(self.record)
+                    if not bf.base_name or bf.base_name.isdigit():
+                        val = args[int(bf.fname)]
+                        ret += str(val) + ' (tmp)'
+                    else:
+                        val = kwargs[bf.fname]
+                        ret += str(val) + ' (tmp2)'
                 except:
-                    value_dict[ff.fname] = ff.type_func()
-        return format_str.format(*pos_args, **value_dict)
+                    ret += bf.fstr
+        return ret
 
 
 class FormatField(BaseFormatField):
@@ -60,27 +53,30 @@ class FormatField(BaseFormatField):
         super(FormatField, self).__init__(fname, fspec)
         self.getter = getter
         self._raw_default = default
-        if default is None:
-            self.default = self.fstr
-        elif isinstance(default, str):
-            self.default = default
-        else:
-            raise TypeError('default expected str or None, not %r' % default)
         self.quote_output = quote
         if quote is None:
             is_numeric = issubclass(self.type_func, (int, float))
             self.quote_output = not is_numeric
-        print self.fname, self.quote_output
+        if default is None:
+            self.default = self.fstr
+        elif isinstance(default, str):
+            if self.quote_output:
+                self.default = escape_str(default)
+            else:
+                self.default = default
+        else:
+            raise TypeError('default expected str or None, not %r' % default)
+
 
     def get_formatted(self, *a, **kw):
         try:
             val = self.getter(*a, **kw)
             ret = self.fstr.format(**{self.fname: val})
             # TODO: handle positionals
+            if self.quote_output:
+                ret = escape_str(ret)
         except:
             ret = self.default
-        if self.quote_output:
-            ret = escape_str(ret)
         return ret
 
     def __repr__(self):
