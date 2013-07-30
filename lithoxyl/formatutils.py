@@ -92,8 +92,10 @@ def get_format_args(fstr):
     return fargs, fkwargs
 
 
-def tokenize_format_str(fstr):
+def tokenize_format_str(fstr, resolve_pos=True):
     ret = []
+    if resolve_pos:
+        fstr = infer_positional_format_args(fstr)
     formatter = Formatter()
     for lit, fname, fspec, conv in formatter.parse(fstr):
         if lit:
@@ -112,6 +114,8 @@ class BaseFormatField(object):
 
         self.path_list = re.split('[.[]', fname)  # TODO
         self.base_name = self.path_list[0]
+        self.is_positional = not self.base_name or self.base_name.isdigit()
+
         self.subpath = self.path_list[1:]
         self.subfields = []
         for sublit, subfname, _, _ in fspec._formatter_parser():
