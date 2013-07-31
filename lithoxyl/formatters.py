@@ -116,6 +116,18 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
 
 
 FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
+BUILTIN_GETTERS = dict([(f.fname, f.getter) for f in FMT_BUILTINS])
+
+
+class LazyExtrasDict(dict):
+    "TODO: tighten this up"
+    def __init__(self, record, getters):
+        self.record = record
+        self.getters = getters
+
+    def __missing__(self, key):
+        getter = self.getters[key]
+        return getter(self.record)
 
 
 class Formatter(object):
