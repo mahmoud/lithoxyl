@@ -67,7 +67,6 @@ class FormatField(BaseFormatField):
         else:
             raise TypeError('default expected str or None, not %r' % default)
 
-
     def get_formatted(self, *a, **kw):
         try:
             val = self.getter(*a, **kw)
@@ -117,6 +116,8 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
 
 FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 BUILTIN_GETTERS = dict([(f.fname, f.getter) for f in FMT_BUILTINS])
+BUILTIN_QUOTERS = set([f.fname for f in FMT_BUILTINS
+                       if not issubclass(f.type_func, (int, float))])
 
 
 class LazyExtrasDict(dict):
@@ -128,6 +129,59 @@ class LazyExtrasDict(dict):
     def __missing__(self, key):
         getter = self.getters[key]
         return getter(self.record)
+
+
+class RobustFormatter(object):
+
+    getters = BUILTIN_GETTERS
+
+    def __init__(self, format_str, quoter=None, defaulter=None):
+        #, getters):
+        self.format_str = format_str
+        self.quoter = quoter  # callable
+        self.defaulter = defaulter or (lambda t: str(t))
+        if not callable(self.defaulter):
+            raise TypeError()
+        self.quoter = quoter or self._default_quoter
+        if not callable(self.quoter):
+            raise TypeError()
+        # self.getters = getters  # dict, handled at class level now
+
+        self.tokens = tokenize_format_str(format_str)
+        self.default_map = {}
+        self.quote_map = {}
+        for t in self.tokens:
+            if hasattr(t, 'base_name'):
+                self.default_map[t] = self.defaulter(t)
+                self.quote_map[t] = self.quoter(t)
+
+    def format_record(self, record, *args, **kwargs):
+        ret = ''
+        kw_vals = LazyExtrasDict(record, self.getters)
+        kw_vals.update(kwargs)
+        for t in self.tokens:
+            try:
+                name = t.base_name
+            except AttributeError:
+                ret += t
+                continue
+            try:
+                if t.is_positional:
+                    seg = t.fstr.format(*args)
+                else:
+                    seg = t.fstr.format(**{name: kw_vals[name]})
+                if self.quote_map[t]:
+                    seg = escape_str(seg)
+                ret += seg
+            except:
+                ret += self.default_map[t]
+        return ret
+
+    @staticmethod
+    def _default_quoter(token):
+        return token.fname in BUILTIN_QUOTERS
+        #numeric = issubclass(token.type_func, (int, float))
+        #return not numeric
 
 
 class Formatter(object):
