@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from logger import Record, DEBUG
-from formatters import Formatter, RecordFormatter
+from formatters import Formatter, RecordFormatter, RobustFormatter
 
 template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
@@ -43,7 +43,7 @@ def test_rec_formatter():
     * missing arg
     * type mismatch args
     * type mismatch kwargs
-    * usage of "builtin"
+    * usage of "builtin" fields
     """
 
     rec = Record('Wharf')
@@ -57,3 +57,23 @@ def test_rec_formatter():
     print recf.format(template3, rank='lieutenant')
     print recf.format(template3, 'dank', rank='lieutenant')
     print recf.format(template3 + ' - <{}>', rank='lieutenant')
+
+
+def test_rob_formatter():
+    """
+    * no args/kwargs
+    * sufficient, correct args/kwargs
+    * anonymous args
+    * missing kwarg
+    * missing arg
+    * type mismatch args
+    * type mismatch kwargs
+    * usage of "builtin" fields
+    """
+
+    rec = Record('Wharf')
+    robf = RobustFormatter(template)
+    rec.success('Mr. Wolf')
+    ret = robf.format_record(rec)
+    print ret
+    return ret
