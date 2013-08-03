@@ -4,6 +4,7 @@ import time
 import datetime
 from operator import itemgetter
 from json import dumps as escape_str
+from collections import namedtuple
 
 from tzutils import UTC, LocalTZ
 from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
@@ -33,7 +34,7 @@ class RecordFormatter(object):
                 ff = FMT_BUILTIN_MAP[bf.fname]
                 ret += ff.get_formatted(self.record)
             except AttributeError:
-                ret += bf
+                ret += str(bf)
                 continue
             except KeyError:
                 try:
@@ -51,36 +52,9 @@ class RecordFormatter(object):
 class FormatField(BaseFormatField):
     def __init__(self, fname, fspec, getter=None, default=None, quote=None):
         super(FormatField, self).__init__(fname, fspec)
+        self.default = default
         self.getter = getter
-        self._raw_default = default
-        self.quote_output = quote
-        if quote is None:
-            is_numeric = issubclass(self.type_func, (int, float))
-            self.quote_output = not is_numeric
-        if default is None:
-            self.default = self.fstr
-        elif isinstance(default, str):
-            if self.quote_output:
-                self.default = escape_str(default)
-            else:
-                self.default = default
-        else:
-            raise TypeError('default expected str or None, not %r' % default)
-
-    def get_formatted(self, *a, **kw):
-        try:
-            val = self.getter(*a, **kw)
-            ret = self.fstr.format(**{self.fname: val})
-            # TODO: handle positionals
-            if self.quote_output:
-                ret = escape_str(ret)
-        except:
-            ret = self.default
-        return ret
-
-    def __repr__(self):
-        cn = self.__class__.__name__
-        return '%s(%r, %r, %r)' % (cn, self.fname, self.fspec, self.getter)
+        self.quote = quote
 
 
 # default, fmt_specs
