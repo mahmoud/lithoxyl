@@ -2,51 +2,37 @@
 
 import time
 import datetime
-from operator import itemgetter
 from json import dumps as escape_str
-from collections import namedtuple
 
 from tzutils import UTC, LocalTZ
-from formatutils import tokenize_format_str, _TYPE_MAP, BaseFormatField
+from formatutils import tokenize_format_str, BaseFormatField
 
 
-class RecordFormatter(object):
-    builtin_field_list = []  # TODO
-    builtin_field_map = {}  # TODO
+def timestamp2iso8601_noms(timestamp, local=False):
+    """
+    with time.strftime(), one would have to do fractional
+    seconds/milliseconds manually, because the timetuple used doesn't
+    include data necessary to support the %f flag.
 
-    def __init__(self, record):
-        self.record = record
+    This function is about twice as fast as datetime.strftime(),
+    however. That's nothing compared to time.time()
+    vs. datetime.now(), which is two orders of magnitude faster.
+    """
+    tformat = '%Y-%m-%d %H:%M:%S'
+    if local:
+        tstruct = time.localtime(timestamp)
+    else:
+        tstruct = time.gmtime(timestamp)
+    return time.strftime(tformat, tstruct)
 
-    def format(self, format_str, *args, **kwargs):
-        # TODO: if 2.6, fix up positional args
-        # tokenize format_str into BaseFormatFields
-        # FormatField either comes from args, kwargs, builtin, or record itemgetter
-        # (TODO: default needs to become a string)
-        # format()
-        try:
-            return format_str.format(*args, **kwargs)
-        except:
-            pass
-        base_fields = tokenize_format_str(format_str)
-        ret = ''
-        for bf in base_fields:
-            try:
-                ff = FMT_BUILTIN_MAP[bf.fname]
-                ret += ff.get_formatted(self.record)
-            except AttributeError:
-                ret += str(bf)
-                continue
-            except KeyError:
-                try:
-                    if not bf.base_name or bf.base_name.isdigit():
-                        val = args[int(bf.fname)]
-                        ret += str(val) + ' (tmp)'
-                    else:
-                        val = kwargs[bf.fname]
-                        ret += str(val) + ' (tmp2)'
-                except:
-                    ret += bf.fstr
-        return ret
+
+def timestamp2iso8601(timestamp, local=False, tformat=None):
+    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
+    if local:
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=LocalTZ)
+    else:
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+    return dt.isoformat(' ')
 
 
 class FormatField(BaseFormatField):
@@ -204,30 +190,3 @@ class Formatter(object):
         return ret
 
     __call__ = format_record
-
-
-def timestamp2iso8601_noms(timestamp, local=False):
-    """
-    with time.strftime(), one would have to do fractional
-    seconds/milliseconds manually, because the timetuple used doesn't
-    include data necessary to support the %f flag.
-
-    This function is about twice as fast as datetime.strftime(),
-    however. That's nothing compared to time.time()
-    vs. datetime.now(), which is two orders of magnitude faster.
-    """
-    tformat = '%Y-%m-%d %H:%M:%S'
-    if local:
-        tstruct = time.localtime(timestamp)
-    else:
-        tstruct = time.gmtime(timestamp)
-    return time.strftime(tformat, tstruct)
-
-
-def timestamp2iso8601(timestamp, local=False, tformat=None):
-    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
-    if local:
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=LocalTZ)
-    else:
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-    return dt.isoformat(' ')
