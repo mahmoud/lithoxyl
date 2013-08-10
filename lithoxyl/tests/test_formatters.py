@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from logger import Record, DEBUG
-from formatters import Formatter, RecordFormatter, RobustFormatter
+from formatters import Formatter, Templette
 
 template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
@@ -34,6 +34,20 @@ def test_individual_fields():
     return
 
 
+"""
+Formatter tests
+
+* no args/kwargs
+* sufficient, correct args/kwargs
+* anonymous args
+* missing kwarg
+* missing arg
+* type mismatch args
+* type mismatch kwargs
+* usage of "builtin" fields
+"""
+
+
 def test_rec_formatter():
     """
     * no args/kwargs
@@ -47,32 +61,7 @@ def test_rec_formatter():
     """
 
     rec = Record('Wharf')
-    recf = RecordFormatter(rec)
-    rec.success('Mr. Wolf')
-
-    print recf.format(template)
-    template2 = template + ' - {rank}'
-    print recf.format(template2, rank='lieutenant')
-    template3 = template2 + ' - {stank}'
-    print recf.format(template3, rank='lieutenant')
-    print recf.format(template3, 'dank', rank='lieutenant')
-    print recf.format(template3 + ' - <{}>', rank='lieutenant')
-
-
-def test_rob_formatter():
-    """
-    * no args/kwargs
-    * sufficient, correct args/kwargs
-    * anonymous args
-    * missing kwarg
-    * missing arg
-    * type mismatch args
-    * type mismatch kwargs
-    * usage of "builtin" fields
-    """
-
-    rec = Record('Wharf')
-    robf = RobustFormatter(template)
+    robf = Templette(template)
     rec.success('Mr. Wolf')
     ret = robf.format_record(rec)
     print ret

@@ -91,13 +91,11 @@ class LazyExtrasDict(dict):
         return getter(self.record)
 
 
-class RobustFormatter(object):
+class Templette(object):
 
     getters = BUILTIN_GETTERS
 
-    def __init__(self, format_str, quoter=None, defaulter=None):
-        #, getters):
-        self.format_str = format_str
+    def __init__(self, tmpl_str, quoter=None, defaulter=None):
         self.defaulter = defaulter or (lambda t: str(t))
         if not callable(self.defaulter):
             raise TypeError()
@@ -106,7 +104,8 @@ class RobustFormatter(object):
             raise TypeError()
         # self.getters = getters  # dict, handled at class level now
 
-        self.tokens = tokenize_format_str(format_str)
+        self.raw_tmpl_str = tmpl_str
+        self.tokens = tokenize_format_str(tmpl_str)
         self.default_map = {}
         self.quote_map = {}
         for t in self.tokens:
