@@ -68,3 +68,12 @@ Formatter built-ins
 
 * (exception infos)
 * (os infos? pid, etc.)
+
+
+Vocab angst
+-----------
+
+* Start: begin, open, init
+* Stop: finish, complete, close, (commit?)
+
+* Start, Stop, and Success all have the same first letter :(

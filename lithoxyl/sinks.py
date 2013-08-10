@@ -61,11 +61,3 @@ if __name__ == '__main__':
     with log.debug('hi_task') as t:
         t.warn('everything ok?')
         t.success('doin great')
-
-
-"""
-Vocabangst:
-
-* Start: begin, open, init
-* Stop: finish, complete, close, (commit?)
-"""
