@@ -3,6 +3,8 @@
 import os
 import sys
 
+# TODO: should separators (i.e., newline) be handled here or in the Formatter?
+
 
 class StreamEmitter(object):
     def __init__(self, stream=None, errors=None, newline=os.linesep):
@@ -13,7 +15,7 @@ class StreamEmitter(object):
         elif stream == 'stderr':
             stream = sys.stderr
         self.stream = stream
-        self.encoding = stream.encoding or 'UTF-8'
+        self.encoding = getattr(stream, 'encoding', None) or 'UTF-8'
         self.errors = errors or 'backslashreplace'
         # TODO: try values for encoding and errors out (otherwise
         # problems can get detected way too late)
