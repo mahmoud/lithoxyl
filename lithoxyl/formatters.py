@@ -112,7 +112,6 @@ class RobustFormatter(object):
     def __init__(self, format_str, quoter=None, defaulter=None):
         #, getters):
         self.format_str = format_str
-        self.quoter = quoter  # callable
         self.defaulter = defaulter or (lambda t: str(t))
         if not callable(self.defaulter):
             raise TypeError()
@@ -154,8 +153,6 @@ class RobustFormatter(object):
     @staticmethod
     def _default_quoter(token):
         return token.fname in BUILTIN_QUOTERS
-        #numeric = issubclass(token.type_func, (int, float))
-        #return not numeric
 
 
 class Formatter(object):
