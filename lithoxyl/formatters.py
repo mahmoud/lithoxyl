@@ -83,7 +83,6 @@ BUILTIN_QUOTERS = set([f.fname for f in FMT_BUILTINS if f.quote])
 
 
 class LazyExtrasDict(dict):
-    "TODO: tighten this up"
     def __init__(self, record, getters):
         self.record = record
         self.getters = getters
@@ -140,54 +139,5 @@ class Templette(object):
     @staticmethod
     def _default_quoter(token):
         return token.fname in BUILTIN_QUOTERS
-
-
-class Formatter(object):
-    def __init__(self, format_str, defaults=None, getters=None):
-        self.raw_format_str = format_str
-        getters = dict(getters or {})
-        self.defaults = dict(defaults or {})
-        self.field_map = {}
-        self.token_chain = []
-        self.format_str = ''
-        base_fields = tokenize_format_str(format_str)
-        for bf in base_fields:
-            # TODO: if anonymous and/or positional, raise
-            # TODO: no subfields allowed, either
-            # TODO: and no compound things, gershdernit
-            # TODO: try the field out on its own default, to be sure
-            # TODO: assert that there's whitespace or some static marker
-            #       between all fields (or only all unquote fields?)
-            try:
-                ff = FMT_BUILTIN_MAP[bf.fname]
-                self.format_str += str(ff)
-            except AttributeError:
-                self.format_str += bf
-            except KeyError:
-                ff = 'TODO'
-                raise
-                #ff = FormatField(bf.fname, '', '')
-            self.field_map[ff.fname] = ff
-
-    def format_record(self, record):
-        items = {}
-        try:
-            for fname, field in self.field_map.items():
-                items[fname] = field.getter(record)  # TODO
-            return self.format_str.format(**items)
-        except:
-            pass
-            # switch to safe mode
-
-        ret = ''
-        for token in self.token_chain:
-            try:
-                fname = token.fname
-            except AttributeError:
-                ret += token
-                continue
-            cur = token.get_formatted(record)
-            ret += cur
-        return ret
 
     __call__ = format_record

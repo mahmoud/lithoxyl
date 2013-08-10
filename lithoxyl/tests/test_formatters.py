@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from logger import Record, DEBUG
-from formatters import Formatter, Templette
+from formatters import Templette
 
 template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
