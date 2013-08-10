@@ -141,3 +141,35 @@ class Templette(object):
         return token.fname in BUILTIN_QUOTERS
 
     __call__ = format_record
+
+
+class Formatter(object):
+    # TODO: inherit from templette?
+
+    def __init__(self, format_str):
+        self.templette = Templette(format_str)
+        # TODO: check that templette complies with reversability requirements
+
+    def format_record(self, record):
+        try:
+            return self.templette.format_record(record)
+        except:
+            # TODO: basically impossible atm, but eventually log to
+            # stderr or something
+            raise
+
+    __call__ = format_record
+
+
+"""
+reversability requirements:
+
+all fields must be one or more of:
+
+* known, fixed length
+  (standard for single character fields, certain numeric fields maybe)
+* unquoted but whitespace-free and not adjacent to any other unquoted field
+  (standard for numbers and certain fixed-set labels)
+* quoted, escaped
+  (standard for longer strings that might contain whitespace)
+"""

@@ -4,7 +4,7 @@ import sys
 import json
 
 from filters import ThresholdFilter
-from formatters import Templette
+from formatters import Formatter
 
 
 class AggSink(object):
@@ -54,7 +54,7 @@ class SensibleSink(object):
 
 
 if __name__ == '__main__':
-    fmtr = Templette('{start_timestamp} - {record_status}')
+    fmtr = Formatter('{start_timestamp} - {record_status}')
     ss = SensibleSink(formatter=fmtr, emitter=tmp_emitter)
     from logger import BaseLogger
     log = BaseLogger('test_ss', [ss])
