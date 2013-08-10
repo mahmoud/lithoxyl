@@ -40,6 +40,9 @@ class FormatField(BaseFormatField):
         super(FormatField, self).__init__(fname, fspec)
         self.default = default
         self.getter = getter
+        if quote is None:
+            numeric = issubclass(self.type_func, (int, float))
+            quote = not numeric
         self.quote = quote
 
 
@@ -76,8 +79,7 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
 
 FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
 BUILTIN_GETTERS = dict([(f.fname, f.getter) for f in FMT_BUILTINS])
-BUILTIN_QUOTERS = set([f.fname for f in FMT_BUILTINS
-                       if not issubclass(f.type_func, (int, float))])
+BUILTIN_QUOTERS = set([f.fname for f in FMT_BUILTINS if f.quote])
 
 
 class LazyExtrasDict(dict):

@@ -10,7 +10,7 @@ template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
 RECS = [Record('Riker', DEBUG).success('Hello, Thomas.')]
 
 
-TCS = [[('{logger_name}', '""'),
+TCS = [[('{logger_name}', '{logger_name}'),
         ('{record_status}', 'success'),
         ('{level_number}', '20'),
         ('{record_name}', '"Riker"'),
@@ -20,15 +20,16 @@ TCS = [[('{logger_name}', '""'),
 
 def test_formatter_basic():
     riker = Record('hello_thomas', DEBUG).success('')
-    forming = Formatter(template)
+    forming = Templette(template)
     output = forming.format_record(riker)
-    assert output.endswith('"" - success - "hello_thomas"')
+    expected = '{logger_name} - success - "hello_thomas"'
+    assert output[-len(expected):] == expected
 
 
 def test_individual_fields():
     for record, field_pairs in zip(RECS, TCS):
         for field_tmpl, result in field_pairs:
-            forming = Formatter(field_tmpl)
+            forming = Templette(field_tmpl)
             output = forming.format_record(record)
             assert output == result
     return
