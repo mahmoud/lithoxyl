@@ -5,6 +5,7 @@ import json
 
 from filters import ThresholdFilter
 from formatters import Formatter
+from emitters import StreamEmitter
 
 
 class AggSink(object):
@@ -36,10 +37,6 @@ class StructuredFileSink(object):
         self.fileobj.write('\n')
 
 
-def tmp_emitter(entry):
-    print entry
-
-
 class SensibleSink(object):
     def __init__(self, filters=None, formatter=None, emitter=None):
         self.filters = list(filters or [])
@@ -55,7 +52,8 @@ class SensibleSink(object):
 
 if __name__ == '__main__':
     fmtr = Formatter('{start_timestamp} - {record_status}')
-    ss = SensibleSink(formatter=fmtr, emitter=tmp_emitter)
+    emtr = StreamEmitter()
+    ss = SensibleSink(formatter=fmtr, emitter=emtr)
     from logger import BaseLogger
     log = BaseLogger('test_ss', [ss])
     with log.debug('hi_task') as t:
