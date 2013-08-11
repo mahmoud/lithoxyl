@@ -7,7 +7,7 @@ import sys
 
 
 class StreamEmitter(object):
-    def __init__(self, stream=None, errors=None, newline=os.linesep):
+    def __init__(self, stream=None, encoding=None, **kwargs):
         if stream is None:
             stream = sys.stderr
         elif stream == 'stdout':
@@ -15,11 +15,17 @@ class StreamEmitter(object):
         elif stream == 'stderr':
             stream = sys.stderr
         self.stream = stream
-        self.encoding = getattr(stream, 'encoding', None) or 'UTF-8'
-        self.errors = errors or 'backslashreplace'
-        # TODO: try values for encoding and errors out (otherwise
+        if encoding is None:
+            encoding = getattr(stream, 'encoding', None) or 'UTF-8'
+        self.encoding = encoding
+
+        self.errors = kwargs.pop('errors', 'backslashreplace')
+        self.newline = kwargs.pop('newline', None) or os.linesep
+
+        # TODO: try values for encoding/errors/newline out (otherwise
         # problems can get detected way too late)
-        self.newline = newline
+        # Relatedly, is it already too late by the time the Emitter
+        # is initializing? That's probably up to the sink/logger.
 
     def emit_entry(self, entry):
         if isinstance(entry, unicode):
@@ -34,14 +40,23 @@ class StreamEmitter(object):
             # SystemExits, special handling for everything else.
             raise
 
+    def flush(self):
+        if callable(getattr(self.stream, 'flush', None)):
+            self.stream.flush()
+
     __call__ = emit_entry
 
 
-class FileEmitter(object):
-    def __init__(self, filepath, encoding=None):
+class FileEmitter(StreamEmitter):
+    def __init__(self, filepath, encoding=None, **kwargs):
         self.filepath = os.path.abspath(filepath)
         self.mode = 'a'
-        self.encoding = encoding or 'UTF-8'  # TODO: check encoding?
+        stream = open(self.filepath, self.mode)
+        super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
+
+    def close(self):
+        # TODO
+        pass
 
     def emit_entry(self, entry):
         pass
