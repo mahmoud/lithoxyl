@@ -30,6 +30,18 @@ class StreamEmitter(object):
                 self.stream.write(self.newline)
         except:
             # TODO: something maybe
+            # TODO: built-in logging raises KeyboardInterrupts and
+            # SystemExits, special handling for everything else.
             raise
 
     __call__ = emit_entry
+
+
+class FileEmitter(object):
+    def __init__(self, filepath, encoding=None):
+        self.filepath = os.path.abspath(filepath)
+        self.mode = 'a'
+        self.encoding = encoding or 'UTF-8'  # TODO: check encoding?
+
+    def emit_entry(self, entry):
+        pass
