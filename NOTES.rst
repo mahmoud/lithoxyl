@@ -117,3 +117,13 @@ It differs from "training wheels" because it's not some sort of
 magic/easy-mode switch that attempts to guess what developers
 meant. It differs from linting because it's not static analysis
 capable of running over whole codebases.
+
+
+posix_fadvise
+-------------
+
+from ctypes import cdll, c_uint
+libc = cdll.LoadLibrary('libc.so.6')
+f = open('file.txt', 'w')
+# fd, offset, len, advice_constant  (or is it len, offset)
+libc.posix_fadvise(c_uint(f.fileno()), c_uint(0), c_uint(0), c_uint(3))
