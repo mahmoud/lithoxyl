@@ -49,8 +49,12 @@ class StreamEmitter(object):
             raise
 
     def flush(self):
-        if callable(getattr(self.stream, 'flush', None)):
+        #if callable(getattr(self.stream, 'flush', None)):
+        try:
             self.stream.flush()
+        except:
+            # TODO: warn
+            pass
 
     __call__ = emit_entry
 
@@ -63,8 +67,12 @@ class FileEmitter(StreamEmitter):
         super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
 
     def close(self):
-        # TODO
-        pass
+        try:
+            self.flush()
+            self.stream.close()
+        except:
+            # TODO: warn
+            pass
 
 
 class RotatingFileEmitter(FileEmitter):
