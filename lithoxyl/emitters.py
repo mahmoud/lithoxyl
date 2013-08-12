@@ -50,6 +50,8 @@ class StreamEmitter(object):
 
     def flush(self):
         #if callable(getattr(self.stream, 'flush', None)):
+        if self.stream is None:
+            return
         try:
             self.stream.flush()
         except:
@@ -67,6 +69,8 @@ class FileEmitter(StreamEmitter):
         super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
 
     def close(self):
+        if self.stream is None:
+            return
         try:
             self.flush()
             self.stream.close()
@@ -93,9 +97,8 @@ class WatchedFileEmitter(FileEmitter):
         except OSError:
             new_dev, new_inode = None, None
         is_changed = (new_dev, new_inode) != (self.dev, self.inode)
-        if is_changed:
-            self.stream.flush()
-            self.stream.close()
+        if is_changed and self.stream is not None:
+            self.close()
             self.stream = open(self.filepath, self.mode)
             stat = os.stat(self.filepath)
             self.dev, self.inode = stat.st_dev, stat.st_ino
