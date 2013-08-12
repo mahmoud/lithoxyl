@@ -89,13 +89,13 @@ class Record(object):
         return time.time() - self.start_time
 
     def _complete(self, status, message):
-        self.status = status
-        self.message = message
         if self._is_trans:
             self.end_time = time.time()
             self.duration = self.end_time - self.start_time
+
+        self.status = status
+        self.message = unicode(message, encoding='utf-8')
         if not self._defer_publish and self.logger:
-            # TODO: should logger be required?
             self.logger.enqueue(self)
         return self
 
