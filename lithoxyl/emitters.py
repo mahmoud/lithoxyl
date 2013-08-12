@@ -34,6 +34,7 @@ class StreamEmitter(object):
             self.stream.write(entry)
             if self.newline:
                 self.stream.write(self.newline)
+            self.flush()
         except:
             # TODO: something maybe
             # TODO: built-in logging raises KeyboardInterrupts and
@@ -50,7 +51,7 @@ class StreamEmitter(object):
 class FileEmitter(StreamEmitter):
     def __init__(self, filepath, encoding=None, **kwargs):
         self.filepath = os.path.abspath(filepath)
-        self.mode = 'a'
+        self.mode = 'a'  # always 'a'?
         stream = open(self.filepath, self.mode)
         super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
 
@@ -58,5 +59,7 @@ class FileEmitter(StreamEmitter):
         # TODO
         pass
 
-    def emit_entry(self, entry):
+
+class RotatingFileEmitter(FileEmitter):
+    def __init__(self, filepath):
         pass
