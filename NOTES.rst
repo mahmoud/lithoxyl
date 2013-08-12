@@ -87,3 +87,7 @@ Encoding woes
 * If so, should I be manually encoding that stuff for safety (in the
   emitter). Look at built-in logging (starting at line 834 of
   logging/__init__.py for what appears to be a faceplant of an impl)
+
+
+* lithoxyl will only support python code written in the ASCII or UTF-8
+  encodings.
