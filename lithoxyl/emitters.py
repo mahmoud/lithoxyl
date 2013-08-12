@@ -28,8 +28,15 @@ class StreamEmitter(object):
         # is initializing? That's probably up to the sink/logger.
 
     def emit_entry(self, entry):
-        if isinstance(entry, unicode):
+        try:
             entry = entry.encode(self.encoding, self.errors)
+        except UnicodeDecodeError:
+            # Note that this is a *decode* error, meaning a bytestring
+            # found its way through and implicit decoding is
+            # happening.
+            # TODO: configurable behavior for if bytes manage to find
+            # their way through?
+            raise
         try:
             self.stream.write(entry)
             if self.newline:
