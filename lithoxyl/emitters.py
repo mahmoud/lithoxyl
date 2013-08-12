@@ -75,6 +75,33 @@ class FileEmitter(StreamEmitter):
             pass
 
 
+class WatchedFileEmitter(FileEmitter):
+    def __init__(self, *a, **kw):
+        # TODO: warn on windows usage
+        super(WatchedFileEmitter, self).__init__(*a, **kw)
+        try:
+            stat = os.stat(self.filepath)
+            self.dev, self.inode = stat.st_dev, stat.st_ino
+        except OSError:
+            # TODO: check errno? prolly not.
+            self.dev, self.inode = None, None
+
+    def emit(self, record):
+        try:
+            stat = os.stat(self.filepath)
+            new_dev, new_inode = stat.st_dev, stat.st_ino
+        except OSError:
+            new_dev, new_inode = None, None
+        is_changed = (new_dev, new_inode) != (self.dev, self.inode)
+        if is_changed:
+            self.stream.flush()
+            self.stream.close()
+            self.stream = open(self.filepath, self.mode)
+            stat = os.stat(self.filepath)
+            self.dev, self.inode = stat.st_dev, stat.st_ino
+        super(WatchedFileEmitter, self).emit(record)
+
+
 class RotatingFileEmitter(FileEmitter):
     def __init__(self, filepath):
         pass
