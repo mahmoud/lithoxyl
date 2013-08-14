@@ -108,11 +108,3 @@ class WatchedFileEmitter(FileEmitter):
 class RotatingFileEmitter(FileEmitter):
     def __init__(self, filepath):
         pass
-
-
-"""If a file with prefix_(.*).ext exists, and no pattern is provided,
-detect and follow the pattern. If no patterns match, use default
-pattern.
-
-
-"""

@@ -148,7 +148,11 @@ class Formatter(object):
 
     def __init__(self, format_str):
         self.templette = Templette(format_str)
-        # TODO: check that templette complies with reversability requirements
+        # TODO: check that templette complies with reversability
+        # requirements
+        # TODO: check field type compatibilty when
+        # default format specs have been overridden for built-in
+        # format fields
 
     def format_record(self, record):
         try:
