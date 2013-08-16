@@ -27,7 +27,7 @@ class BaseLogger(object):
         sinks = sinks or []
         self._all_sinks = []
         self._handlers = []
-        self._start_handlers = []
+        self._begin_handlers = []
         for s in sinks:
             self.add_sink(s)
 
@@ -38,16 +38,16 @@ class BaseLogger(object):
         handle_f = getattr(sink, 'handle', None)
         if callable(handle_f):
             self._handlers.append(handle_f)
-        handle_start_f = getattr(sink, 'handle_start', None)
-        if callable(handle_start_f):
-            self._start_handlers.append(handle_start_f)
+        handle_begin_f = getattr(sink, 'handle_begin', None)
+        if callable(handle_begin_f):
+            self._begin_handlers.append(handle_begin_f)
 
     def enqueue(self, record):
         for hfunc in self._handlers:
             hfunc(record)
 
-    def enqueue_start(self, record):
-        for shfunc in self._start_handlers:
+    def enqueue_begin(self, record):
+        for shfunc in self._begin_handlers:
             shfunc(record)
 
     def debug(self, name, **kw):

@@ -13,7 +13,7 @@ class AggSink(object):
     def __init__(self):
         self.records = []
 
-    def handle_start(self, record):
+    def handle_begin(self, record):
         pass
 
     def handle(self, record):
@@ -21,7 +21,7 @@ class AggSink(object):
 
 
 _MSG_ATTRS = ('name', 'level', 'status', 'message',
-              'start_time', 'end_time', 'duration')
+              'begin_time', 'end_time', 'duration')
 
 
 class StructuredFileSink(object):
@@ -51,7 +51,7 @@ class SensibleSink(object):
 
 
 if __name__ == '__main__':
-    fmtr = Formatter('{start_timestamp} - {record_status}')
+    fmtr = Formatter('{begin_timestamp} - {record_status}')
     emtr = StreamEmitter()
     ss = SensibleSink(formatter=fmtr, emitter=emtr)
     from logger import BaseLogger

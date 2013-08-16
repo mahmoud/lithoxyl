@@ -44,7 +44,7 @@ class Record(object):
         self.message = kwargs.pop('message', None)
         self.raw_message = kwargs.pop('raw_message', None)
         self.extras = kwargs.pop('extras', {})
-        self.start_time = kwargs.pop('start_time', time.time())
+        self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
         self.duration = kwargs.pop('duration', 0.0)
         self.warnings = []
@@ -86,12 +86,12 @@ class Record(object):
             self.extras[key] = value
 
     def get_elapsed_time(self):
-        return time.time() - self.start_time
+        return time.time() - self.begin_time
 
     def _complete(self, status, message):
         if self._is_trans:
             self.end_time = time.time()
-            self.duration = self.end_time - self.start_time
+            self.duration = self.end_time - self.begin_time
 
         self.status = status
         if not isinstance(message, unicode):
@@ -103,7 +103,7 @@ class Record(object):
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        self.logger.enqueue_start(self)
+        self.logger.enqueue_begin(self)
         return self
 
     def __exit__(self, exc_type, exc_val, tb):
