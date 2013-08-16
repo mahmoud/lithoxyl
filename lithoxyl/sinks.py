@@ -13,10 +13,10 @@ class AggSink(object):
     def __init__(self):
         self.records = []
 
-    def handle_begin(self, record):
+    def on_begin(self, record):
         pass
 
-    def handle(self, record):
+    def on_complete(self, record):
         self.records.append(record)
 
 
@@ -28,7 +28,7 @@ class StructuredFileSink(object):
     def __init__(self, fileobj=None):
         self.fileobj = fileobj or sys.stdout
 
-    def handle(self, record):
+    def on_complete(self, record):
         msg_data = dict(record.extras)
         for attr in _MSG_ATTRS:
             msg_data[attr] = getattr(record, attr, None)
@@ -43,7 +43,7 @@ class SensibleSink(object):
         self.formatter = formatter
         self.emitter = emitter
 
-    def handle(self, record):
+    def on_complete(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter(record)

@@ -98,12 +98,12 @@ class Record(object):
             message = message.decode('utf-8')
         self.message = message
         if not self._defer_publish and self.logger:
-            self.logger.enqueue(self)
+            self.logger.on_complete(self)
         return self
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        self.logger.enqueue_begin(self)
+        self.logger.on_begin(self)
         return self
 
     def __exit__(self, exc_type, exc_val, tb):

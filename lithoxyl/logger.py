@@ -26,8 +26,8 @@ class BaseLogger(object):
     def sinks(self, sinks):
         sinks = sinks or []
         self._all_sinks = []
-        self._handlers = []
-        self._begin_handlers = []
+        self._complete_hooks = []
+        self._begin_hooks = []
         for s in sinks:
             self.add_sink(s)
 
@@ -35,20 +35,26 @@ class BaseLogger(object):
         if sink in self._all_sinks:
             return
         self._all_sinks.append(sink)
-        handle_f = getattr(sink, 'handle', None)
-        if callable(handle_f):
-            self._handlers.append(handle_f)
-        handle_begin_f = getattr(sink, 'handle_begin', None)
-        if callable(handle_begin_f):
-            self._begin_handlers.append(handle_begin_f)
+        complete_hook = getattr(sink, 'on_complete', None)
+        if callable(complete_hook):
+            self._complete_hooks.append(complete_hook)
+        begin_hook = getattr(sink, 'on_begin', None)
+        if callable(begin_hook):
+            self._begin_hooks.append(begin_hook)
 
-    def enqueue(self, record):
-        for hfunc in self._handlers:
-            hfunc(record)
+    def on_complete(self, record):
+        for complete_hook in self._complete_hooks:
+            complete_hook(record)
 
-    def enqueue_begin(self, record):
-        for shfunc in self._begin_handlers:
-            shfunc(record)
+    def on_begin(self, record):
+        for begin_hook in self._begin_hooks:
+            begin_hook(record)
+
+    #def on_warn(self, record):
+    #    pass
+
+    #def on_exception(self, record, exc_obj, exc_type, exc_tb):
+    #    pass
 
     def debug(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
