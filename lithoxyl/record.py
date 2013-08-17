@@ -3,6 +3,8 @@
 import sys
 import time
 
+from tbutils import TracebackInfo
+
 _EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
             ' {exc_filename}, logged from {callpoint_info})')
 
@@ -52,6 +54,10 @@ class Record(object):
         self.duration = kwargs.pop('duration', 0.0)
         self.warnings = []
 
+        self.exc_type = None
+        self.exc_obj = None
+        self.exc_tb_info = None
+
         frame = kwargs.pop('frame', None)
         if frame is None:
             frame = sys._getframe(1)
@@ -71,9 +77,13 @@ class Record(object):
     def failure(self, message):
         return self._complete('failure', message)
 
-    def exception(self, exc_type, exc_val, tb_obj):
+    def exception(self, exc_type, exc_val, exc_tb):
         # TODO: make real exc message
-        # TODO: structure tb obj?
+
+        self.exc_type = exc_type
+        self.exc_val = exc_val
+        self.exc_tb_info = TracebackInfo.from_traceback(exc_tb)
+
         return self._complete('exception', '%r, %r' % (exc_type, exc_val))
 
     def __getitem__(self, key):
