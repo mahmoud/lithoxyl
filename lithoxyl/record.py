@@ -3,6 +3,9 @@
 import sys
 import time
 
+_EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
+            ' {exc_filename}, logged from {callpoint_info})')
+
 
 class Callpoint(object):
     __slots__ = ('func_name', 'lineno', 'module_name', 'module_path', 'lasti')
@@ -106,10 +109,21 @@ class Record(object):
         self.logger.on_begin(self)
         return self
 
-    def __exit__(self, exc_type, exc_val, tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self._defer_publish = False
         if exc_type:
-            self.exception(exc_type, exc_val, tb)
+            try:
+                # first, give any willing sinks a chance to handle exceptions
+                self.logger.on_exception(self, exc_type, exc_val, exc_tb)
+                # TODO: should there be a way for sinks to override
+                # exception propagation here? probably not, I think.
+            except:
+                # TODO: something? grasshopper mode maybe.
+                pass
+            # then, normal completion behavior
+            self.exception(exc_type, exc_val, exc_tb)
+            # TODO: should probably be three steps:
+            # set certain attributes, then do on_exception, then do completion.
         elif self.status is None:
             self.success(self.message)
         else:

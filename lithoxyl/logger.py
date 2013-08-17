@@ -41,6 +41,9 @@ class BaseLogger(object):
         begin_hook = getattr(sink, 'on_begin', None)
         if callable(begin_hook):
             self._begin_hooks.append(begin_hook)
+        exc_hook = getattr(sink, 'on_exception', None)
+        if callable(exc_hook):
+            self._exc_hooks.append(exc_hook)
 
     def on_complete(self, record):
         for complete_hook in self._complete_hooks:
@@ -53,8 +56,9 @@ class BaseLogger(object):
     #def on_warn(self, record):
     #    pass
 
-    #def on_exception(self, record, exc_obj, exc_type, exc_tb):
-    #    pass
+    def on_exception(self, record, exc_type, exc_obj, exc_tb):
+        for exc_hook in self._exc_hooks:
+            exc_hook(record, exc_type, exc_obj, exc_tb)
 
     def debug(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
