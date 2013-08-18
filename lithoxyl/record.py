@@ -105,14 +105,13 @@ class Record(object):
     def status_char(self):
         ret = '_'
         try:
-            if self.end_time:
-                ret = self.status[:1]
-                if self._is_trans:
-                    ret = ret.upper()
+            if self._is_trans:
+                if self.end_time:
+                    ret = self.status[:1].upper()
                 else:
-                    ret = ret.lower()
-            elif self._is_trans:
-                ret = 'b'
+                    ret = 'b'
+            else:
+                ret = self.status[:1].lower()
         except:
             pass
         return ret
