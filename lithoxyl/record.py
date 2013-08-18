@@ -101,6 +101,22 @@ class Record(object):
     def get_elapsed_time(self):
         return time.time() - self.begin_time
 
+    @property
+    def status_char(self):
+        ret = '_'
+        try:
+            if self.end_time:
+                ret = self.status[:1]
+                if self._is_trans:
+                    ret = ret.upper()
+                else:
+                    ret = ret.lower()
+            elif self._is_trans:
+                ret = 'b'
+        except:
+            pass
+        return ret
+
     def _complete(self, status, message):
         if self._is_trans:
             self.end_time = time.time()
