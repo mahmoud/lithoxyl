@@ -3,7 +3,8 @@
 from logger import Record, DEBUG
 from formatters import Formatter
 
-template = ('{start_timestamp} - {start_local_iso8601} - {start_iso8601}'
+template = ('{record_status_char} - {begin_timestamp}'
+            ' - {begin_local_iso8601} - {begin_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
 
 
@@ -23,12 +24,14 @@ def test_formatter_basic():
     forming = Formatter(template)
     output = forming.format_record(riker)
     expected = '{logger_name} - success - "hello_thomas"'
+    print output
     assert output[-len(expected):] == expected
 
     rec = Record('Wharf')
     robf = Formatter(template)
     rec.success('Mr. Wolf')
     ret = robf.format_record(rec)
+    print ret
     return ret
 
 
