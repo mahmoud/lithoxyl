@@ -6,6 +6,16 @@ import sys
 # TODO: should separators (i.e., newline) be handled here or in the Formatter?
 
 
+class FakeEmitter(object):
+    def __init__(self):
+        self.entries = []
+
+    def emit_entry(self, entry):
+        self.entries.append(entry)
+
+    __call__ = emit_entry
+
+
 class StreamEmitter(object):
     def __init__(self, stream=None, encoding=None, **kwargs):
         if stream is None:
