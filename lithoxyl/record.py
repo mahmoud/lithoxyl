@@ -52,6 +52,7 @@ class Record(object):
         self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
         self.duration = kwargs.pop('duration', 0.0)
+        self._reraise = kwargs.pop('reraise', True)
         self.warnings = []
 
         self.exc_type = None
@@ -153,3 +154,6 @@ class Record(object):
             self.success(self.message)
         else:
             self._complete(self.status, self.message)
+        if self._reraise is False:
+            return True  # ignore exception
+        return
