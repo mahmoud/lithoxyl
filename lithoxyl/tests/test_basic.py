@@ -6,6 +6,11 @@ from sinks import AggSink, StructuredFileSink
 from logger import BaseLogger
 
 
+def _get_logger():
+    acc = AggSink()
+    return BaseLogger('test_logger', [acc])
+
+
 def do_debug_trans(logger):
     with logger.debug('hi') as t:
         time.sleep(0.01)
@@ -14,11 +19,10 @@ def do_debug_trans(logger):
 
 
 def test_logger_success(trans_count=2):
-    acc = AggSink()
-    log = BaseLogger('test_logger', [acc])
+    logger = _get_logger()
     for i in range(trans_count):
-        do_debug_trans(log)
-    assert len(acc.records) == trans_count
+        do_debug_trans(logger)
+    assert len(logger.sinks[0].records) == trans_count
 
 
 def test_structured(trans_count=5):
@@ -37,3 +41,21 @@ def test_callpoint_info():
     assert t.callpoint.lineno > 0
     assert t.callpoint.lasti > 0
     assert repr(t)
+
+
+def test_reraise_false():
+    logger = _get_logger()
+    with logger.debug('hi', reraise=False) as t:
+        x
+    assert logger.sinks[0].records[0].status == 'exception'
+
+
+def test_reraise_true():
+    logger = _get_logger()
+    try:
+        with logger.debug('hi', reraise=True) as t:
+            y
+    except NameError:
+        assert True
+    else:
+        assert False, 'should have reraised NameError'
