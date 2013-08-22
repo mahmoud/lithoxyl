@@ -53,6 +53,7 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('record_id', 'd', lambda r: id(r)),  # TODO
                 FF('record_status', 's', lambda r: r.status, quote=False),
                 FF('record_status_char', 's', lambda r: r.status_char, quote=False),
+                FF('record_warn_char', 's', lambda r: 'W' if r.warnings else ' ', quote=False),
                 FF('level_name', 's', lambda r: r.level),  # TODO
                 FF('level_number', 'd', lambda r: r.level),
                 FF('message', 's', lambda r: r.message),

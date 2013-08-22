@@ -3,7 +3,7 @@
 from logger import Record, DEBUG
 from formatters import Formatter
 
-template = ('{record_status_char} - {begin_timestamp}'
+template = ('{record_status_char}{record_warn_char}{begin_timestamp}'
             ' - {begin_local_iso8601} - {begin_iso8601}'
             ' - {logger_name} - {record_status} - {record_name}')
 
