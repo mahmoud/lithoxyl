@@ -50,6 +50,20 @@ class SensibleSink(object):
         return self.emitter(entry)
 
 
+from quantile import QuantileAccumulator
+
+
+class QuantileSink(object):
+    def __init__(self):
+        self.qa = QuantileAccumulator()
+
+    def on_complete(self, record):
+        self.qa.add(record.duration)
+
+    def __getattr__(self, name):
+        return getattr(self.qa, name)
+
+
 if __name__ == '__main__':
     fmtr = Formatter('{begin_timestamp} - {record_status}')
     emtr = StreamEmitter()
