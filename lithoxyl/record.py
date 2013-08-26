@@ -123,7 +123,9 @@ class Record(object):
             self.duration = self.end_time - self.begin_time
 
         self.status = status
-        if not isinstance(message, unicode):
+        if not message:
+            message = u''
+        elif not isinstance(message, unicode):
             message = message.decode('utf-8')
         self.message = message
         if not self._defer_publish and self.logger:
