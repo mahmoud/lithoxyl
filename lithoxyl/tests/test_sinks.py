@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from sinks import SensibleSink
-from formatters import Formatter
-from emitters import StreamEmitter, FakeEmitter
-from logger import BaseLogger
+from lithoxyl.sinks import SensibleSink
+from lithoxyl.formatters import Formatter
+from lithoxyl.emitters import StreamEmitter, FakeEmitter
+from lithoxyl.logger import BaseLogger
 
 
 fmtr = Formatter('{record_status_char}{begin_timestamp}')

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from logger import Record, DEBUG
-from formatters import Formatter
+from lithoxyl.logger import Record, DEBUG
+from lithoxyl.formatters import Formatter
 
 template = ('{record_status_char}{record_warn_char}{begin_timestamp}'
             ' - {begin_local_iso8601} - {begin_iso8601}'

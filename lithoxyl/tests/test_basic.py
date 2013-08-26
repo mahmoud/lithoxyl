@@ -2,8 +2,8 @@
 
 import time
 
-from sinks import AggSink, StructuredFileSink
-from logger import BaseLogger
+from lithoxyl.sinks import AggSink, StructuredFileSink
+from lithoxyl.logger import BaseLogger
 
 
 def _get_logger():

@@ -3,8 +3,8 @@
 import os
 import random
 
-from moment import MomentAccumulator
-from quantile import QuantileAccumulator, P2QuantileAccumulator
+from lithoxyl.moment import MomentAccumulator
+from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
 import _statsutils
 
 
