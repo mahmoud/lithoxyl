@@ -6,6 +6,7 @@ import json
 from filters import ThresholdFilter
 from formatters import Formatter
 from emitters import StreamEmitter
+from quantile import QuantileAccumulator, P2QuantileAccumulator
 
 
 class AggSink(object):
@@ -50,11 +51,12 @@ class SensibleSink(object):
         return self.emitter(entry)
 
 
-from quantile import QuantileAccumulator
-
-
 class QuantileSink(object):
-    def __init__(self):
+    def __init__(self, use_p2=False):
+        if use_p2:
+            self._qa_type = P2QuantileAccumulator
+        else:
+            self._qa_type = QuantileAccumulator
         self.qas = {}
 
     def on_complete(self, record):
@@ -66,7 +68,7 @@ class QuantileSink(object):
         try:
             acc = logger_accs[record.name]
         except KeyError:
-            acc = logger_accs[record.name] = QuantileAccumulator()
+            acc = logger_accs[record.name] = self._qa_type()
 
         acc.add(record.duration)
 
