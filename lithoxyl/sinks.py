@@ -55,13 +55,28 @@ from quantile import QuantileAccumulator
 
 class QuantileSink(object):
     def __init__(self):
-        self.qa = QuantileAccumulator()
+        self.qas = {}
 
     def on_complete(self, record):
-        self.qa.add(record.duration)
+        try:
+            # key off the logger object itself?
+            logger_accs = self.qas[record.logger.name]
+        except KeyError:
+            logger_accs = self.qas[record.logger.name] = {}
+        try:
+            acc = logger_accs[record.name]
+        except KeyError:
+            acc = logger_accs[record.name] = QuantileAccumulator()
 
-    def __getattr__(self, name):
-        return getattr(self.qa, name)
+        acc.add(record.duration)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        acc_dict_repr = dict([(lname,
+                               dict([(k, round(a.median, 4)) for k, a in a_map.items()]))
+                              for lname, a_map in self.qas.items()])
+        ret = '<%s %r>' % (cn, acc_dict_repr)
+        return ret
 
 
 if __name__ == '__main__':
