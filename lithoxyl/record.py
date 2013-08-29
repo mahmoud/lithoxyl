@@ -160,16 +160,3 @@ class Record(object):
         if self._reraise is False:
             return True  # ignore exception
         return
-
-    def __iter__(self):
-        return iter([self, self])
-
-
-def _main():
-    with Record('test') as (r1, r2):
-        print 1, r1
-        print 2, r2
-
-
-if __name__ == '__main__':
-    _main()
