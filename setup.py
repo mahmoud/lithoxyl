@@ -25,12 +25,12 @@ desc = ('A systematic approach to logging, profiling, and statistics'
 
 
 if sys.version_info < (2,6):
-    raise NotImplementedError("Sorry, clastic only supports Python >=2.6")
+    raise NotImplementedError("Sorry, lithoxyl only supports Python >=2.6")
 
 if sys.version_info >= (3,):
-    raise NotImplementedError("clastic Python 3 support en route to your location")
+    raise NotImplementedError("lithoxyl Python 3 support en route to your location")
 
-setup(name='clastic',
+setup(name='lithoxyl',
       version=__version__,
       description=desc,
       long_description=__doc__,
