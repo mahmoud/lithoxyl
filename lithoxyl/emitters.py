@@ -5,6 +5,24 @@ import sys
 
 # TODO: should separators (i.e., newline) be handled here or in the Formatter?
 
+class EncodingLookupError(LookupError): pass
+class ErrorBehaviorLookupError(LookupError): pass
+
+
+def check_encoding_settings(encoding, errors):
+    try:
+        # then test error-handler
+        u''.encode(encoding)
+    except LookupError as le:
+        raise EncodingLookupError(le.message)
+    try:
+        # then test error-handler
+        u'\xdd'.encode('ascii', errors=errors)
+    except LookupError:
+        raise ErrorBehaviorLookupError(le.message)
+    except:
+        return
+
 
 class FakeEmitter(object):
     def __init__(self):
@@ -29,15 +47,14 @@ class StreamEmitter(object):
         self.stream = stream
         if encoding is None:
             encoding = getattr(stream, 'encoding', None) or 'UTF-8'
-        self.encoding = encoding
+        errors = kwargs.pop('errors', 'backslashreplace')
 
-        self.errors = kwargs.pop('errors', 'backslashreplace')
+        # Too late to raise exceptions? Don't think so.
+        check_encoding_settings(encoding, errors)  # raises on error
+
         self.newline = kwargs.pop('newline', None) or os.linesep
-
-        # TODO: try values for encoding/errors/newline out (otherwise
-        # problems can get detected way too late)
-        # Relatedly, is it already too late by the time the Emitter
-        # is initializing? That's probably up to the sink/logger.
+        self.errors = errors
+        self.encoding = encoding
 
     def emit_entry(self, entry):
         try:
