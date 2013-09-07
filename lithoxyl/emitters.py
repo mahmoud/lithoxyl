@@ -5,6 +5,7 @@ import sys
 
 # TODO: should separators (i.e., newline) be handled here or in the Formatter?
 
+
 class EncodingLookupError(LookupError): pass
 class ErrorBehaviorLookupError(LookupError): pass
 
@@ -18,7 +19,7 @@ def check_encoding_settings(encoding, errors):
     try:
         # then test error-handler
         u'\xdd'.encode('ascii', errors=errors)
-    except LookupError:
+    except LookupError as le:
         raise ErrorBehaviorLookupError(le.message)
     except:
         return

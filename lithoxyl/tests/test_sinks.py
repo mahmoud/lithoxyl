@@ -38,3 +38,21 @@ def test_sensible_basic():
         pass
 
     assert fake_emtr.entries[-1][0] == 'E'
+
+
+def test_bad_encoding():
+    try:
+        StreamEmitter('stderr', encoding='nope')
+    except LookupError:
+        assert True
+    else:
+        assert False
+
+
+def test_bad_encoding_error_fallback():
+    try:
+        StreamEmitter('stderr', errors='badvalue')
+    except LookupError:
+        assert True
+    else:
+        assert False
