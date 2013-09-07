@@ -83,7 +83,7 @@ class QuantileSink(object):
 
 if __name__ == '__main__':
     fmtr = Formatter('{begin_timestamp} - {record_status}')
-    emtr = StreamEmitter()
+    emtr = StreamEmitter('stderr')
     ss = SensibleSink(formatter=fmtr, emitter=emtr)
     from logger import BaseLogger
     log = BaseLogger('test_ss', [ss])

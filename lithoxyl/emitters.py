@@ -17,13 +17,15 @@ class FakeEmitter(object):
 
 
 class StreamEmitter(object):
-    def __init__(self, stream=None, encoding=None, **kwargs):
-        if stream is None:
-            stream = sys.stderr
-        elif stream == 'stdout':
+    def __init__(self, stream, encoding=None, **kwargs):
+        if stream == 'stdout':
             stream = sys.stdout
         elif stream == 'stderr':
             stream = sys.stderr
+        elif not callable(getattr(stream, 'write', None)):
+            raise TypeError('StreamEmitter expected file-like object'
+                            ' (or shortcut values "stderr" or "stdout"),'
+                            ' not %r' % stream)
         self.stream = stream
         if encoding is None:
             encoding = getattr(stream, 'encoding', None) or 'UTF-8'
