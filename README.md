@@ -37,7 +37,7 @@ def create_user(name):
     with stderr_log.critical('user creation', reraise=False) as r:
         success = _create_user()
         if not success:
-            r.fail()
+            r.failure()
 ```
 
 
