@@ -9,7 +9,6 @@ Application instrumentation and logging, with a geological bent.
 Here's an example of some ostensibly well-instrumented code.
 
 ```python
-
 import logging
 
 def create_user(name):
@@ -34,15 +33,11 @@ Here's lithoxyl's take:
 ```python
 from lithoxyl import stderr_log
 
-
 def create_user(name):
     with stderr_log.critical('user creation', reraise=False) as r:
         success = _create_user()
         if not success:
             r.fail()
-
-
-_create_user = lambda: 'pretend like we created a user, ok?'
 ```
 
 
