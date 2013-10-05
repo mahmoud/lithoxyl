@@ -3,38 +3,10 @@
 import sys
 import time
 
-from tbutils import TracebackInfo
+from tbutils import TracebackInfo, Callpoint
 
 _EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
             ' {exc_filename}, logged from {callpoint_info})')
-
-
-class Callpoint(object):
-    __slots__ = ('func_name', 'lineno', 'module_name', 'module_path', 'lasti')
-
-    def __init__(self, module_name, module_path, func_name, lineno, lasti):
-        self.func_name = func_name
-        self.lineno = lineno
-        self.module_name = module_name
-        self.module_path = module_path
-        self.lasti = lasti
-
-    @classmethod
-    def from_frame(cls, frame):
-        func_name = frame.f_code.co_name
-        lineno = frame.f_lineno
-        module_name = frame.f_globals.get('__name__', '')
-        module_path = frame.f_code.co_filename
-        lasti = frame.f_lasti
-        return cls(module_name, module_path, func_name, lineno, lasti)
-
-    def __repr__(self):
-        cn = self.__class__.__name__
-        args = [getattr(self, s, None) for s in self.__slots__]
-        if not any(args):
-            return super(Callpoint, self).__repr__()
-        else:
-            return '%s(%s)' % (cn, ', '.join([repr(a) for a in args]))
 
 
 class Record(object):
