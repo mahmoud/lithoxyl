@@ -1,13 +1,17 @@
+# -*- coding: utf-8 -*-
+
 """Extract, format and print information about Python stack traces."""
 from __future__ import print_function
 
-from collections import namedtuple
-import linecache
+import re
 import sys
+import linecache
+
 
 # TODO: cross compatibility (jython, etc.)
 # TODO: parser
 # TODO: chaining primitives?  what are real use cases where these help?
+# TODO: intelligently truncating repr
 
 # TODO: print_* for backwards compatability
 # __all__ = ['extract_stack', 'extract_tb', 'format_exception',
@@ -16,17 +20,59 @@ import sys
 #            'print_last', 'print_stack', 'print_tb']
 
 
-class FrameInfo(namedtuple('FrameInfo', 'filename, lineno, name, line')):
-    # TODO: intelligently truncating repr
+class Callpoint(object):
+    __slots__ = ('func_name', 'lineno', 'module_name', 'module_path', 'lasti',
+                 'line')  # line is for the actual single-line code content
 
-    def __str__(self):
-        header = '  File "{0}", line {1}, in {2}\n'.format(self.filename,
-                                                           self.lineno,
-                                                           self.name)
-        ret = header
+    def __init__(self, module_name, module_path, func_name,
+                 lineno, lasti, line=None):
+        self.func_name = func_name
+        self.lineno = lineno
+        self.module_name = module_name
+        self.module_path = module_path
+        self.lasti = lasti
+        self.line = line
+
+    @classmethod
+    def from_frame(cls, frame):
+        func_name = frame.f_code.co_name
+        lineno = frame.f_lineno
+        module_name = frame.f_globals.get('__name__', '')
+        module_path = frame.f_code.co_filename
+        lasti = frame.f_lasti
+        line = _DeferredLine(module_path, lineno, frame.f_globals)
+        return cls(module_name, module_path, func_name,
+                   lineno, lasti, line=line)
+
+    @classmethod
+    def from_tb(cls, tb):
+        # main difference with from_frame is that lineno and lasti
+        # come from the traceback, which is to say the line that
+        # failed in the try block, not the line currently being
+        # executed (in the except block)
+        func_name = tb.tb_frame.f_code.co_name
+        lineno = tb.tb_lineno
+        lasti = tb.tb_lasti
+        module_name = tb.tb_frame.f_globals.get('__name__', '')
+        module_path = tb.tb_frame.f_code.co_filename
+        line = _DeferredLine(module_path, lineno, tb.tb_frame.f_globals)
+        return cls(module_name, module_path, func_name,
+                   lineno, lasti, line=line)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        args = [getattr(self, s, None) for s in self.__slots__]
+        if not any(args):
+            return super(Callpoint, self).__repr__()
+        else:
+            return '%s(%s)' % (cn, ', '.join([repr(a) for a in args]))
+
+    def tb_frame_str(self):
+        ret = '  File "{0}", line {1}, in {2}\n'.format(self.module_path,
+                                                        self.lineno,
+                                                        self.func_name)
         if self.line:
             ret += '    {0}\n'.format(str(self.line))
-
         return ret
 
 
@@ -67,10 +113,27 @@ class _DeferredLine(object):
         return len(str(self))
 
 
+class ExceptionInfo(object):
+    def __init__(self, exc_type, exc_msg, tb_info):
+        # TODO: additional fields for SyntaxErrors
+        self.exc_type = exc_type
+        self.exc_msg = exc_msg
+        self.tb_info = tb_info
+
+    @classmethod
+    def from_exc_info(cls, exc_type, exc_value, traceback):
+        type_str = exc_type.__name__
+        type_mod = exc_type.__module__
+        if type_mod not in ("__main__", "__builtin__", "exceptions"):
+            type_str = '%s.%s' % (type_mod, type_str)
+        val_str = _some_str(exc_value)
+        tb_info = TracebackInfo.from_traceback(traceback)
+        return cls(type_str, val_str, tb_info)
+
+
 # TODO: dedup frames, look at __eq__ on _DeferredLine
 # TODO: StackInfo/TracebackInfo split, latter stores exc
 class TracebackInfo(object):
-
     def __init__(self, frames):
         self.frames = frames
 
@@ -83,11 +146,7 @@ class TracebackInfo(object):
             limit = getattr(sys, 'tracebacklimit', 1000)
         n = 0
         while frame is not None and n < limit:
-            filename = frame.f_code.co_filename
-            lineno = frame.f_lineno
-            name = frame.f_code.co_name
-            line = _DeferredLine(filename, lineno, frame.f_globals)
-            item = FrameInfo(filename, lineno, name, line)
+            item = Callpoint.from_frame(frame)
             ret.append(item)
             frame = frame.f_back
             n += 1
@@ -101,14 +160,10 @@ class TracebackInfo(object):
             limit = getattr(sys, 'tracebacklimit', 1000)
         n = 0
         while tb is not None and n < limit:
-            filename = tb.tb_frame.f_code.co_filename
-            lineno = tb.tb_lineno
-            name = tb.tb_frame.f_code.co_name
-            line = _DeferredLine(filename, lineno, tb.tb_frame.f_globals)
-            item = FrameInfo(filename, lineno, name, line)
+            item = Callpoint.from_tb(tb)
             ret.append(item)
             tb = tb.tb_next
-        n += 1
+            n += 1
         return cls(ret)
 
     @classmethod
@@ -144,8 +199,9 @@ class TracebackInfo(object):
                         frame_part=frame_part))
 
     def __str__(self):
-        header = 'Traceback (most recent call last):\n'
-        return header + ''.join(str(f) for f in self)
+        ret = 'Traceback (most recent call last):\n'
+        ret += ''.join([f.tb_frame_str() for f in self.frames])
+        return ret
 
 
 # TODO: clean up & reimplement -- specifically for syntax errors
@@ -247,18 +303,122 @@ def fix_print_exception():
     sys.excepthook = print_exception
 
 
+_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)'
+                       r', in (?P<funcname>.+)$')
+_se_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)')
+
+
+class ParsedTB(object):
+    """
+    Parses a traceback string as typically output by sys.excepthook.
+    """
+    def __init__(self, exc_type_name, exc_msg, frames=None):
+        self.exc_type = exc_type_name
+        self.exc_msg = exc_msg
+        self.frames = list(frames or [])
+
+    @property
+    def source_file(self):
+        try:
+            return self.frames[-1]['filepath']
+        except IndexError:
+            return None
+
+    def to_dict(self):
+        return {'exc_type': self.exc_type,
+                'exc_msg': self.exc_msg,
+                'frames': self.frames}
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return ('%s(%r, %r, frames=%r)'
+                % (cn, self.exc_type, self.exc_msg, self.frames))
+
+    @classmethod
+    def from_string(cls, tb_str):
+        if not isinstance(tb_str, unicode):
+            tb_str = tb_str.decode('utf-8')
+        tb_lines = tb_str.lstrip().splitlines()
+        if tb_lines[0].strip() == 'Traceback (most recent call last):':
+            frame_lines = tb_lines[1:-1]
+            frame_re = _frame_re
+        elif len(tb_lines) > 1 and tb_lines[-2].lstrip().startswith('^'):
+            frame_lines = tb_lines[:-2]
+            frame_re = _se_frame_re
+        else:
+            raise ValueError('unrecognized traceback string format')
+        while tb_lines:
+            cl = tb_lines[-1]
+            if cl.startswith('Exception ') and cl.endswith('ignored'):
+                # handle some ignored exceptions
+                tb_lines.pop()
+            else:
+                break
+        for line in reversed(tb_lines):
+            # get the bottom-most line that looks like an actual Exception
+            # repr(), (i.e., "Exception: message")
+            exc_type, sep, exc_msg = line.partition(':')
+            if sep and exc_type and len(exc_type.split()) == 1:
+                break
+
+        frames = []
+        for pair_idx in range(0, len(frame_lines), 2):
+            frame_line = frame_lines[pair_idx].strip()
+            frame_match = frame_re.match(frame_line)
+            if frame_match:
+                frame_dict = frame_match.groupdict()
+            else:
+                continue
+            frame_dict['source_line'] = frame_lines[pair_idx + 1].strip()
+            frames.append(frame_dict)
+
+        return cls(exc_type, exc_msg, frames)
+
+
 if __name__ == '__main__':
+    import cStringIO
+
+    builtin_exc_hook = sys.excepthook
     fix_print_exception()
+    tbi_str = ''
 
     def test():
-        raise ValueError
+        raise ValueError('yay fun')
+
+    fake_stderr1 = cStringIO.StringIO()
+    fake_stderr2 = cStringIO.StringIO()
+    sys.stderr = fake_stderr1
 
     try:
         test()
     except:
         _, _, exc_traceback = sys.exc_info()
         tbi = TracebackInfo.from_traceback(exc_traceback)
-        print(repr(tbi))
-        print(tbi.frames[-1]._asdict())
+        tbi_str = str(tbi)
+        print_exception(*sys.exc_info(), file=fake_stderr2)
+        new_exc_hook_res = fake_stderr2.getvalue()
+        builtin_exc_hook(*sys.exc_info())
+        builtin_exc_hook_res = fake_stderr1.getvalue()
+    finally:
+        sys.stderr = sys.__stderr__
 
-    test()
+    print()
+    print('# Single frame:\n')
+    print(tbi.frames[-1].tb_frame_str())
+
+    print('# Traceback info:\n')
+    print(tbi_str)
+
+    print('# Full except hook output:\n')
+    print(new_exc_hook_res)
+
+    assert new_exc_hook_res == builtin_exc_hook_res
+
+    FAKE_TB_STR = u"""
+Traceback (most recent call last):
+  File "example.py", line 2, in <module>
+    plarp
+NameError: name 'plarp' is not defined
+"""
+    parsed_tb = ParsedTB.from_string(FAKE_TB_STR)
+    print(parsed_tb)
