@@ -68,11 +68,11 @@ class Callpoint(object):
             return '%s(%s)' % (cn, ', '.join([repr(a) for a in args]))
 
     def tb_frame_str(self):
-        ret = '  File "{0}", line {1}, in {2}\n'.format(self.module_path,
-                                                        self.lineno,
-                                                        self.func_name)
+        ret = '  File "%s", line %s, in %s\n' % (self.module_path,
+                                                 self.lineno,
+                                                 self.func_name)
         if self.line:
-            ret += '    {0}\n'.format(str(self.line))
+            ret += '    %s\n' % self.line
         return ret
 
 
@@ -90,7 +90,7 @@ class _DeferredLine(object):
                     self.module_globals[k] = v
 
     def __eq__(self, other):
-        return (self.lineno, self.filename) == (other.lineno, other.filename)
+        return self.lineno == other.lineno and self.filename == other.filename
 
     def __ne__(self, other):
         return not self == other
@@ -115,10 +115,18 @@ class _DeferredLine(object):
 
 class ExceptionInfo(object):
     def __init__(self, exc_type, exc_msg, tb_info):
-        # TODO: additional fields for SyntaxErrors
+        """
+        This function expects exc_type and exc_msg to already be
+        strings, and tb_info to be a TracebackInfo. For creating an
+        ExceptionInfo with sys.exc_info() use the classmethod
+        .from_exc_info()
+        """
         self.exc_type = exc_type
         self.exc_msg = exc_msg
         self.tb_info = tb_info
+
+        # TODO: additional fields for SyntaxErrors
+        # (.filename, .lineno, .offset, .text)
 
     @classmethod
     def from_exc_info(cls, exc_type, exc_value, traceback):
@@ -132,7 +140,6 @@ class ExceptionInfo(object):
 
 
 # TODO: dedup frames, look at __eq__ on _DeferredLine
-# TODO: StackInfo/TracebackInfo split, latter stores exc
 class TracebackInfo(object):
     def __init__(self, frames):
         self.frames = frames
@@ -166,19 +173,6 @@ class TracebackInfo(object):
             n += 1
         return cls(ret)
 
-    @classmethod
-    def from_dict(cls, d):
-        # TODO: respect message, exception; part of
-        # StackInfo/TracebackInfo split
-        return cls(d['frames'])
-
-    def to_dict(self):
-        # TODO: fill in message, exception; part of
-        # StackInfo/TracebackInfo split
-        return {'frames': [f._asdict() for f in self],
-                'message': None,
-                'exception': None}
-
     def __len__(self):
         return len(self.frames)
 
@@ -186,17 +180,12 @@ class TracebackInfo(object):
         return iter(self.frames)
 
     def __repr__(self):
-        class_name = self.__class__.__name__
-
+        cn = self.__class__.__name__
         if self.frames:
-            frame_part = ' last={0}'.format(repr(self.frames[-1]))
+            frame_part = ' last=%r' % (self.frames[-1],)
         else:
             frame_part = ''
-
-        return ('<{class_name} frames={nframes}{frame_part}>'
-                .format(class_name=class_name,
-                        nframes=len(self),
-                        frame_part=frame_part))
+        return '<%s frames=%s%s>' % (cn, len(self.frames), frame_part)
 
     def __str__(self):
         ret = 'Traceback (most recent call last):\n'

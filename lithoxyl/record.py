@@ -3,7 +3,7 @@
 import sys
 import time
 
-from tbutils import TracebackInfo, Callpoint
+from tbutils import ExceptionInfo, Callpoint
 
 _EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
             ' {exc_filename}, logged from {callpoint_info})')
@@ -27,9 +27,7 @@ class Record(object):
         self._reraise = kwargs.pop('reraise', True)
         self.warnings = []
 
-        self.exc_type = None
-        self.exc_obj = None
-        self.exc_tb_info = None
+        self.exc_info = None
 
         frame = kwargs.pop('frame', None)
         if frame is None:
@@ -52,12 +50,9 @@ class Record(object):
 
     def exception(self, exc_type, exc_val, exc_tb):
         # TODO: make real exc message
+        self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
 
-        self.exc_type = exc_type
-        self.exc_val = exc_val
-        self.exc_tb_info = TracebackInfo.from_traceback(exc_tb)
-
-        return self._complete('exception', '%r, %r' % (exc_type, exc_val))
+        return self._complete('exception', '%r: %r' % (exc_type, exc_val))
 
     def __getitem__(self, key):
         try:

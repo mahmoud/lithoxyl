@@ -70,10 +70,10 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('module_path', 's', lambda r: r.callpoint.module_path),
                 FF('func_name', 's', lambda r: r.callpoint.func_name),
                 FF('line_number', 'd', lambda r: r.callpoint.lineno),
-                FF('exc_type', 's', lambda r: 'TODO'),
-                FF('exc_message', 's', lambda r: 'TODO'),
-                FF('exc_tb_str', 's', lambda r: 'TODO'),
-                FF('exc_tb_dict', 's', lambda r: 'TODO'),
+                FF('exc_type', 's', lambda r: r.exc_info.exc_type),
+                FF('exc_message', 's', lambda r: r.exc_info.exc_msg),
+                FF('exc_tb_str', 's', lambda r: str(r.exc_info.tb_info)),
+                FF('exc_tb_list', 's', lambda r: r.exc_info.tb_info.frames),
                 FF('process_id', 'd', lambda r: 'TODO')]
 
 
