@@ -51,8 +51,7 @@ class Record(object):
     def exception(self, exc_type, exc_val, exc_tb):
         # TODO: make real exc message
         self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
-
-        return self._complete('exception', '%r: %r' % (exc_type, exc_val))
+        return self._complete('exception', repr(exc_val))
 
     def __getitem__(self, key):
         try:
