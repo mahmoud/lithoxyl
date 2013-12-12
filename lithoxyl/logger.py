@@ -10,11 +10,11 @@ CRITICAL = 90
 
 
 class BaseLogger(object):
-    def __init__(self, name, sinks, **kwargs):
+    def __init__(self, name, sinks=None, **kwargs):
         # TODO: get module
         self.module = kwargs.pop('module', None)
         self.name = name or self.module
-        self.sinks = sinks
+        self.sinks = list(sinks or [])
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
 
