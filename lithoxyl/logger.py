@@ -74,3 +74,12 @@ class BaseLogger(object):
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
         kw['frame'] = sys._getframe(1)
         return Record(**kw)
+
+    def record(self, name, level, **kw):
+        kw['name'], kw['level'], kw['logger'] = name, level, self
+        kw['frame'] = sys._getframe(1)
+        return Record(**kw)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '<%s name=%r sinks=%r>' % (cn, self.name, self.sinks)
