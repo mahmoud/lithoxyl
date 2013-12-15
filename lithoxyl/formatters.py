@@ -88,8 +88,12 @@ class LazyExtrasDict(dict):
         self.getters = getters
 
     def __missing__(self, key):
-        getter = self.getters[key]
-        return getter(self.record)
+        try:
+            getter = self.getters[key]
+        except KeyError:
+            return self.record.extras.get(key)
+        else:
+            return getter(self.record)
 
 
 class Templette(object):
