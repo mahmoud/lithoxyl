@@ -151,6 +151,7 @@ class Formatter(object):
     # TODO: inherit from templette?
 
     def __init__(self, format_str):
+        self._format_str = format_str
         self.templette = Templette(format_str)
         # TODO: check that templette complies with reversability
         # requirements
@@ -167,6 +168,9 @@ class Formatter(object):
             raise
 
     __call__ = format_record
+
+    def __repr__(self):
+        return '%s(%r)' % (self.__class__.__name__, self._format_str)
 
 
 """

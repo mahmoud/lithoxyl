@@ -50,9 +50,25 @@ class SensibleSink(object):
         entry = self.formatter(record)
         return self.emitter(entry)
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return ('<%s filters=%r formatter=%r emitter=%r>'
+                % (cn, self.filters, self.formatter, self.emitter))
+
+
 
 class QuantileSink(object):
     def __init__(self, use_p2=False):
+        """
+        There are two approaches for quantile-based stats
+        accumulation. A standard, reservoir/replacement strategy
+        (QuantileAccumulator) and the P2 approach
+        (P2QuantileAccumulator).
+
+        P2 is slower to update, but faster to read, so consider
+        setting use_p2 to True if your use case entails more frequent
+        stats reading.
+        """
         if use_p2:
             self._qa_type = P2QuantileAccumulator
         else:

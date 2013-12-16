@@ -90,6 +90,9 @@ class StreamEmitter(object):
 
     __call__ = emit_entry
 
+    def __repr__(self):
+        return '<%s stream=%r>' % (self.__class__.__name__, self.stream)
+
 
 class FileEmitter(StreamEmitter):
     def __init__(self, filepath, encoding=None, **kwargs):
