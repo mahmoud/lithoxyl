@@ -3,9 +3,6 @@ TODO
 
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
-* Emitters
-* Filters for on_start/on_warn
-* Integrate structured traceback stuff
 * "auto" mode for escaping (eliminate excessive quoting)
 
 Sinks/emitters
