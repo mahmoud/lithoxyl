@@ -3,6 +3,7 @@
 from lithoxyl.sinks import SensibleSink
 from lithoxyl.formatters import Formatter
 from lithoxyl.emitters import StreamEmitter, FakeEmitter
+from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import BaseLogger
 
 
@@ -56,3 +57,20 @@ def test_bad_encoding_error_fallback():
         assert True
     else:
         assert False
+
+
+def _test_exception():
+    _tmpl = ('{end_iso8601} - {exc_type}: {exc_message}'
+             ' - {func_name}:{line_number} - {exc_tb_list}')
+    sink = SensibleSink([ThresholdFilter(exception=0)],
+                        Formatter(_tmpl),
+                        StreamEmitter('stderr'))
+    logger = BaseLogger('excelsilog', [sink])
+    with logger.info('A for Effort', reraise=False) as tr:
+        print tr
+        raise ValueError('E for Exception')
+    return
+
+
+if __name__ == '__main__':
+    _test_exception()
