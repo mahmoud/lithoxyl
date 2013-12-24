@@ -3,16 +3,6 @@ Notes
 
 Some implementation thoughts/reminders.
 
-TODO
-----
-
-* handle_exc for X-Treme automated runtime debugging logs
-* how to register additional levels
-* removal of global level constants?
-* default-on fixed header for formatter
-* concurrency association IDs
-* Callpoint for transaction-completion call, too (status call)
-
 Sinks
 -----
 
@@ -47,37 +37,14 @@ Emitters take care of the actual serialization. A basic set of useful
 emitters, including asynchronous and threadsafe implementations, is a
 must.
 
-Formatter built-ins
--------------------
-
-* message_name
-* logger_name
-* status_name
-* status_num  (_int? _code? _val?)
-* level_name
-* level_num  (built-in logging calls it levelno, parallel with lineno)
-* func_name
-* lineno
-* module_name
-* module_path
-* lasti
-* duration_secs
-* duration_msecs
-* start_time  (formats tbd, obvs)
-* end_time
-
-* (exception infos)
-* (os infos? pid, etc.)
-
-
 Vocab angst
 -----------
 
 * Start: begin, open, init
-* Stop: finish, complete, close, (commit?)
+* Stop: finish, end, complete, close, (commit?)
 
 * Start, Stop, and Success all have the same first letter :(
-
+* Solution: begin, end, success, failure, exception
 
 Encoding woes
 -------------

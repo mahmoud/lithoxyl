@@ -4,6 +4,9 @@ TODO
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
 * "auto" mode for escaping (eliminate excessive quoting)
+* register additional levels? remove global level constants?
+* default-on fixed header for formatter?
+* Callpoint for transaction-completion call, too (status call)
 
 Sinks/emitters
 --------------
