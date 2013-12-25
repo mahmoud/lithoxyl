@@ -3,6 +3,16 @@ Notes
 
 Some implementation thoughts/reminders.
 
+Sensibilities
+-------------
+
+One major area of contention is how to resolve the inherent
+heterogeneity of expected and unexpected cases. Do we really want
+exceptions being logged in the same place as non-exceptions? The
+nature of the loggable data fundamentally changes. There are stack
+traces for exceptions, for instance. Apache has access_log and
+error_log by default, too.
+
 Sinks
 -----
 

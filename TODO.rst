@@ -7,6 +7,7 @@ TODO
 * register additional levels? remove global level constants?
 * default-on fixed header for formatter?
 * Callpoint for transaction-completion call, too (status call)
+* autoincremented IDs for loggers and records?
 
 Sinks/emitters
 --------------
