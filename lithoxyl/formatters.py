@@ -2,8 +2,8 @@
 
 from json import dumps as escape_str
 
-from fields import BUILTIN_GETTERS, BUILTIN_QUOTERS
 from formatutils import tokenize_format_str
+from fields import BUILTIN_GETTERS, BUILTIN_QUOTERS
 
 
 class LazyExtrasDict(dict):

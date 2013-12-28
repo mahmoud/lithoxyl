@@ -37,19 +37,21 @@ class Record(object):
         if kwargs:
             self.extras.update(kwargs)
 
-    def success(self, message):
-        # TODO: autogenerate success message
-        return self._complete('success', message)
-
     def warn(self, message):
         self.warnings.append(message)
         return self
 
-    def failure(self, message):
+    def success(self, message=None):
+        if not message:
+            message = self.name + ' succeeded'  # TODO: localize
+        return self._complete('success', message)
+
+    def failure(self, message=None):
+        if not message:
+            message = self.name + ' failed'
         return self._complete('failure', message)
 
     def exception(self, exc_type, exc_val, exc_tb):
-        # TODO: make real exc message
         self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         return self._complete('exception', repr(exc_val))
 
@@ -82,6 +84,10 @@ class Record(object):
         except:
             pass
         return ret
+
+    @property
+    def warn_char(self):
+        return 'W' if self.warnings else ' '
 
     def _complete(self, status, message):
         if self._is_trans:
