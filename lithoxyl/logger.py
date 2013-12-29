@@ -38,16 +38,19 @@ class BaseLogger(object):
     def add_sink(self, sink):
         if sink in self._all_sinks:
             return
-        self._all_sinks.append(sink)
-        complete_hook = getattr(sink, 'on_complete', None)
-        if callable(complete_hook):
-            self._complete_hooks.append(complete_hook)
         begin_hook = getattr(sink, 'on_begin', None)
         if callable(begin_hook):
             self._begin_hooks.append(begin_hook)
+        warn_hook = getattr(sink, 'on_warn', None)
+        if callable(warn_hook):
+            self._warn_hooks.append(warn_hook)
+        complete_hook = getattr(sink, 'on_complete', None)
+        if callable(complete_hook):
+            self._complete_hooks.append(complete_hook)
         exc_hook = getattr(sink, 'on_exception', None)
         if callable(exc_hook):
             self._exc_hooks.append(exc_hook)
+        self._all_sinks.append(sink)
 
     def on_complete(self, record):
         for complete_hook in self._complete_hooks:
@@ -57,8 +60,11 @@ class BaseLogger(object):
         for begin_hook in self._begin_hooks:
             begin_hook(record)
 
-    #def on_warn(self, record):
-    #    pass
+    def on_warn(self, record):
+        # TODO: need the actual warning as an argument?
+        # TODO: warning module integration goes somewhere
+        for warn_hook in self._warn_hooks:
+            warn_hook(record)
 
     def on_exception(self, record, exc_type, exc_obj, exc_tb):
         for exc_hook in self._exc_hooks:
