@@ -13,23 +13,27 @@ class BaseLogger(object):
     def __init__(self, name, sinks=None, **kwargs):
         # TODO: get module
         self.module = kwargs.pop('module', None)
-        self.name = name or self.module
-        self.sinks = list(sinks or [])
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
+        self.name = name or self.module
+        self.set_sinks(sinks)
 
     @property
     def sinks(self):
-        return self._all_sinks
+        return list(self._all_sinks)
 
-    @sinks.setter
-    def sinks(self, sinks):
+    def set_sinks(self, sinks):
         sinks = sinks or []
         self._all_sinks = []
-        self._complete_hooks = []
         self._begin_hooks = []
+        self._warn_hooks = []
+        self._complete_hooks = []
+        self._exc_hooks = []
         for s in sinks:
             self.add_sink(s)
+
+    def clear_sinks(self):
+        self.set_sinks(None)
 
     def add_sink(self, sink):
         if sink in self._all_sinks:
