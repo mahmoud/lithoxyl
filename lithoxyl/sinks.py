@@ -56,7 +56,6 @@ class SensibleSink(object):
                 % (cn, self.filters, self.formatter, self.emitter))
 
 
-
 class QuantileSink(object):
     def __init__(self, use_p2=False):
         """
@@ -69,15 +68,13 @@ class QuantileSink(object):
         setting use_p2 to True if your use case entails more frequent
         stats reading.
         """
+        self._qa_type = QuantileAccumulator
         if use_p2:
             self._qa_type = P2QuantileAccumulator
-        else:
-            self._qa_type = QuantileAccumulator
         self.qas = {}
 
     def on_complete(self, record):
         try:
-            # key off the logger object itself?
             logger_accs = self.qas[record.logger.name]
         except KeyError:
             logger_accs = self.qas[record.logger.name] = {}
@@ -91,7 +88,8 @@ class QuantileSink(object):
     def __repr__(self):
         cn = self.__class__.__name__
         acc_dict_repr = dict([(lname,
-                               dict([(k, round(a.median, 4)) for k, a in a_map.items()]))
+                               dict([(k, round(a.median, 4))
+                                     for k, a in a_map.items()]))
                               for lname, a_map in self.qas.items()])
         ret = '<%s %r>' % (cn, acc_dict_repr)
         return ret
