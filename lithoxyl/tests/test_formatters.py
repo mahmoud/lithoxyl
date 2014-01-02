@@ -3,16 +3,16 @@
 from lithoxyl.logger import Record, DEBUG
 from lithoxyl.formatters import Formatter
 
-template = ('{record_status_char}{record_warn_char}{begin_timestamp}'
+template = ('{status_char}{record_warn_char}{begin_timestamp}'
             ' - {begin_local_iso8601} - {begin_iso8601}'
-            ' - {logger_name} - {record_status} - {record_name}')
+            ' - {logger_name} - {status_str} - {record_name}')
 
 
 RECS = [Record('Riker', DEBUG).success('Hello, Thomas.')]
 
 
 TCS = [[('{logger_name}', '{logger_name}'),
-        ('{record_status}', 'success'),
+        ('{status_str}', 'success'),
         ('{level_number}', '20'),
         ('{record_name}', '"Riker"'),
         ('{message}', '"Hello, Thomas."')]

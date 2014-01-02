@@ -7,7 +7,7 @@ from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import BaseLogger
 
 
-fmtr = Formatter('{record_status_char}{begin_timestamp}')
+fmtr = Formatter('{status_char}{begin_timestamp}')
 strm_emtr = StreamEmitter('stderr')
 fake_emtr = FakeEmitter()
 strm_sink = SensibleSink(formatter=fmtr, emitter=strm_emtr)

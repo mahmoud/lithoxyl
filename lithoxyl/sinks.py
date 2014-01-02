@@ -67,6 +67,9 @@ class QuantileSink(object):
         P2 is slower to update, but faster to read, so consider
         setting use_p2 to True if your use case entails more frequent
         stats reading.
+
+        TODO: should the quantile sink really bother supporting the
+        multiple-logger/single-sink usage pattern?
         """
         self._qa_type = QuantileAccumulator
         if use_p2:
