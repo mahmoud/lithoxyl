@@ -33,7 +33,7 @@ class ThresholdFilter(object):
         # TODO: add "default" response?
         self.event_kw_vals = {}
         for event in ('start', 'success', 'failure', 'exception'):
-            self.event_kw_vals[event] = kwargs.pop(event, 0)
+            self.event_kw_vals[event] = kwargs.pop(event, 100)
 
         self.event_thresh_map = dict(self.event_kw_vals)  # TODO
         if kwargs:
