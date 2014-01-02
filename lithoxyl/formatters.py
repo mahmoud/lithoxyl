@@ -3,7 +3,7 @@
 from json import dumps as escape_str
 
 from formatutils import tokenize_format_str
-from fields import BUILTIN_GETTERS, BUILTIN_QUOTERS
+from fields import FMT_BUILTIN_MAP, BUILTIN_GETTERS, BUILTIN_QUOTERS
 
 
 class LazyExtrasDict(dict):
@@ -37,10 +37,16 @@ class Templette(object):
         self.tokens = tokenize_format_str(tmpl_str)
         self.default_map = {}
         self.quote_map = {}
-        for t in self.tokens:
-            if hasattr(t, 'base_name'):
-                self.default_map[t] = self.defaulter(t)
-                self.quote_map[t] = self.quoter(t)
+        for token in self.tokens:
+            try:
+                if not token.fspec:
+                    token.set_fspec(FMT_BUILTIN_MAP[token.fname].fspec)
+                self.default_map[token] = self.defaulter(token)
+                self.quote_map[token] = self.quoter(token)
+            except (KeyError, AttributeError):
+                # not a field or not a builtin field
+                pass
+        return
 
     def format_record(self, record, *args, **kwargs):
         ret = ''
