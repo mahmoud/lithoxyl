@@ -39,12 +39,30 @@ class StructuredFileSink(object):
 
 
 class SensibleSink(object):
-    def __init__(self, filters=None, formatter=None, emitter=None):
+    def __init__(self, filters=None, formatter=None, emitter=None, on=None):
+        events = on
+        if events is None:
+            events = ['complete']
+        elif isinstance(events, basestring):
+            events = [events]
+        self.events = [e.lower() for e in events]
         self.filters = list(filters or [])
         self.formatter = formatter
         self.emitter = emitter
 
-    def on_complete(self, record):
+        if 'complete' in self.events:
+            self.on_complete = self._on_complete
+        if 'begin' in self.events:
+            self.on_begin = self._on_begin
+        # TODO warn and exc
+
+    def _on_complete(self, record):
+        if self.filters and not all([f(record) for f in self.filters]):
+            return
+        entry = self.formatter(record)
+        return self.emitter(entry)
+
+    def _on_begin(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter(record)
