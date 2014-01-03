@@ -39,10 +39,11 @@ class Templette(object):
         self.quote_map = {}
         for token in self.tokens:
             try:
-                if not token.fspec:
-                    token.set_fspec(FMT_BUILTIN_MAP[token.fname].fspec)
+                fspec = token.fspec
                 self.default_map[token] = self.defaulter(token)
                 self.quote_map[token] = self.quoter(token)
+                if not fspec:
+                    token.set_fspec(FMT_BUILTIN_MAP[token.fname].fspec)
             except (KeyError, AttributeError):
                 # not a field or not a builtin field
                 pass
