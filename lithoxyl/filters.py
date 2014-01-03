@@ -32,7 +32,7 @@ class ThresholdFilter(object):
         # TODO: on-bind lookup behaviors?
         # TODO: add "default" response?
         self.event_kw_vals = {}
-        for event in ('start', 'success', 'failure', 'exception'):
+        for event in ('begin', 'success', 'failure', 'exception'):
             self.event_kw_vals[event] = kwargs.pop(event, 100)
 
         self.event_thresh_map = dict(self.event_kw_vals)  # TODO
