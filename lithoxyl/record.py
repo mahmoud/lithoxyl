@@ -17,8 +17,8 @@ class Record(object):
         self.name = name
         self.level = level
         self.logger = kwargs.pop('logger', None)
-        self.status = kwargs.pop('status', None)
-        self.message = kwargs.pop('message', None)
+        self.status = kwargs.pop('status', 'begin')
+        self.message = kwargs.pop('message', '%s begin' % name)
         self.raw_message = kwargs.pop('raw_message', None)
         self.extras = kwargs.pop('extras', {})
         self.begin_time = kwargs.pop('begin_time', time.time())
@@ -125,9 +125,10 @@ class Record(object):
             self.exception(exc_type, exc_val, exc_tb)
             # TODO: should probably be three steps:
             # set certain attributes, then do on_exception, then do completion.
-        elif self.status is None:
-            self.success(self.message)
+        elif self.status is 'begin':
+            self.success()
         else:
+            # TODO: a bit questionable
             self._complete(self.status, self.message)
         if self._reraise is False:
             return True  # ignore exception
