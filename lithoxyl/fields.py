@@ -55,7 +55,7 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('status_char', 's', lambda r: r.status_char, quote=False),
                 FF('warn_char', 's', lambda r: r.warn_char, quote=False),
                 FF('level_name', 's', lambda r: r.level),  # TODO
-                FF('level_number', 'd', lambda r: r.level),
+                FF('level_number', 'd', lambda r: r.level._value),
                 FF('message', 's', lambda r: r.message),
                 FF('raw_message', 's', lambda r: r.raw_message),
                 FF('begin_timestamp', '.14g', lambda r: r.begin_time),

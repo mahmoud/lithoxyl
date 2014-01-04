@@ -3,10 +3,7 @@
 import sys
 
 from record import Record
-
-DEBUG = 20
-INFO = 50
-CRITICAL = 90
+from common import DEBUG, INFO, CRITICAL
 
 
 class BaseLogger(object):
