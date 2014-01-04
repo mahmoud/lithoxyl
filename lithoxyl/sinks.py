@@ -3,7 +3,6 @@
 import sys
 import json
 
-from filters import ThresholdFilter
 from formatters import Formatter
 from emitters import StreamEmitter
 from quantile import QuantileAccumulator, P2QuantileAccumulator
@@ -39,7 +38,7 @@ class StructuredFileSink(object):
 
 
 class SensibleSink(object):
-    def __init__(self, filters=None, formatter=None, emitter=None, on=None):
+    def __init__(self, formatter=None, emitter=None, filters=None, on=None):
         events = on
         if events is None:
             events = ['complete']

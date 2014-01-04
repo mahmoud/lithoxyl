@@ -62,9 +62,9 @@ def test_bad_encoding_error_fallback():
 def _test_exception():
     _tmpl = ('{end_iso8601} - {exc_type}: {exc_message}'
              ' - {func_name}:{line_number} - {exc_tb_list}')
-    sink = SensibleSink([ThresholdFilter(exception=0)],
-                        Formatter(_tmpl),
-                        StreamEmitter('stderr'))
+    sink = SensibleSink(Formatter(_tmpl),
+                        StreamEmitter('stderr'),
+                        filters=[ThresholdFilter(exception=0)])
     logger = BaseLogger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
         print tr
