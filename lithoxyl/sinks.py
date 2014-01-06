@@ -85,14 +85,33 @@ class QuantileSink(object):
         setting use_p2 to True if your use case entails more frequent
         stats reading.
 
-        TODO: should the quantile sink really bother supporting the
-        multiple-logger/single-sink usage pattern?
+        Depending on application/sink usage, a MultiQuantileSink may
+        be appropriate to avoid collisions among statistics with the
+        same record names. (only if you use the same sink with
+        multiple loggers, just look at on_complete and it'll be
+        clear.)
         """
         self._qa_type = QuantileAccumulator
         if use_p2:
             self._qa_type = P2QuantileAccumulator
         self.qas = {}
 
+    def on_complete(self, record):
+        try:
+            acc = self.qas[record.name]
+        except KeyError:
+            acc = self.qas[record.name] = self._qa_type()
+        acc.add(record.duration)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        acc_dict_repr = dict([(rec_name, round(acc.median, 4))
+                              for rec_name, acc in self.qas.items()])
+        ret = '<%s %r>' % (cn, acc_dict_repr)
+        return ret
+
+
+class MultiQuantileSink(QuantileSink):
     def on_complete(self, record):
         try:
             logger_accs = self.qas[record.logger.name]
