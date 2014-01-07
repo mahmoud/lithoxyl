@@ -105,7 +105,7 @@ class QuantileSink(object):
 
     def __repr__(self):
         cn = self.__class__.__name__
-        acc_dict_repr = dict([(rec_name, round(acc.median, 4))
+        acc_dict_repr = dict([(rec_name, (acc.count, round(acc.median, 4)))
                               for rec_name, acc in self.qas.items()])
         ret = '<%s %r>' % (cn, acc_dict_repr)
         return ret
@@ -127,7 +127,7 @@ class MultiQuantileSink(QuantileSink):
     def __repr__(self):
         cn = self.__class__.__name__
         acc_dict_repr = dict([(lname,
-                               dict([(k, round(a.median, 4))
+                               dict([(k, (a.count, round(a.median, 4)))
                                      for k, a in a_map.items()]))
                               for lname, a_map in self.qas.items()])
         ret = '<%s %r>' % (cn, acc_dict_repr)
