@@ -9,6 +9,10 @@ _EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
             ' {exc_filename}, logged from {callpoint_info})')
 
 
+class DefaultException(Exception):
+    "Usually only used when traceback extraction fails"
+
+
 class Record(object):
     _is_trans = None
     _defer_publish = False
@@ -58,7 +62,14 @@ class Record(object):
             message = self.name + ' failed'
         return self._complete('failure', message)
 
-    def exception(self, exc_type, exc_val, exc_tb):
+    def exception(self, exc_info=None):
+        if not exc_info:
+            exc_info = sys.exc_info()
+        try:
+            exc_type, exc_val, exc_tb = exc_info
+        except:
+            exc_type, exc_val, exc_tb = (None, None, None)
+        exc_type = exc_type or DefaultException
         self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         return self._complete('exception', repr(exc_val))
 
@@ -129,7 +140,8 @@ class Record(object):
                 # TODO: something? grasshopper mode maybe.
                 pass
             # then, normal completion behavior
-            self.exception(exc_type, exc_val, exc_tb)
+            exc_info = (exc_type, exc_val, exc_tb)
+            self.exception(exc_info)
             # TODO: should probably be three steps:
             # set certain attributes, then do on_exception, then do completion.
         elif self.status is 'begin':
