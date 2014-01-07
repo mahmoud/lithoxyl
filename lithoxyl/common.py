@@ -33,10 +33,13 @@ DEBUG = Level('debug', 20)
 INFO = Level('info', 70)
 CRITICAL = Level('critical', 90)
 
+MIN_LEVEL = Level('_min', 0)
+MAX_LEVEL = Level('_max', 100)
+
 
 if __name__ == '__main__':
     assert DEBUG != INFO != CRITICAL
-    assert DEBUG < INFO < CRITICAL
+    assert MIN_LEVEL < DEBUG < INFO < CRITICAL < MAX_LEVEL
     assert DEBUG <= INFO <= CRITICAL
     assert DEBUG == DEBUG
     assert DEBUG == Level('debug', 20)

@@ -20,7 +20,7 @@ class AggSink(object):
         self.records.append(record)
 
 
-_MSG_ATTRS = ('name', 'level', 'status', 'message',
+_MSG_ATTRS = ('name', 'level_name', 'status', 'message',
               'begin_time', 'end_time', 'duration')
 
 

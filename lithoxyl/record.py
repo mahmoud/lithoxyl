@@ -37,6 +37,13 @@ class Record(object):
         if kwargs:
             self.extras.update(kwargs)
 
+    @property
+    def level_name(self):
+        try:
+            return self.level.name
+        except:
+            return repr(self.level)
+
     def warn(self, message):
         self.warnings.append(message)
         return self
