@@ -73,6 +73,20 @@ class SensibleSink(object):
                 % (cn, self.filters, self.formatter, self.emitter))
 
 
+class CounterSink(object):
+    def __init__(self):
+        self.counter_map = {}
+
+    def on_complete(self, record):
+        try:
+            self.counter_map[record.name] += 1
+        except KeyError:
+            self.counter_map[record.name] = 1
+
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.counter_map)
+
+
 class QuantileSink(object):
     def __init__(self, use_p2=False):
         """
