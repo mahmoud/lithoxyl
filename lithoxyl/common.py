@@ -67,7 +67,7 @@ def get_next_level(key, delta=1):
 
 
 def get_prev_level(key, delta=1):
-    level = get_level(key)
+    level, delta = get_level(key), abs(delta)
     prev_i = max(_SORTED_LEVELS.index(level) - delta, 0)
     prev_level = _SORTED_LEVELS[prev_i]
     return prev_level
