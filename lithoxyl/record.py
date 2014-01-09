@@ -41,6 +41,10 @@ class Record(object):
         if kwargs:
             self.extras.update(kwargs)
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '<%s %r %r>' % (cn, self.level, self.status)
+
     @property
     def level_name(self):
         try:
