@@ -115,7 +115,8 @@ class Record(object):
         if self._is_trans:
             self.end_time = time.time()
             self.duration = self.end_time - self.begin_time
-
+        else:
+            self.end_time, self.duration = self.begin_time, 0.0
         self.status = status
         if not message:
             message = u''
