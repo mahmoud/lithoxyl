@@ -15,7 +15,7 @@ class LazyExtrasDict(dict):
         try:
             getter = self.getters[key]
         except KeyError:
-            return self.record.extras.get(key)
+            return self.record.extras.get[key]
         else:
             return getter(self.record)
 
