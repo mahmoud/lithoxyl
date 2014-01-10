@@ -74,6 +74,7 @@ class SensibleSink(object):
 
 
 class CounterSink(object):
+    # TODO: incorporate status
     def __init__(self):
         self.counter_map = {}
 
@@ -122,6 +123,14 @@ class QuantileSink(object):
         acc_dict_repr = dict([(rec_name, (acc.count, round(acc.median, 4)))
                               for rec_name, acc in self.qas.items()])
         ret = '<%s %r>' % (cn, acc_dict_repr)
+        return ret
+
+    def to_dict(self):
+        ret = {}
+        for r_name, acc in self.qas.iteritems():
+            ret[r_name] = {'count': acc.count,
+                           'trimean': acc.trimean,
+                           'quantiles': dict(acc.get_quantiles())}
         return ret
 
 
