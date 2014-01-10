@@ -8,7 +8,7 @@ from tzutils import UTC, LocalTZ
 from formatutils import BaseFormatField
 
 
-def timestamp2iso8601_noms(timestamp, local=False):
+def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
     """
     with time.strftime(), one would have to do fractional
     seconds/milliseconds manually, because the timetuple used doesn't
@@ -18,7 +18,10 @@ def timestamp2iso8601_noms(timestamp, local=False):
     however. That's nothing compared to time.time()
     vs. datetime.now(), which is two orders of magnitude faster.
     """
-    tformat = '%Y-%m-%d %H:%M:%S'
+    if with_tz:
+        tformat = '%Y-%m-%d %H:%M:%S %Z'
+    else:
+        tformat = '%Y-%m-%d %H:%M:%S'
     if local:
         tstruct = time.localtime(timestamp)
     else:
@@ -26,13 +29,16 @@ def timestamp2iso8601_noms(timestamp, local=False):
     return time.strftime(tformat, tstruct)
 
 
-def timestamp2iso8601(timestamp, local=False, tformat=None):
-    tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
+def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
+    if with_tz:
+        tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
+    else:
+        tformat = tformat or '%Y-%m-%d %H:%M:%S.%f'
     if local:
         dt = datetime.datetime.fromtimestamp(timestamp, tz=LocalTZ)
     else:
         dt = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-    return dt.isoformat(' ')
+    return dt.strftime(tformat)
 
 
 class FormatField(BaseFormatField):
@@ -62,10 +68,6 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('raw_message', 's', lambda r: r.raw_message),
                 FF('begin_timestamp', '.14g', lambda r: r.begin_time),
                 FF('end_timestamp', '.14g', lambda r: r.end_time),
-                FF('begin_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time)),
-                FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
-                FF('begin_local_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time, local=True)),
-                FF('end_local_iso8601', 's', lambda r: timestamp2iso8601(r.end_time, local=True)),
                 FF('duration_secs', '.3f', lambda r: r.duration),
                 FF('duration_msecs', '.3f', lambda r: r.duration * 1000.0),
                 FF('module_name', 's', lambda r: r.callpoint.module_name),
@@ -77,6 +79,36 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('exc_tb_str', 's', lambda r: str(r.exc_info.tb_info)),
                 FF('exc_tb_list', 's', lambda r: r.exc_info.tb_info.frames),
                 FF('process_id', 'd', lambda r: 'TODO')]
+
+# ISO8601 and variants. combinations of:
+#   * begin/end
+#   * UTC/Local
+#   * with/without milliseconds
+#   * with/without timezone (_noms variants have textual timezone)
+FMT_BUILTINS.extend([
+        FF('begin_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time)),
+        FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
+        FF('begin_iso8601_notz', 's',
+           lambda r: timestamp2iso8601(r.begin_time, with_tz=False)),
+        FF('end_iso8601_notz', 's',
+           lambda r: timestamp2iso8601(r.end_time, with_tz=False)),
+        FF('begin_local_iso8601', 's',
+           lambda r: timestamp2iso8601(r.begin_time, local=True)),
+        FF('end_local_iso8601', 's',
+           lambda r: timestamp2iso8601(r.end_time, local=True)),
+        FF('begin_local_iso8601_notz', 's',
+           lambda r: timestamp2iso8601(r.begin_time, local=True, with_tz=False)),
+        FF('end_local_iso8601_notz', 's',
+           lambda r: timestamp2iso8601(r.end_time, local=True, with_tz=False)),
+        FF('begin_local_iso8601_noms', 's',
+           lambda r: timestamp2iso8601_noms(r.begin_time, local=True)),
+        FF('end_local_iso8601_noms', 's',
+           lambda r: timestamp2iso8601_noms(r.end_time, local=True)),
+        FF('begin_local_iso8601_noms_notz', 's',
+           lambda r: timestamp2iso8601_noms(r.begin_time, local=True, with_tz=False)),
+        FF('end_local_iso8601_noms_notz', 's',
+           lambda r: timestamp2iso8601_noms(r.end_time, local=True, with_tz=False))])
+
 
 
 FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
