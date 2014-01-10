@@ -5,8 +5,7 @@ import time
 
 from tbutils import ExceptionInfo, Callpoint
 
-_EXC_MSG = ('{exc_type_name}: {exc_msg} (line {exc_lineno} in file'
-            ' {exc_filename}, logged from {callpoint_info})')
+from formatters import Templette
 
 
 class DefaultException(Exception):
@@ -56,15 +55,15 @@ class Record(object):
         self.warnings.append(message)
         return self
 
-    def success(self, message=None):
+    def success(self, message=None, **kw):
         if not message:
             message = self.name + ' succeeded'  # TODO: localize
-        return self._complete('success', message)
+        return self._complete('success', message, **kw)
 
-    def failure(self, message=None):
+    def failure(self, message=None, **kw):
         if not message:
             message = self.name + ' failed'
-        return self._complete('failure', message)
+        return self._complete('failure', message, **kw)
 
     def exception(self, exc_info=None):
         if not exc_info:
@@ -111,18 +110,26 @@ class Record(object):
     def warn_char(self):
         return 'W' if self.warnings else ' '
 
-    def _complete(self, status, message):
+    def _complete(self, status, message=None, **kw):
         if self._is_trans:
             self.end_time = time.time()
             self.duration = self.end_time - self.begin_time
         else:
             self.end_time, self.duration = self.begin_time, 0.0
         self.status = status
-        if not message:
+        if message is None:
             message = u''
         elif not isinstance(message, unicode):
-            message = message.decode('utf-8')
-        self.message = message
+            # if you think this is excessive, see the issue with the
+            # unicode constructor as semi-detailed here:
+            # http://pythondoeswhat.blogspot.com/2013/09/unicodebreakers.html
+            message = unicode(str(message), encoding='utf-8')
+        self.raw_message = message
+        if '{' not in message:
+            # yay premature optimization
+            self.message = message
+        else:
+            self.message = Templette(message).format_record(self, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
         return self
