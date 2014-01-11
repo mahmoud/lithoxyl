@@ -21,8 +21,11 @@ class Record(object):
         self.level = level
         self.logger = kwargs.pop('logger', None)
         self.status = kwargs.pop('status', 'begin')
-        self.message = kwargs.pop('message', '%s begin' % name)
-        self.raw_message = kwargs.pop('raw_message', None)
+        try:
+            self.raw_message = kwargs.pop('raw_message')
+        except:
+            self.raw_message = '%s begin' % name
+        self.message = kwargs.pop('message', self.raw_message)
         self.extras = kwargs.pop('extras', {})
         self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
@@ -123,12 +126,16 @@ class Record(object):
             # if you think this is excessive, see the issue with the
             # unicode constructor as semi-detailed here:
             # http://pythondoeswhat.blogspot.com/2013/09/unicodebreakers.html
-            message = unicode(str(message), encoding='utf-8')
+            try:
+                message = str(message).decode('utf-8', errors='replace')
+            except:
+                message = unicode(object.__repr__(message))  # space nuke
         self.raw_message = message
         if '{' not in message:
             # yay premature optimization
             self.message = message
         else:
+            # TODO: Templette cache
             self.message = Templette(message).format_record(self, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
