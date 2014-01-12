@@ -58,20 +58,20 @@ class Record(object):
         self.warnings.append(message)
         return self
 
-    def success(self, message=None, **kw):
+    def success(self, message=None, *a, **kw):
         if not message:
             message = self.name + ' succeeded'  # TODO: localize
-        return self._complete('success', message, **kw)
+        return self._complete('success', message, *a, **kw)
 
-    def failure(self, message=None, **kw):
+    def failure(self, message=None, *a, **kw):
         if not message:
             message = self.name + ' failed'
-        return self._complete('failure', message, **kw)
+        return self._complete('failure', message, *a, **kw)
 
-    def exception(self, message=None, **kw):
-        return self._exception(None, message, **kw)
+    def exception(self, message=None, *a, **kw):
+        return self._exception(None, message, *a, **kw)
 
-    def _exception(self, exc_info, message, **kw):
+    def _exception(self, exc_info, message, *a, **kw):
         if not exc_info:
             exc_info = sys.exc_info()
         try:
@@ -79,46 +79,12 @@ class Record(object):
         except:
             exc_type, exc_val, exc_tb = (None, None, None)
         exc_type = exc_type or DefaultException
+        self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
-        self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
-        return self._complete('exception', message, **kw)
+        return self._complete('exception', message, *a, **kw)
 
-    def __getitem__(self, key):
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            return self.extras[key]
-
-    def __setitem__(self, key, value):
-        if hasattr(self, key):
-            setattr(self, key, value)
-        else:
-            self.extras[key] = value
-
-    def get_elapsed_time(self):
-        return time.time() - self.begin_time
-
-    @property
-    def status_char(self):
-        ret = '_'
-        try:
-            if self._is_trans:
-                if self.end_time:
-                    ret = self.status[:1].upper()
-                else:
-                    ret = 'b'
-            else:
-                ret = self.status[:1].lower()
-        except:
-            pass
-        return ret
-
-    @property
-    def warn_char(self):
-        return 'W' if self.warnings else ' '
-
-    def _complete(self, status, message=None, **kw):
+    def _complete(self, status, message=None, *a, **kw):
         if self._is_trans:
             self.end_time = time.time()
             self.duration = self.end_time - self.begin_time
@@ -141,7 +107,7 @@ class Record(object):
             self.message = message
         else:
             # TODO: Templette cache
-            self.message = Templette(message).format_record(self, **kw)
+            self.message = Templette(message).format_record(self, *a, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
         return self
@@ -176,3 +142,37 @@ class Record(object):
         if self._reraise is False:
             return True  # ignore exception
         return
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            return self.extras[key]
+
+    def __setitem__(self, key, value):
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            self.extras[key] = value
+
+    def get_elapsed_time(self):
+        return time.time() - self.begin_time
+
+    @property
+    def status_char(self):
+        ret = '_'
+        try:
+            if self._is_trans:
+                if self.end_time:
+                    ret = self.status[:1].upper()
+                else:
+                    ret = 'b'
+            else:
+                ret = self.status[:1].lower()
+        except:
+            pass
+        return ret
+
+    @property
+    def warn_char(self):
+        return 'W' if self.warnings else ' '
