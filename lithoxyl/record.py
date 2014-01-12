@@ -68,7 +68,10 @@ class Record(object):
             message = self.name + ' failed'
         return self._complete('failure', message, **kw)
 
-    def exception(self, exc_info=None):
+    def exception(self, message=None, **kw):
+        return self._exception(None, message, **kw)
+
+    def _exception(self, exc_info, message, **kw):
         if not exc_info:
             exc_info = sys.exc_info()
         try:
@@ -76,8 +79,10 @@ class Record(object):
         except:
             exc_type, exc_val, exc_tb = (None, None, None)
         exc_type = exc_type or DefaultException
+        if not message:
+            message = '%s raised exception: %r' % (self.name, exc_val)
         self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
-        return self._complete('exception', repr(exc_val))
+        return self._complete('exception', message, **kw)
 
     def __getitem__(self, key):
         try:
@@ -160,7 +165,7 @@ class Record(object):
                 pass
             # then, normal completion behavior
             exc_info = (exc_type, exc_val, exc_tb)
-            self.exception(exc_info)
+            self._exception(exc_info, None)
             # TODO: should probably be three steps:
             # set certain attributes, then do on_exception, then do completion.
         elif self.status is 'begin':
