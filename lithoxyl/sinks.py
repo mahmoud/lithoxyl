@@ -2,6 +2,9 @@
 
 import sys
 import json
+import time
+import bisect
+from collections import deque
 
 from formatters import Formatter
 from emitters import StreamEmitter
@@ -35,6 +38,124 @@ class StructuredFileSink(object):
         json_str = json.dumps(msg_data, sort_keys=True)
         self.fileobj.write(json_str)
         self.fileobj.write('\n')
+
+
+class RateAccumulator(object):
+    def __init__(self, sample_size=128):
+        self.times = deque()
+        self.total_count = 0
+        self.creation_time = time.time()
+        self.sample_size = sample_size
+
+    def add(self, timestamp):
+        self.total_count += 1
+        times = self.times
+        times.append(timestamp)
+        if len(times) > self.sample_size:
+            times.popleft()
+
+    def get_norm_times(self, ndigits=4):
+        if not self.times:
+            return self.times
+        first = self.times[0]
+        return [round(x - first, ndigits) for x in self.times]
+
+    def get_rate(self, start_time=None, end_time=None):
+        if not self.times:
+            return 0.0
+        end_time = end_time or time.time()
+        start_time = start_time or self.creation_time
+        if start_time <= self.creation_time:
+            count = self.total_count
+        else:
+            target_idx = bisect.bisect_left(self.times, start_time)
+            count = len(self.times) - target_idx
+            if not count:
+                return 0.0
+            elif not target_idx:
+                start_time = self.times[0]
+        return count / (end_time - start_time)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        rate = self.get_rate()
+        return '<%s rate=%.4f count=%r>' % (cn, rate, self.total_count)
+
+
+class RateSink(object):
+    def __init__(self, sample_size=128):
+        # TODO: configurable getter (now hardcoded to get record.end_time)
+        self.acc_map = {}
+        self.sample_size = sample_size
+        self.creation_time = time.time()
+
+    def on_complete(self, record):
+        name_time_map = self.acc_map.setdefault(record.logger, {})
+        status_time_map = name_time_map.setdefault(record.name, {})
+        try:
+            acc = status_time_map[record.status]
+        except:
+            acc = RateAccumulator(sample_size=self.sample_size)
+            status_time_map[record.status] = acc
+        acc.add(record.end_time)
+
+    def get_rates(self, max_time=None, **kw):
+        """\
+        max_time is a convenience for only getting the rate for the last
+        1/2/5 seconds, etc.
+        """
+        end_time = kw.pop('end_time', time.time())
+        start_time = kw.pop('start_time', self.creation_time)
+        if max_time:
+            start_time = end_time - max_time
+
+        ret = {}
+        all_loggers_rate = 0.0
+        for logger, name_map in self.acc_map.items():
+            cur_logger_rate = 0.0
+            ret[logger.name] = {}
+            for name, status_map in name_map.items():
+                cur_name_rate = 0.0
+                ret[logger.name][name] = {}
+                for status, acc in status_map.items():
+                    cur_rate = acc.get_rate(start_time=start_time,
+                                            end_time=end_time)
+                    ret[logger.name][name][status] = cur_rate
+                    cur_name_rate += cur_rate
+                    cur_logger_rate += cur_rate
+                    all_loggers_rate += cur_rate
+                ret[logger.name][name]['__all__'] = cur_name_rate
+            ret[logger.name]['__all__'] = cur_logger_rate
+        ret['__all__'] = all_loggers_rate
+        return ret
+
+    def get_total_counts(self):
+        ret = {}
+        all_loggers_count = 0
+        for logger, name_map in self.acc_map.items():
+            cur_logger_count = 0
+            ret[logger.name] = {}
+            for name, status_map in name_map.items():
+                cur_name_count = 0
+                ret[logger.name][name] = {}
+                for status, acc in status_map.items():
+                    cur_count = acc.total_count
+                    ret[logger.name][name][status] = cur_count
+                    cur_name_count += cur_count
+                    cur_logger_count += cur_count
+                    all_loggers_count += cur_count
+                ret[logger.name][name]['__all__'] = cur_name_count
+            ret[logger.name]['__all__'] = cur_logger_count
+        ret['__all__'] = all_loggers_count
+        return ret
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        total_rate_all = self.get_rates()['__all__']
+        total_count_all = self.get_total_counts()['__all__']
+        return '<%s total_rate=%.4f total_count=%r>' % (cn,
+                                                        total_rate_all,
+                                                        total_count_all)
 
 
 class SensibleSink(object):
@@ -71,21 +192,6 @@ class SensibleSink(object):
         cn = self.__class__.__name__
         return ('<%s filters=%r formatter=%r emitter=%r>'
                 % (cn, self.filters, self.formatter, self.emitter))
-
-
-class CounterSink(object):
-    # TODO: incorporate status
-    def __init__(self):
-        self.counter_map = {}
-
-    def on_complete(self, record):
-        try:
-            self.counter_map[record.name] += 1
-        except KeyError:
-            self.counter_map[record.name] = 1
-
-    def __repr__(self):
-        return '<%s %r>' % (self.__class__.__name__, self.counter_map)
 
 
 class QuantileSink(object):
