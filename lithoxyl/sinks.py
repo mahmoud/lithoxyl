@@ -41,6 +41,11 @@ class StructuredFileSink(object):
 
 
 class RateAccumulator(object):
+    """\
+    The RateAccumulator provides basic accounting and rate estimation
+    capabilities based on a single stream of timestamps. Note that the stream
+    is assumed to be in order.
+    """
     def __init__(self, sample_size=128):
         self.times = deque()
         self.total_count = 0
@@ -48,6 +53,10 @@ class RateAccumulator(object):
         self.sample_size = sample_size
 
     def add(self, timestamp):
+        """
+        Adds a timestamp to the accumulator. Note that timestamps are
+        expected to be added _in order_.
+        """
         self.total_count += 1
         times = self.times
         times.append(timestamp)
@@ -55,12 +64,27 @@ class RateAccumulator(object):
             times.popleft()
 
     def get_norm_times(self, ndigits=4):
+        """\
+        Mostly for debugging: returns the current reservoir of
+        timestamps normalized to the first.
+        """
         if not self.times:
-            return self.times
+            return []
         first = self.times[0]
         return [round(x - first, ndigits) for x in self.times]
 
     def get_rate(self, start_time=None, end_time=None):
+        """\ Returns the per-second rate of the accumulator, taking into
+        account the window designated by start_time and
+        end_time.
+
+        start_time defaults to the creation time of the
+        accumulator. end_time defaults to current time.
+
+        Note that if the window extends beyond the time range
+        currently tracked by the reservoir, but less than the total
+        lifespan of the accumulator, the rate will be an estimate.
+        """
         if not self.times:
             return 0.0
         end_time = end_time or time.time()
@@ -83,8 +107,19 @@ class RateAccumulator(object):
 
 
 class RateSink(object):
-    def __init__(self, sample_size=128):
-        # TODO: configurable getter (now hardcoded to get record.end_time)
+    """\
+    The RateSink provides basic accounting and rate estimation
+    facilities records as they pass through the system.
+
+    It uses a reservoir system for predictable and stable memory
+    use. See RateAccumulator for more information.
+
+    A RateSink can be shared across multiple loggers.
+    """
+    def __init__(self, sample_size=128, getter=None):
+        if getter is None:
+            getter = lambda record: record.end_time
+        self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size
         self.creation_time = time.time()
@@ -101,8 +136,13 @@ class RateSink(object):
 
     def get_rates(self, max_time=None, **kw):
         """\
-        max_time is a convenience for only getting the rate for the last
-        1/2/5 seconds, etc.
+        Gets a dictionary of rates, grouped by logger and
+        status. Aggregates are put under the special key,
+        '__all__'. All rates are in terms of seconds.
+
+        The caller can specify `start_time` and `end_time`, or use the
+        convenience parameter `max_time`, which specifies how long
+        before the current time the window should extend.
         """
         end_time = kw.pop('end_time', time.time())
         start_time = kw.pop('start_time', self.creation_time)
@@ -130,6 +170,11 @@ class RateSink(object):
         return ret
 
     def get_total_counts(self):
+        """\
+        Gets a dictionary of counts, grouped by logger and
+        status. Aggregates are put under the special key,
+        '__all__'. All counts are for the full lifetime of the sink.
+        """
         ret = {}
         all_loggers_count = 0
         for logger, name_map in self.acc_map.items():
