@@ -47,10 +47,13 @@ class RateAccumulator(object):
     is assumed to be in order.
     """
     def __init__(self, sample_size=128):
-        self.times = deque()
+        self.times = deque(maxlen=sample_size)
         self.total_count = 0
         self.creation_time = time.time()
-        self.sample_size = sample_size
+
+    @property
+    def sample_size(self):
+        return self.times.maxlen
 
     def add(self, timestamp):
         """
@@ -58,10 +61,7 @@ class RateAccumulator(object):
         expected to be added _in order_.
         """
         self.total_count += 1
-        times = self.times
-        times.append(timestamp)
-        if len(times) > self.sample_size:
-            times.popleft()
+        self.times.append(timestamp)
 
     def get_norm_times(self, ndigits=4):
         """\
