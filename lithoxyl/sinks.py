@@ -208,6 +208,72 @@ class RateSink(object):
                                                         total_count_all)
 
 
+from ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
+
+
+class EWMASink(object):
+    # accumulator_type = EWMAAccumulator
+    def __init__(self,
+                 periods=DEFAULT_PERIODS,
+                 interval=DEFAULT_INTERVAL,
+                 getter=None):
+        if getter is None:
+            getter = lambda record: record.duration
+        self.periods = periods
+        self.interval = interval
+        self.getter = getter
+        self.acc_map = {}
+
+    def on_complete(self, record):
+        name_time_map = self.acc_map.setdefault(record.logger.name, {})
+        status_time_map = name_time_map.setdefault(record.name, {})
+        try:
+            acc = status_time_map[record.status]
+        except:
+            acc = EWMAAccumulator(periods=self.periods,
+                                  interval=self.interval)
+            status_time_map[record.status] = acc
+        value = self.getter(record)
+        print value
+        acc.add(value)
+
+    @staticmethod
+    def _update_add(target, other):
+        for k, v in other.iteritems():
+            if v is None:
+                continue
+            try:
+                target[k] += v
+            except KeyError:
+                target[k] = v
+        return
+
+    def get_values(self):
+        ret = {}
+        _update_add = self._update_add
+        all_loggers_vals = ret['__all__'] = {}
+        for logger, name_map in self.acc_map.items():
+            ret[logger] = {}
+            cur_logger_vals = ret[logger]['__all__'] = {}
+            for name, status_map in name_map.items():
+                ret[logger][name] = {}
+                cur_name_vals = ret[logger][name]['__all__'] = {}
+                for status, acc in status_map.items():
+                    cur_vals = acc.get_rates()
+                    print cur_vals
+                    ret[logger][name][status] = cur_vals
+                    _update_add(cur_name_vals, cur_vals)
+                    _update_add(cur_logger_vals, cur_vals)
+                    _update_add(all_loggers_vals, cur_vals)
+        return ret
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        total_values = self.get_values()['__all__']
+        return '<%s total_values=%r>' % (cn,
+                                         total_values)
+
+
 class SensibleSink(object):
     def __init__(self, formatter=None, emitter=None, filters=None, on=None):
         events = on

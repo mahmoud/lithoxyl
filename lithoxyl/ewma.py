@@ -22,6 +22,7 @@ class EWMAAccumulator(object):
         self._rate_map = dict([(p, None) for p in periods])
         self._uncounted = 0.0
         self._last_update = time.time()
+        self._force_next_update = True
 
     def add(self, value):
         "Adds a new value to the moving average."
@@ -47,7 +48,14 @@ class EWMAAccumulator(object):
         "Conditionally updates and returns a copy of the rate map"
         if (time.time() - self._last_update) >= self._interval:
             self._update()
+        elif self._force_next_update:
+            self._force_next_update = False
+            self._update()
         return dict(self._rate_map)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '<%s rates=%r>' % (cn, self.get_rates())
 
 
 def _main(incr=1):
