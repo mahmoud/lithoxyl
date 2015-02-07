@@ -6,7 +6,7 @@ from record import Record
 from common import DEBUG, INFO, CRITICAL
 
 
-class BaseLogger(object):
+class Logger(object):
     record_type = Record
 
     def __init__(self, name, sinks=None, **kwargs):

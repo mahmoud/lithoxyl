@@ -2,13 +2,13 @@
 
 import time
 
-from lithoxyl.logger import BaseLogger
+from lithoxyl.logger import Logger
 from lithoxyl.sinks import RateSink, RateAccumulator
 
 
 def test_rate_sink():
     sink = RateSink()
-    logger = BaseLogger('testlog', sinks=[sink])
+    logger = Logger('testlog', sinks=[sink])
 
     for i in range(8):
         with logger.info('sleeping', reraise=False):

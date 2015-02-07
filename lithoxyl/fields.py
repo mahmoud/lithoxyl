@@ -8,7 +8,6 @@ from tzutils import UTC, LocalTZ
 from formatutils import BaseFormatField
 
 BUILTIN_FIELD_MAP = {}
-BUILTIN_GETTERS = {}
 
 
 def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
@@ -125,7 +124,6 @@ for f in ISO8601_FIELDS:
 
 def register_builtin_field(f):
     BUILTIN_FIELD_MAP[f.fname] = f
-    BUILTIN_GETTERS[f.fname] = f.getter
 
 
 for f in BASIC_FIELDS:

@@ -383,8 +383,8 @@ if __name__ == '__main__':
     fmtr = Formatter('{begin_timestamp} - {record_status}')
     emtr = StreamEmitter('stderr')
     ss = SensibleSink(formatter=fmtr, emitter=emtr)
-    from logger import BaseLogger
-    log = BaseLogger('test_ss', [ss])
+    from logger import Logger
+    log = Logger('test_ss', [ss])
     with log.debug('hi_task') as t:
         t.warn('everything ok?')
         t.success('doin great')

@@ -2,8 +2,8 @@
 
 import json
 
+from fields import BUILTIN_FIELD_MAP
 from formatutils import tokenize_format_str
-from fields import BUILTIN_FIELD_MAP, BUILTIN_GETTERS
 
 DEFAULT_QUOTER = json.dumps
 
@@ -101,8 +101,6 @@ class Formatter(object):
 
 """
 class Formatter(object):
-    base_getters = BUILTIN_GETTERS
-
     def __init__(self, format_str, on_err=None):
         # TODO: check that templette complies with reversability
         # requirements

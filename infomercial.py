@@ -6,6 +6,9 @@ Here's an example of some ostensibly well-instrumented code.
 
 import logging
 
+_create_user = lambda: 'a dummy function that supposedly creates the user'
+
+
 def create_user(name):
     logging.info('creating user with name %r', name)
     try:
@@ -35,6 +38,3 @@ def create_user(name):
         success = _create_user()
         if not success:
             r.failure()
-
-
-_create_user = lambda: 'pretend like we created a user, ok?'

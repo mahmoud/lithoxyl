@@ -3,12 +3,12 @@
 import time
 
 from lithoxyl.sinks import AggSink, StructuredFileSink
-from lithoxyl.logger import BaseLogger
+from lithoxyl.logger import Logger
 
 
 def _get_logger():
     acc = AggSink()
-    return BaseLogger('test_logger', [acc])
+    return Logger('test_logger', [acc])
 
 
 def do_debug_trans(logger):
@@ -27,13 +27,13 @@ def test_logger_success(trans_count=2):
 
 def test_structured(trans_count=5):
     acc = StructuredFileSink()
-    log = BaseLogger('test_logger', [acc])
+    log = Logger('test_logger', [acc])
     for i in range(trans_count):
         do_debug_trans(log)
 
 
 def test_callpoint_info():
-    log = BaseLogger('test_logger', [])
+    log = Logger('test_logger', [])
     t = do_debug_trans(log)
     assert t.callpoint.module_name == __name__
     assert t.callpoint.module_path.endswith(__file__)

@@ -4,7 +4,7 @@ from lithoxyl.sinks import SensibleSink
 from lithoxyl.formatters import Formatter
 from lithoxyl.emitters import StreamEmitter, FakeEmitter
 from lithoxyl.filters import ThresholdFilter
-from lithoxyl.logger import BaseLogger
+from lithoxyl.logger import Logger
 
 
 fmtr = Formatter('{status_char}{begin_timestamp}')
@@ -15,7 +15,7 @@ fake_sink = SensibleSink(formatter=fmtr, emitter=fake_emtr)
 
 
 def test_sensible_basic():
-    log = BaseLogger('test_ss', [strm_sink, fake_sink])
+    log = Logger('test_ss', [strm_sink, fake_sink])
 
     print
 
@@ -65,7 +65,7 @@ def _test_exception():
     sink = SensibleSink(Formatter(_tmpl),
                         StreamEmitter('stderr'),
                         filters=[ThresholdFilter(exception=0)])
-    logger = BaseLogger('excelsilog', [sink])
+    logger = Logger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
         print tr
         raise ValueError('E for Exception')
