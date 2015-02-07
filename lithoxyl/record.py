@@ -5,11 +5,11 @@ import time
 
 from tbutils import ExceptionInfo, Callpoint
 
-from formatters import Templette
+from formatters import Formatter
 
 
 class DefaultException(Exception):
-    "Usually only used when traceback extraction fails"
+    "Only used when traceback extraction fails"
 
 
 class Record(object):
@@ -106,8 +106,8 @@ class Record(object):
             # yay premature optimization
             self.message = message
         else:
-            # TODO: Templette cache
-            self.message = Templette(message).format_record(self, *a, **kw)
+            # TODO: Formatter cache
+            self.message = Formatter(message).format_record(self, *a, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
         return self

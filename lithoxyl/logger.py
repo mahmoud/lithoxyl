@@ -7,6 +7,8 @@ from common import DEBUG, INFO, CRITICAL
 
 
 class BaseLogger(object):
+    record_type = Record
+
     def __init__(self, name, sinks=None, **kwargs):
         # TODO: get module
         self.module = kwargs.pop('module', None)
@@ -70,22 +72,22 @@ class BaseLogger(object):
     def debug(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
         kw['frame'] = sys._getframe(1)
-        return Record(**kw)
+        return self.record_type(**kw)
 
     def info(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, INFO, self
         kw['frame'] = sys._getframe(1)
-        return Record(**kw)
+        return self.record_type(**kw)
 
     def critical(self, name, **kw):
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
         kw['frame'] = sys._getframe(1)
-        return Record(**kw)
+        return self.record_type(**kw)
 
     def record(self, name, level, **kw):
         kw['name'], kw['level'], kw['logger'] = name, level, self
         kw['frame'] = sys._getframe(1)
-        return Record(**kw)
+        return self.record_type(**kw)
 
     def __repr__(self):
         cn = self.__class__.__name__

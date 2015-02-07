@@ -7,6 +7,9 @@ import datetime
 from tzutils import UTC, LocalTZ
 from formatutils import BaseFormatField
 
+BUILTIN_FIELD_MAP = {}
+BUILTIN_GETTERS = {}
+
 
 def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
     """
@@ -31,9 +34,9 @@ def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
 
 def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
     if with_tz:
-        tformat = tformat or '%Y-%m-%d %H:%M:%S.%f%z'
+        tformat = tformat or '%Y-%m-%dT%H:%M:%S.%f%z'
     else:
-        tformat = tformat or '%Y-%m-%d %H:%M:%S.%f'
+        tformat = tformat or '%Y-%m-%dT%H:%M:%S.%f'
     if local:
         dt = datetime.datetime.fromtimestamp(timestamp, tz=LocalTZ)
     else:
@@ -42,18 +45,24 @@ def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
 
 
 class FormatField(BaseFormatField):
-    def __init__(self, fname, fspec, getter=None, default=None, quote=None):
+    # FormatFields specify whether or not they're quoted, but not the
+    # exact method for their quoting, that is reserved for the
+    # Formatter.
+    def __init__(self, fname, fspec='s', getter=None, default=None, quote=None):
+        # TODO: is default necessary here? Formatters should control
+        # defaults, like quotes
         super(FormatField, self).__init__(fname, fspec)
         self.default = default
         self.getter = getter
         if quote is None:
+            # numeric fields should appear without quotes
             numeric = issubclass(self.type_func, (int, float))
             quote = not numeric
         self.quote = quote
 
 # default, fmt_specs
 FF = FormatField
-FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
+BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('logger_id', 'd', lambda r: id(r.logger)),  # TODO
                 FF('record_name', 's', lambda r: r.name),
                 FF('record_id', 'd', lambda r: id(r)),  # TODO
@@ -85,7 +94,7 @@ FMT_BUILTINS = [FF('logger_name', 's', lambda r: r.logger.name),
 #   * UTC/Local
 #   * with/without milliseconds
 #   * with/without timezone (_noms variants have textual timezone)
-FMT_BUILTINS.extend([
+ISO8601_FIELDS = [
         FF('begin_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time)),
         FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
         FF('begin_iso8601_notz', 's',
@@ -107,11 +116,21 @@ FMT_BUILTINS.extend([
         FF('begin_local_iso8601_noms_notz', 's',
            lambda r: timestamp2iso8601_noms(r.begin_time, local=True, with_tz=False)),
         FF('end_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.end_time, local=True, with_tz=False))])
+           lambda r: timestamp2iso8601_noms(r.end_time, local=True, with_tz=False))]
+
+# using the T separator means no whitespace and thus no quoting
+for f in ISO8601_FIELDS:
+    f.quote = False
 
 
+def register_builtin_field(f):
+    BUILTIN_FIELD_MAP[f.fname] = f
+    BUILTIN_GETTERS[f.fname] = f.getter
 
-FMT_BUILTIN_MAP = dict([(f.fname, f) for f in FMT_BUILTINS])
-BUILTIN_GETTERS = dict([(f.fname, f.getter) for f in FMT_BUILTINS])
-BUILTIN_QUOTERS = dict([(f.fname, json.dumps)
-                        for f in FMT_BUILTINS if f.quote])
+
+for f in BASIC_FIELDS:
+    register_builtin_field(f)
+for f in ISO8601_FIELDS:
+    register_builtin_field(f)
+
+del f
