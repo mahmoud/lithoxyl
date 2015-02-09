@@ -6,12 +6,22 @@ from record import Record
 from common import DEBUG, INFO, CRITICAL
 
 
+def get_module_not_including_subtypes():
+    frame = sys._getframe(1)
+    while isinstance(frame.f_locals.get('self'), Logger):
+        frame = frame.f_back
+    return frame.f_globals.get('__name__', '<module>')
+
+
 class Logger(object):
     record_type = Record
 
     def __init__(self, name, sinks=None, **kwargs):
         # TODO: get module
         self.module = kwargs.pop('module', None)
+        if self.module is None:
+            self.module = get_module_not_including_subtypes()
+        print self.module
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
         self.name = name or self.module
@@ -91,4 +101,7 @@ class Logger(object):
 
     def __repr__(self):
         cn = self.__class__.__name__
-        return '<%s name=%r sinks=%r>' % (cn, self.name, self.sinks)
+        try:
+            return '<%s name=%r sinks=%r>' % (cn, self.name, self.sinks)
+        except:
+            return object.__repr__(self)
