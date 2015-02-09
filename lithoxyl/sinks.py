@@ -212,7 +212,8 @@ from ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
 class EWMASink(object):
-    # accumulator_type = EWMAAccumulator
+    accumulator_type = EWMAAccumulator
+
     def __init__(self,
                  periods=DEFAULT_PERIODS,
                  interval=DEFAULT_INTERVAL,
@@ -230,11 +231,10 @@ class EWMASink(object):
         try:
             acc = status_time_map[record.status]
         except:
-            acc = EWMAAccumulator(periods=self.periods,
-                                  interval=self.interval)
+            acc = self.accumulator_type(periods=self.periods,
+                                        interval=self.interval)
             status_time_map[record.status] = acc
         value = self.getter(record)
-        print value
         acc.add(value)
 
     @staticmethod
@@ -260,7 +260,6 @@ class EWMASink(object):
                 cur_name_vals = ret[logger][name]['__all__'] = {}
                 for status, acc in status_map.items():
                     cur_vals = acc.get_rates()
-                    print cur_vals
                     ret[logger][name][status] = cur_vals
                     _update_add(cur_name_vals, cur_vals)
                     _update_add(cur_logger_vals, cur_vals)
