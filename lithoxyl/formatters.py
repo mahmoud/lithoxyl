@@ -29,7 +29,11 @@ class Formatter(object):
         if not callable(self.defaulter):
             raise TypeError('expected callable for Formatter.defaulter, not %r'
                             % self.defaulter)
-        self.quoter = quoter or self._default_quoter
+        if quoter is False:
+            # disable quoting
+            self.quoter = lambda field: None
+        else:
+            self.quoter = quoter or self._default_quoter
         if not callable(self.quoter):
             raise TypeError('expected callable for Formatter.quoter, not %r'
                             % self.quoter)

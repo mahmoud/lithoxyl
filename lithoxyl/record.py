@@ -107,7 +107,7 @@ class Record(object):
             self.message = message
         else:
             # TODO: Formatter cache
-            self.message = Formatter(message).format_record(self, *a, **kw)
+            self.message = Formatter(message, quoter=False).format_record(self, *a, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
         return self
