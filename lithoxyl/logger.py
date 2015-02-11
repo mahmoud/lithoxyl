@@ -6,22 +6,49 @@ from record import Record
 from common import DEBUG, INFO, CRITICAL
 
 
-def get_module_not_including_subtypes():
+def _get_previous_frame(frame):
+    try:
+        return frame.f_back
+    except AttributeError:
+        raise ValueError('reached topmost frame in stack')
+
+
+def get_frame_excluding_subtypes(target_type, offset=0):
+    """
+    `offset` is the number of additional frames to look up after
+    reaching the outside of a class (in the event of a factory
+    function or some such.
+    """
     frame = sys._getframe(1)
-    while isinstance(frame.f_locals.get('self'), Logger):
-        frame = frame.f_back
-    return frame.f_globals.get('__name__', '<module>')
+    args = frame.f_code.co_varnames[:frame.f_code.co_argcount]
+    first_arg_name = args[0] if args else ''
+    i = 0
+    while 1:
+        i += 1
+        first_arg = frame.f_locals.get(first_arg_name)
+        if i > 10000:
+            raise ValueError('could not get frame')
+        if isinstance(first_arg, target_type):
+            frame = _get_previous_frame(frame)
+        elif isinstance(first_arg, type) and issubclass(first_arg, target_type):
+            frame = _get_previous_frame(frame)
+        else:
+            break
+    for i in xrange(offset):
+        frame = _get_previous_frame(frame)
+    return frame
 
 
 class Logger(object):
     record_type = Record
 
     def __init__(self, name, sinks=None, **kwargs):
-        # TODO: get module
         self.module = kwargs.pop('module', None)
+        self._module_offset = kwargs.pop('module_offset', 0)
         if self.module is None:
-            self.module = get_module_not_including_subtypes()
-        print self.module
+            frame = get_frame_excluding_subtypes(target_type=Logger,
+                                                 offset=self._module_offset)
+            self.module = frame.f_globals.get('__name__', '<module>')
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
         self.name = name or self.module
