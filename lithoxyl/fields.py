@@ -59,6 +59,7 @@ class FormatField(BaseFormatField):
             quote = not numeric
         self.quote = quote
 
+
 # default, fmt_specs
 FF = FormatField
 BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),

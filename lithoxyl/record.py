@@ -25,7 +25,7 @@ class Record(object):
             self.raw_message = kwargs.pop('raw_message')
         except:
             self.raw_message = '%s begin' % name
-        self.message = kwargs.pop('message', self.raw_message)
+        self._message = kwargs.pop('message', None)
         self.extras = kwargs.pop('extras', {})
         self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
@@ -85,6 +85,8 @@ class Record(object):
         return self._complete('exception', message, *a, **kw)
 
     def _complete(self, status, message=None, *a, **kw):
+        self._pos_args = a
+        self.extras.update(kw)
         if self._is_trans:
             self.end_time = time.time()
             self.duration = self.end_time - self.begin_time
@@ -102,15 +104,25 @@ class Record(object):
             except:
                 message = unicode(object.__repr__(message))  # space nuke
         self.raw_message = message
-        if '{' not in message:
-            # yay premature optimization
-            self.message = message
-        else:
-            # TODO: Formatter cache
-            self.message = Formatter(message, quoter=False).format_record(self, *a, **kw)
         if not self._defer_publish and self.logger:
             self.logger.on_complete(self)
         return self
+
+    @property
+    def message(self):
+        if self._message is not None:
+            return self._message
+        raw_message = self.raw_message
+        if raw_message is None:
+            return None
+
+        if '{' not in raw_message:  # yay premature optimization
+            self._message = raw_message
+        else:
+            # TODO: Formatter cache
+            fmtr = Formatter(raw_message, quoter=False)
+            self._message = fmtr.format_record(self, *self._pos_args)
+        return self._message
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True

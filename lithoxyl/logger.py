@@ -13,6 +13,7 @@ def _get_previous_frame(frame):
         raise ValueError('reached topmost frame in stack')
 
 
+# TODO: should all sys._getframes be converted to use this?
 def get_frame_excluding_subtypes(target_type, offset=0):
     """
     `offset` is the number of additional frames to look up after

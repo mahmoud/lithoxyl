@@ -104,3 +104,18 @@ libc = cdll.LoadLibrary('libc.so.6')
 f = open('file.txt', 'w')
 # fd, offset, len, advice_constant  (or is it len, offset)
 libc.posix_fadvise(c_uint(f.fileno()), c_uint(0), c_uint(0), c_uint(3))
+
+
+Misc.
+-----
+
+* known complexity of custom format fields: Logger and Sink both need to know about them since Logger formats the message and Sink formats the line
+  * Lazy evaluation
+  * Log-level filtration
+  * Custom logger with log-level filtration
+  * Rich taxonomy of Sinks (differentiate between numerical, textual, log levels and build a routing table up-front)
+  * Ask Sinks whether they want a particular record for every record (no routing table)
+  * Ask Sinks what fields they're interested in
+  * Ask Sinks what fields they're interested in under what conditions (dictionary of field to condition)
+
+  * lazily format the message <-
