@@ -2,6 +2,8 @@
 
 from lithoxyl.logger import Record, DEBUG
 from lithoxyl.formatters import Formatter
+from lithoxyl.formatutils import DeferredValue
+
 
 template = ('{status_char}{record_warn_char}{begin_timestamp}'
             ' - {begin_local_iso8601} - {begin_iso8601}'
@@ -41,6 +43,20 @@ def test_individual_fields():
             forming = Formatter(field_tmpl)
             output = forming.format_record(record)
             assert output == result
+    return
+
+
+def test_deferred():
+    DV = DeferredValue
+    expensive_ops = [(lambda: 5, '"oh, 5"'),
+                     (lambda: 'hi', '"oh, hi"'),
+                     (lambda: 2.0, '"oh, 2.0"')]
+    formatter = Formatter('{message}')
+
+    for eo, expected in expensive_ops:
+        record = Record('spendy_op', DEBUG).success('oh, {dv}', dv=DV(eo))
+        output = formatter.format_record(record)
+        assert output == expected
     return
 
 
