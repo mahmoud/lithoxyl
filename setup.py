@@ -11,7 +11,7 @@ from setuptools import setup
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.1.0'
+__version__ = '0.1.1dev'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/lithoxyl'
 __license__ = 'BSD'
