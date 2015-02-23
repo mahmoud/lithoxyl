@@ -1,13 +1,9 @@
 """
-    lithoxyl
-    ~~~~~~~~
+A systematic approach to logging, profiling, and statistics
+collection. Very lightweight, very Pythonic.
 
-    A systematic approach to logging, profiling, and statistics
-    collection. Very lightweight, very Pythonic.
-
-    :copyright: (c) 2013 by Mahmoud Hashemi
-    :license: BSD, see LICENSE for more details.
-
+:copyright: (c) 2015 by Mahmoud Hashemi
+:license: BSD, see LICENSE for more details.
 """
 
 import sys
