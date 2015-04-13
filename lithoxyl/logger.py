@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""The :class:`Logger` is the application developer's primary
+interface to using Lithoxyl. It is used to conveniently create
+:class:`Records <Record>` and publish them to :class:`Sinks <Sink>`.
+
+"""
 
 import sys
 
@@ -108,21 +113,25 @@ class Logger(object):
             exc_hook(record, exc_type, exc_obj, exc_tb)
 
     def debug(self, name, **kw):
+        "Create and return a new :class:`Record` named *name* with level :data:`DEBUG`"
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
     def info(self, name, **kw):
+        "Create and return a new :class:`Record` named *name* with level :data:`INFO`"
         kw['name'], kw['level'], kw['logger'] = name, INFO, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
     def critical(self, name, **kw):
+        "Create and return a new :class:`Record` named *name* with level :data:`CRITICAL`"
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
     def record(self, name, level, **kw):
+        "Create and return a new :class:`Record` named *name* classified as *level*."
         kw['name'], kw['level'], kw['logger'] = name, level, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
