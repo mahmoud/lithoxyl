@@ -17,6 +17,8 @@ Section Listing
 
    state_of_logging
    logger
+   record
+   glossary
 
 
 Indices and tables
