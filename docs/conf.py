@@ -8,6 +8,7 @@
 
 import os
 import sys
+import sphinx
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_PATH = os.path.abspath(CUR_PATH + '/../')
@@ -26,6 +27,13 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
 ]
+
+# Read the Docs is version 1.2 as of writing
+if sphinx.version_info[:2] < (1, 3):
+    extensions.append('sphinxcontrib.napoleon')
+else:
+    extensions.append('sphinx.ext.napoleon')
+
 
 templates_path = ['_templates']
 source_suffix = '.rst'
