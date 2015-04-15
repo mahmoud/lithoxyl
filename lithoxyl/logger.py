@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The :class:`Logger` is the application developer's primary
 interface to using Lithoxyl. It is used to conveniently create
-:class:`Records <Record>` and publish them to :class:`Sinks <Sink>`.
+:class:`Records <Record>` and publish them to :class:`sinks <Sink>`.
 
 """
 
@@ -46,7 +46,34 @@ def get_frame_excluding_subtypes(target_type, offset=0):
 
 
 class Logger(object):
+    """The ``Logger`` is one of three core Lithoxyl types, and the main
+    entrypoint to creating :class:`~lithoxyl.record.Record`
+    instances. It is responsible for the fan-out of publishing
+    :term:`records <record>` to :term:`sinks <sink>`.
+
+    Args:
+        name (str): Name of this Logger.
+        sinks (list): A list of :term:`sink` objects to be attached to
+            the Logger. Defaults to ``[]``. Sinks can be added later
+            with :meth:`Logger.add_sink`.
+        module (str): Name of the module where the new Logger instance
+            will be stored.  Defaults to the module of the caller.
+
+    The Logger is primarily used through its
+    :class:`~lithoxyl.record.Record`-creating methods named after
+    various log levels:
+
+        * :meth:`Logger.critical`
+        * :meth:`Logger.info`
+        * :meth:`Logger.debug`
+
+    Each creates a new :term:`record` with a given name, passing any
+    additional keyword arguments on through to the
+    :class:`lithoxyl.record.Record` constructor.
+    """
+
     record_type = Record
+    "Override *record_type* in subtypes for custom Record behavior."
 
     def __init__(self, name, sinks=None, **kwargs):
         self.module = kwargs.pop('module', None)
@@ -62,9 +89,13 @@ class Logger(object):
 
     @property
     def sinks(self):
+        """A copy of all sinks set on this Logger.
+        Set sinks with :meth:`Logger.set_sinks`.
+        """
         return list(self._all_sinks)
 
     def set_sinks(self, sinks):
+        "Replace this Logger's sinks with *sinks*."
         sinks = sinks or []
         self._all_sinks = []
         self._begin_hooks = []
@@ -75,9 +106,13 @@ class Logger(object):
             self.add_sink(s)
 
     def clear_sinks(self):
-        self.set_sinks(None)
+        "Clear this Logger's sinks."
+        self.set_sinks([])
 
     def add_sink(self, sink):
+        """Add *sink* to this Logger's sinks. Does nothing if *sink* is
+        already in this Logger's sinks.
+        """
         if sink in self._all_sinks:
             return
         begin_hook = getattr(sink, 'on_begin', None)
@@ -95,37 +130,41 @@ class Logger(object):
         self._all_sinks.append(sink)
 
     def on_complete(self, record):
+        "Publish *record* to all sinks with ``on_complete()`` hooks."
         for complete_hook in self._complete_hooks:
             complete_hook(record)
 
     def on_begin(self, record):
+        "Publish *record* to all sinks with ``on_begin()`` hooks."
         for begin_hook in self._begin_hooks:
             begin_hook(record)
 
     def on_warn(self, record):
+        "Publish *record* to all sinks with ``on_warning()`` hooks."
         # TODO: need the actual warning as an argument?
         # TODO: warning module integration goes somewhere
         for warn_hook in self._warn_hooks:
             warn_hook(record)
 
     def on_exception(self, record, exc_type, exc_obj, exc_tb):
+        "Publish *record* to all sinks with ``on_exception()`` hooks."
         for exc_hook in self._exc_hooks:
             exc_hook(record, exc_type, exc_obj, exc_tb)
 
     def debug(self, name, **kw):
-        "Create and return a new :class:`Record` named *name* with level :data:`DEBUG`"
+        "Create and return a new :data:`DEBUG`-level :class:`Record` named *name*."
         kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
     def info(self, name, **kw):
-        "Create and return a new :class:`Record` named *name* with level :data:`INFO`"
+        "Create and return a new :data:`INFO`-level :class:`Record` named *name*."
         kw['name'], kw['level'], kw['logger'] = name, INFO, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
     def critical(self, name, **kw):
-        "Create and return a new :class:`Record` named *name* with level :data:`CRITICAL`"
+        "Create and return a new :data:`CRITICAL`-level :class:`Record` named *name*."
         kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)

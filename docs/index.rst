@@ -20,6 +20,7 @@ Section Listing
    record
    glossary
 
+.. group all the core types into one page? (Logger, Record, Sink)
 
 Indices and tables
 ==================
