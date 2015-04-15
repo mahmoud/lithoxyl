@@ -21,6 +21,17 @@ Glossary
      :term:`loggers <logger>`, manipulated, and automatically
      published to :term:`sinks <sink>`.
 
+   status
+     The completion state of a :term:`record`, meant to represent one
+     of four possible task outcomes:
+
+       * **Begin** - not yet completed
+       * **Success** - no exceptions or failures
+       * **Failure** - anticipated or application-level unsuccessful
+         completion (e.g., invalid username)
+       * **Exception** - unanticipated or lower-level unsuccessful
+         completion (e.g., database connection interrupted)
+
    sink
      Any object implementing the Sink protocol, and one of the
      three fundamental Lithoxyl types. Typically subscribed to
