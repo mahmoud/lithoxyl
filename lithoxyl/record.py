@@ -27,12 +27,14 @@ class Record(object):
             :data:`~lithoxyl.common.DEBUG`,
             :data:`~lithoxyl.common.INFO`, or
             :data:`~lithoxyl.common.CRITICAL`. Defaults to ``None``.
-
-        logger: The Logger instance responsible for creating (and publishing) the Record.
-
+        logger: The Logger instance responsible for creating (and
+            publishing) the Record.
         status (str): State of the task represented by the Record. One
             of 'begin', 'success', 'failure', or 'exception'. Defaults
             to 'begin'.
+        extras (dict): A mapping of non-builtin fields to user
+            values. Defaults to ``{}`` and can be populated after
+            Record creation by accessing the Record like a ``dict``.
         raw_message (str): A message or message template that further
             describes the status of the record.
             Defaults to ``'<name> <status>'``, using the values above.
@@ -56,10 +58,21 @@ class Record(object):
     All additional keyword arguments are automatically included in the
     Record's ``extras`` attribute.
 
+    >>> record = Record('our_mission', CRITICAL, mission='explore new worlds')
+
     Most of these parameters are managed by the Records and respective
     Loggers themselves. While they are provided here for advanced use
-    cases, usually only the *name*, *raw_message*, and extra values
-    will be explicitly passed in.
+    cases, usually only the *name*, *raw_message*, *reraise*, and
+    extra values should be provided.
+
+    Records are :class:`dict`-like, and can be accessed as mappings
+    and used to store additional structured data:
+
+    >>> record['my_data'] = 20.0
+    >>> record['my_lore'] = -record['my_data'] / 10.0
+    >>> from pprint import pprint
+    >>> pprint(record.extras)
+    {'mission': 'explore new worlds', 'my_data': 20.0, 'my_lore': -2.0}
     """
     _is_trans = None
     _defer_publish = False
@@ -127,11 +140,32 @@ class Record(object):
         return self._complete('success', message, *a, **kw)
 
     def failure(self, message=None, *a, **kw):
+        """Mark this Record as complete and failed. Also set the Record's
+        *message* template. Positional and keyword arguments will be
+        used to generate the formatted message. Keyword arguments will
+        also be added to the Record's ``extras`` attribute.
+
+        >>> record = Record('important_task', CRITICAL)
+        >>> record.failure('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='no fun')
+        <Record CRITICAL 'failure'>
+        >>> record.message
+        u'important_task failure: this is no fun'
+        """
         if not message:
             message = self.name + ' failed'
         return self._complete('failure', message, *a, **kw)
 
     def exception(self, message=None, *a, **kw):
+        """Mark this Record as complete and having had an exception. Also
+        sets the Record's *message* template similar to
+        :meth:`Record.success` and :meth:`Record.failure`.
+
+        Unlike those two attributes, this method is rarely called
+        explicitly by application code, because the context manager
+        aspect of the Record catches and sets the appropriate
+        exception fields. When called explicitly, this method should
+        only be called in an :keyword:`except` block.
+        """
         return self._exception(None, message, *a, **kw)
 
     def _exception(self, exc_info, message, *a, **kw):
@@ -232,10 +266,18 @@ class Record(object):
             self.extras[key] = value
 
     def get_elapsed_time(self):
+        """Simply get the amount of time that has passed since the record was
+        created or begun. This method has no side effects.
+        """
         return time.time() - self.begin_time
 
     @property
     def status_char(self):
+        """A single-character representation of the status of the Record. See
+        the ``status_chr`` field in the
+        :class:`~lithoxyl.formatter.Formatter` field documentation for
+        more details.
+        """
         ret = '_'
         try:
             if self._is_trans:
@@ -251,4 +293,5 @@ class Record(object):
 
     @property
     def warn_char(self):
+        "``'W'`` if the Record has warnings, ``' '`` otherwise."
         return 'W' if self.warnings else ' '
