@@ -5,6 +5,7 @@ import time
 
 from tbutils import ExceptionInfo, Callpoint
 
+from common import DEBUG, INFO, CRITICAL
 from formatters import Formatter
 
 
@@ -13,10 +14,58 @@ class DefaultException(Exception):
 
 
 class Record(object):
+    """The ``Record`` type is one of the three core Lithoxyl types, and
+    the underlying currency of the Lithoxyl system. Records are
+    usually instantiated through convenience methods on
+    :class:`~lithoxyl.logger.Logger` instances, and most
+    instrumentation will be done through populating records with
+    relevant data.
+
+    Args:
+        name (str): The name of the Record.
+        level: Log level of the Record. Generally one of
+            :data:`~lithoxyl.common.DEBUG`,
+            :data:`~lithoxyl.common.INFO`, or
+            :data:`~lithoxyl.common.CRITICAL`. Defaults to ``None``.
+
+        logger: The Logger instance responsible for creating (and publishing) the Record.
+
+        status (str): State of the task represented by the Record. One
+            of 'begin', 'success', 'failure', or 'exception'. Defaults
+            to 'begin'.
+        raw_message (str): A message or message template that further
+            describes the status of the record.
+            Defaults to ``'<name> <status>'``, using the values above.
+        message (str): A pre-formatted message that similar to
+            *raw_message*, but will not be treated as a template.
+        begin_time (float): A timestamp of when the Record was created
+            or started. Defaults to the output of :func:`time.time`.
+        end_time (float): A timestamp of when the Record was
+            completed, assuming it is a transactional record. Defaults
+            to ``None``, which is valid when a record is incomplete or
+            is not transactional and thus has no duration.
+        duration (float): The duration of the record. Defaults to ``0.0``.
+        frame: Frame of the callpoint creating the Record. Defaults to
+            the caller's frame.
+        reraise (bool): Whether or not the Record should catch and
+            reraise exceptions. Defaults to ``True``. Setting to
+            ``False`` will cause all exceptions to be caught and
+            logged appropriately, but not reraised. This should be
+            used to eliminate ``try``/``except`` verbosity.
+
+    All additional keyword arguments are automatically included in the
+    Record's ``extras`` attribute.
+
+    Most of these parameters are managed by the Records and respective
+    Loggers themselves. While they are provided here for advanced use
+    cases, usually only the *name*, *raw_message*, and extra values
+    will be explicitly passed in.
+    """
     _is_trans = None
     _defer_publish = False
 
     def __init__(self, name, level=None, **kwargs):
+        # TODO: default level
         self.name = name
         self.level = level
         self.logger = kwargs.pop('logger', None)
@@ -24,11 +73,12 @@ class Record(object):
         try:
             self.raw_message = kwargs.pop('raw_message')
         except:
-            self.raw_message = '%s begin' % name
+            self.raw_message = '%s %s' % (name, self.status)
         self._message = kwargs.pop('message', None)
         self.extras = kwargs.pop('extras', {})
         self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
+        # TODO: make end_time - begin_time if end_time is not None?
         self.duration = kwargs.pop('duration', 0.0)
         self._reraise = kwargs.pop('reraise', True)
         self.warnings = []
@@ -45,7 +95,8 @@ class Record(object):
 
     def __repr__(self):
         cn = self.__class__.__name__
-        return '<%s %r %r>' % (cn, self.level, self.status)
+        # TODO on the upper() stuff. better repr for level?
+        return '<%s %s %r>' % (cn, self.level.name.upper(), self.status)
 
     @property
     def level_name(self):
@@ -55,10 +106,22 @@ class Record(object):
             return repr(self.level)
 
     def warn(self, message):
+        "Append a warning *message* to the warnings tracked by this record."
         self.warnings.append(message)
         return self
 
     def success(self, message=None, *a, **kw):
+        """Mark this Record as complete and successful. Also set the Record's
+        *message* template. Positional and keyword arguments will be
+        used to generate the formatted message. Keyword arguments will
+        also be added to the Record's ``extras`` attribute.
+
+        >>> record = Record('important_task', CRITICAL)
+        >>> record.success('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='fun')
+        <Record CRITICAL 'success'>
+        >>> record.message
+        u'important_task success: this is fun'
+        """
         if not message:
             message = self.name + ' succeeded'  # TODO: localize
         return self._complete('success', message, *a, **kw)
@@ -131,6 +194,7 @@ class Record(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # TODO: handle logger = None
         self._defer_publish = False
         if exc_type:
             try:
