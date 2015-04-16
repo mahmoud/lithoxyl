@@ -7,7 +7,7 @@ import datetime
 from tzutils import UTC, LocalTZ
 from formatutils import BaseFormatField
 
-BUILTIN_FIELD_MAP = {}
+BUILTIN_FIELD_MAP = {}  # populated below
 
 
 def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
@@ -44,10 +44,13 @@ def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
 
 
 class FormatField(BaseFormatField):
-    # FormatFields specify whether or not they're quoted, but not the
-    # exact method for their quoting, that is reserved for the
-    # Formatter.
-    def __init__(self, fname, fspec='s', getter=None, default=None, quote=None):
+    """FormatFields specify whether or not they are *quoted* (i.e., whether
+    or not values will contain whitespace), but not the exact method
+    for their quoting. That aspect is reserved for the Formatter.
+    """
+
+    def __init__(self, fname, fspec='s',
+                 getter=None, default=None, quote=None):
         # TODO: is default necessary here? Formatters should control
         # defaults, like quotes
         super(FormatField, self).__init__(fname, fspec)

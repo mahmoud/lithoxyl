@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-
+"""Implements types and functions for rendering
+:class:`~lithoxyl.record.Record` instances into strings.
+"""
 import json
 
 from fields import BUILTIN_FIELD_MAP
@@ -8,7 +10,21 @@ from formatutils import tokenize_format_str
 DEFAULT_QUOTER = json.dumps
 
 
+__all__ = ['Formatter']
+
+
 class LazyExtrasDict(dict):
+    """An internal-use-only dict to enable the fetching of values from a
+    :class:`~lithoxyl.record.Record`. First, attempts to use a
+    "getter" as defined in the map of known format fields,
+    *getters*. Most of those fields simply access an attribute on the
+    Record instance. If no such getter exists, assume that the desired
+    key is expected to be in the *extras* dict of the target Record.
+
+    If the key is neither a known "getter" or "extra", ``None`` is
+    returned. Exceptions raised from getters are not caught.
+    """
+    # TODO: typos in field names will result in None
     def __init__(self, record, getters):
         self.record = record
         self.getters = getters
@@ -23,6 +39,37 @@ class LazyExtrasDict(dict):
 
 
 class Formatter(object):
+    """The basic ``Formatter`` type implements a constrained, but robust,
+    microtemplating system rendering Records to strings that are both
+    human-readable *and* machine-readable. This system is based on
+    :class:`FormatFields <lithoxyl.fields.FormatField>`, many of which
+    are built-in.
+
+    Args:
+        format_str (str): The template for the string to be rendered,
+            e.g., ``"Request outcome: {status_str}"``.
+        extra_fields (dict): Optionally specify a map of fields this
+            Formatter should recognize in addition to the builtins.
+        quoter (callable): Optionally override the default quoting
+            function.
+        defaulter (callable): Optionally override how the Formatter
+            determines the default value for fields.
+
+    Generally a Formatter is called only with the template string.
+
+    >>> from lithoxyl.record import Record
+    >>> fmtr = Formatter('Record status: {status_str}.')
+    >>> fmtr.format_record(Record('test').success())
+    'Record status: success.'
+
+    Other types of Formatters do not need to inherit from
+    ``Formatter``, they just need to implement the
+    :meth:`Formatter.format_record` method.
+
+    .. TODO: decide whether Formatters should be callable or implement .format_record
+    .. TODO: links to built-in fields
+
+    """
     def __init__(self, format_str,
                  extra_fields=None, quoter=None, defaulter=None):
         self.defaulter = defaulter or self._default_defaulter
@@ -68,6 +115,16 @@ class Formatter(object):
         return '%s(%r)' % (self.__class__.__name__, self.raw_format_str)
 
     def format_record(self, record, *args, **kwargs):
+        """
+        Render a :class:`~lithoxyl.record.Record` into text, using values from the following sources:
+
+          * Positional arguments to this method (``*args``)
+          * Keyword arguments to this method (``**kwargs``)
+          * FormatFields built-in to Lithoxyl
+          * Structured data stored in the Record object's ``extras`` map
+
+        .. TODO: adjust the above list to account for overriding behavior
+        """
         ret = ''
         kw_vals = LazyExtrasDict(record, self._getter_map)
         kw_vals.update(kwargs)
