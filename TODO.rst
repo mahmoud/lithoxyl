@@ -8,6 +8,7 @@ TODO
 * default-on fixed header for formatter?
 * Callpoint for transaction-completion call, too (status call)
 * autoincremented IDs for loggers and records?
+* First-class datetime Formatter/FormatField support (type_func)
 
 Sinks/emitters
 --------------
