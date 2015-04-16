@@ -18,6 +18,7 @@ Section Listing
    state_of_logging
    logger
    record
+   formatting
    glossary
 
 .. group all the core types into one page? (Logger, Record, Sink)
