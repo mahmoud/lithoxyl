@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-
+"""Emitters are callable objects which take an entry in *text-form*
+and output it to a persistence resource, such as stdout/stderr, files,
+or network streams.
+"""
 import os
 import sys
 
