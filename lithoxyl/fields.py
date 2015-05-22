@@ -122,9 +122,9 @@ def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
     vs. datetime.now(), which is two orders of magnitude faster.
     """
     if with_tz:
-        tformat = '%Y-%m-%d %H:%M:%S %Z'
+        tformat = '%Y-%m-%dT%H:%M:%S %Z'
     else:
-        tformat = '%Y-%m-%d %H:%M:%S'
+        tformat = '%Y-%m-%dT%H:%M:%S'
     if local:
         tstruct = time.localtime(timestamp)
     else:
@@ -199,6 +199,7 @@ BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
 #   * UTC/Local
 #   * with/without milliseconds
 #   * with/without timezone (_noms variants have textual timezone)
+# TODO: rename to just ISO
 ISO8601_FIELDS = [
         FF('begin_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time)),
         FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
