@@ -100,6 +100,7 @@ Timestamp Fields
 
 # TODO: should record_id be combined with logger_id? loggers are not
 # ephemeral, but records are; there are chances of id reuse.
+# TODO: exc_repr field
 
 import time
 import json

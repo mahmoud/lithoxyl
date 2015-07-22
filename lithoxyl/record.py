@@ -101,6 +101,7 @@ class Record(object):
         frame = kwargs.pop('frame', None)
         if frame is None:
             frame = sys._getframe(1)
+        # TODO: should Callpoint actually be at __exit__?
         self.callpoint = Callpoint.from_frame(frame)
 
         if kwargs:
@@ -176,6 +177,9 @@ class Record(object):
         except:
             exc_type, exc_val, exc_tb = (None, None, None)
         exc_type = exc_type or DefaultException
+
+        self.logger.on_exception(self, exc_type, exc_val, exc_tb)
+
         self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
@@ -193,6 +197,7 @@ class Record(object):
         if message is None:
             message = u''
         elif not isinstance(message, unicode):
+            # TODO: use to_unicode
             # if you think this is excessive, see the issue with the
             # unicode constructor as semi-detailed here:
             # http://pythondoeswhat.blogspot.com/2013/09/unicodebreakers.html
@@ -207,6 +212,7 @@ class Record(object):
 
     @property
     def message(self):
+        # TODO: will have to invalidate this on record status change
         if self._message is not None:
             return self._message
         raw_message = self.raw_message
@@ -218,7 +224,8 @@ class Record(object):
         else:
             # TODO: Formatter cache
             fmtr = Formatter(raw_message, quoter=False)
-            self._message = fmtr.format_record(self, *self._pos_args)
+            args = getattr(self, '_pos_args', [])
+            self._message = fmtr.format_record(self, *args)
         return self._message
 
     def __enter__(self):
@@ -231,17 +238,13 @@ class Record(object):
         # TODO: handle logger = None
         self._defer_publish = False
         if exc_type:
+            # then, normal completion behavior
+            exc_info = (exc_type, exc_val, exc_tb)
             try:
-                # first, give any willing sinks a chance to handle exceptions
-                self.logger.on_exception(self, exc_type, exc_val, exc_tb)
-                # TODO: should there be a way for sinks to override
-                # exception propagation here? probably not, I think.
+                self._exception(exc_info, message=None)
             except:
                 # TODO: something? grasshopper mode maybe.
                 pass
-            # then, normal completion behavior
-            exc_info = (exc_type, exc_val, exc_tb)
-            self._exception(exc_info, None)
             # TODO: should probably be three steps:
             # set certain attributes, then do on_exception, then do completion.
         elif self.status is 'begin':

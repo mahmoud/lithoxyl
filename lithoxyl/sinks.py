@@ -11,16 +11,17 @@ from emitters import StreamEmitter
 from quantile import QuantileAccumulator, P2QuantileAccumulator
 
 
-class AggSink(object):
+class AggregateSink(object):
     "A 'dummy' sink that just aggregates the messages."
-    def __init__(self):
-        self.records = []
+    def __init__(self, max_length=None):
+        self.begun_records = deque(maxlen=max_length)
+        self.complete_records = deque(maxlen=max_length)
 
     def on_begin(self, record):
-        pass
+        self.begun_records.append(record)
 
     def on_complete(self, record):
-        self.records.append(record)
+        self.complete_records.append(record)
 
 
 _MSG_ATTRS = ('name', 'level_name', 'status', 'message',

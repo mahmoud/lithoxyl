@@ -2,12 +2,12 @@
 
 import time
 
-from lithoxyl.sinks import AggSink, StructuredFileSink
+from lithoxyl.sinks import AggregateSink, StructuredFileSink
 from lithoxyl.logger import Logger
 
 
 def _get_logger():
-    acc = AggSink()
+    acc = AggregateSink()
     return Logger('test_logger', [acc])
 
 
@@ -22,7 +22,7 @@ def test_logger_success(trans_count=2):
     logger = _get_logger()
     for i in range(trans_count):
         do_debug_trans(logger)
-    assert len(logger.sinks[0].records) == trans_count
+    assert len(logger.sinks[0].complete_records) == trans_count
 
 
 def test_structured(trans_count=5):
@@ -47,7 +47,7 @@ def test_reraise_false():
     logger = _get_logger()
     with logger.debug('hi', reraise=False) as t:
         x
-    assert logger.sinks[0].records[0].status == 'exception'
+    assert logger.sinks[0].complete_records[0].status == 'exception'
 
 
 def test_reraise_true():
