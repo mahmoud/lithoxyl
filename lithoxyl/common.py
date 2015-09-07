@@ -50,6 +50,8 @@ def _register_level(level_obj):
 
 _SORTED_LEVELS = None
 LEVEL_ALIAS_MAP = {}
+_register_level(MIN_LEVEL)
+_register_level(MAX_LEVEL)
 for level in BUILTIN_LEVELS:
     _register_level(level)
 del level

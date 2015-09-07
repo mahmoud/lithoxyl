@@ -25,7 +25,7 @@ to the left, and lower verbosity, down and to the right.
 
 """
 
-from common import MAX_LEVEL
+from common import MAX_LEVEL, LEVEL_ALIAS_MAP
 
 
 class ThresholdFilter(object):
@@ -35,7 +35,9 @@ class ThresholdFilter(object):
         # TODO: add "default" response?
         self.event_kw_vals = {}
         for event in ('begin', 'success', 'failure', 'exception'):
-            self.event_kw_vals[event] = kwargs.pop(event, MAX_LEVEL)
+            level = kwargs.pop(event, MAX_LEVEL)
+            level = LEVEL_ALIAS_MAP[level]
+            self.event_kw_vals[event] = level
 
         self.event_thresh_map = dict(self.event_kw_vals)  # TODO
         if kwargs:
