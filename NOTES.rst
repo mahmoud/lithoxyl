@@ -69,6 +69,46 @@ Encoding woes
 * lithoxyl will only support python code written in the ASCII or UTF-8
   encodings.
 
+Context manager laments
+-----------------------
+
+At one point, as a convenience, I wanted to make nested context
+managers flat. For instance::
+
+  def do_work(data):
+      with logger.debug('saving file {path}', path=path) as log_rec:
+          #
+          # processing
+          #
+          with open(path, 'wb') as f:
+              f.write(data)
+      return
+
+The double nesting of the with statements might not be too bad in this
+example, but code gets pretty zigzaggy as they're put together. And
+for larger blocks like thread locks, this can get pretty gnarly.
+
+I was hoping to flatten it out into something like this::
+
+  def do_write(data):
+      with logger.debug_mgr('writing file {path}', open, path, 'wb') as rec, f:
+          f.write(data)
+      return
+
+It seems simple enough, but it's not meant to be.
+
+* Can't ``__enter__`` both at the same time. The Record has to be
+  entered, then the function called, then a single result returned for
+  entry.
+* Can't return a tuple like in the fake example. Tuples aren't enterable
+* Have to choose to return either the callable's return or the
+  Record. The Record can hold the result, but not all results can hold
+  the return.
+* Because the ``__enter__`` has to be called manually, there's no
+  guarantee of ``__exit__``. What happens to Records created by
+  debug_mgr() that aren't entered.
+
+
 
 Grasshopper mode
 ----------------
