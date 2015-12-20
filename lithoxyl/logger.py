@@ -19,6 +19,7 @@ def _get_previous_frame(frame):
 
 
 # TODO: should all sys._getframes be converted to use this?
+# TODO: could precalculate offsets based on which methods are overridden
 def get_frame_excluding_subtypes(target_type, offset=0):
     """
     `offset` is the number of additional frames to look up after
