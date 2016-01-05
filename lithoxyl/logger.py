@@ -8,7 +8,7 @@ interface to using Lithoxyl. It is used to conveniently create
 import sys
 
 from record import Record
-from common import DEBUG, INFO, CRITICAL
+from common import DEBUG, INFO, CRITICAL, get_level
 
 
 def _get_previous_frame(frame):
@@ -172,9 +172,24 @@ class Logger(object):
 
     def record(self, name, level, **kw):
         "Create and return a new :class:`Record` named *name* classified as *level*."
-        kw['name'], kw['level'], kw['logger'] = name, level, self
+        kw['name'], kw['level'], kw['logger'] = name, get_level(level), self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
+
+    def wrap(self, name, level, inject_as=None, **kw):
+        import decorator
+
+        def wrapper(func):
+            def logged_func(func, *a, **kw):
+                rec = self.record(name, level, **kw)
+                if inject_as:
+                    kw[inject_as] = rec
+                with rec:
+                    return func(*a, **kw)
+
+            return decorator.decorate(func, logged_func)
+
+        return wrapper
 
     def __repr__(self):
         cn = self.__class__.__name__
