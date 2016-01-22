@@ -110,7 +110,8 @@ class Record(object):
     def __repr__(self):
         cn = self.__class__.__name__
         # TODO on the upper() stuff. better repr for level?
-        return '<%s %s %r>' % (cn, self.level.name.upper(), self.status)
+        return ('<%s %r %s %r>'
+                % (cn, self.name, self.level.name.upper(), self.status))
 
     @property
     def level_name(self):
