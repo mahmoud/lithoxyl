@@ -177,8 +177,6 @@ class Logger(object):
         return self.record_type(**kw)
 
     def wrap(self, name, level, inject_as=None, **kw):
-        import decorator
-
         def wrapper(func):
             def logged_func(func, *a, **kw):
                 rec = self.record(name, level, **kw)
@@ -187,7 +185,7 @@ class Logger(object):
                 with rec:
                     return func(*a, **kw)
 
-            return decorator.decorate(func, logged_func)
+            return decorate(func, logged_func, injected=inject_as)
 
         return wrapper
 
@@ -197,3 +195,113 @@ class Logger(object):
             return '<%s name=%r sinks=%r>' % (cn, self.name, self.sinks)
         except:
             return object.__repr__(self)
+
+
+def decorate(func, caller, injected=None):
+    # TODO: docstring
+    # TODO: py3 for this and FunctionBuilder
+    if injected is None:
+        injected = []
+    elif isinstance(injected, basestring):
+        injected = [injected]
+
+    fb = FunctionBuilder.from_func(func)
+
+    execdict = dict(_call=caller, _func=func)
+
+    for arg in injected:
+        # test for existence of argument
+        # can't inject into what's not there
+        try:
+            fb.args.remove(arg)
+            fb.defaults.pop(arg, None)
+        except ValueError:
+            raise TypeError('expected %r in %r args' % (arg, func))
+
+    fb.body = '    return _call(_func, %s)' % fb.get_sig_str()
+    ret = fb.get_func(execdict)
+
+    return ret
+
+
+import inspect
+import itertools
+
+
+class FunctionBuilder(object):
+
+    _defaults = {'args': [],
+                 'varargs': None,
+                 'keywords': None,
+                 'defaults': {},
+                 'doc': '',
+                 'module': None,
+                 'body': 'pass'}
+
+    _compile_count = itertools.count()
+
+    def __init__(self, name, **kw):
+        self.name = name
+
+        for a in ('args', 'varargs', 'keywords', 'defaults',
+                  'doc', 'module', 'body'):
+            val = kw.pop(a, None)
+            if val is None:
+                val = self._defaults[a]
+            setattr(self, a, val)
+
+    # def get_argspec(self):  # TODO
+
+    def get_sig_str(self):
+        return inspect.formatargspec(self.args, self.varargs,
+                                     self.keywords, self.defaults,
+                                     formatvalue=lambda x: '')[1:-1]
+
+    @classmethod
+    def from_func(cls, func):
+        argspec = inspect.getargspec(func)
+        # TODO: lambda hack?
+        kwargs = {'name': func.__name__,
+                  'doc': func.__doc__,
+                  'module': func.__module__}
+
+        for a in ('args', 'varargs', 'keywords', 'defaults'):
+            kwargs[a] = getattr(argspec, a)
+        return cls(**kwargs)
+
+    def get_func(self, execdict=None, add_source=True):
+        execdict = execdict or {}
+        body = self.body or self._default_body
+
+        tmpl = 'def {name}({sig_str}):'
+        if self.doc:
+            tmpl += '\n    """{doc}"""'
+        tmpl += '\n{body}'
+
+        src = tmpl.format(name=self.name, sig_str=self.get_sig_str(),
+                          doc=self.doc, body=body)
+
+        self._compile(src, execdict)
+        func = execdict[self.name]
+
+        func.__name__ = self.name
+        func.__doc__ = self.doc
+        # func.__dict__  # TODO
+        func.__module__ = self.module
+        # TODO: caller module fallback?
+
+        if add_source:
+            func.__source__ = src
+
+        return func
+
+    def _compile(self, src, execdict):
+        filename = '<gen-%d>' % (next(self._compile_count),)
+        try:
+            code = compile(src, filename, 'single')
+            exec(code, execdict)
+        except:
+            sys.stderr.write('Error in generated code:\n')
+            sys.stderr.write(src)
+            raise
+        return execdict
