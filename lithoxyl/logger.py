@@ -218,7 +218,7 @@ def decorate(func, caller, injected=None):
         except ValueError:
             raise TypeError('expected %r in %r args' % (arg, func))
 
-    fb.body = '    return _call(_func, %s)' % fb.get_sig_str()
+    fb.body = 'return _call(_func, %s)' % fb.get_sig_str()
     ret = fb.get_func(execdict)
 
     return ret
@@ -226,6 +226,14 @@ def decorate(func, caller, injected=None):
 
 import inspect
 import itertools
+
+from strutils import iter_splitlines
+
+
+def indent(text, margin, newline='\n', key=bool):
+    indented_lines = [(margin + line if key(line) else line)
+                      for line in iter_splitlines(text)]
+    return newline.join(indented_lines)
 
 
 class FunctionBuilder(object):
@@ -236,7 +244,8 @@ class FunctionBuilder(object):
                  'defaults': {},
                  'doc': '',
                  'module': None,
-                 'body': 'pass'}
+                 'body': 'pass',
+                 'indent': 4}
 
     _compile_count = itertools.count()
 
@@ -244,11 +253,15 @@ class FunctionBuilder(object):
         self.name = name
 
         for a in ('args', 'varargs', 'keywords', 'defaults',
-                  'doc', 'module', 'body'):
+                  'doc', 'module', 'body', 'indent'):
             val = kw.pop(a, None)
             if val is None:
                 val = self._defaults[a]
             setattr(self, a, val)
+
+        if kw:
+            raise TypeError('unexpected kwargs: %r' % kw.keys())
+        return
 
     # def get_argspec(self):  # TODO
 
@@ -278,6 +291,8 @@ class FunctionBuilder(object):
             tmpl += '\n    """{doc}"""'
         tmpl += '\n{body}'
 
+        body = indent(self.body, ' ' * self.indent)
+
         src = tmpl.format(name=self.name, sig_str=self.get_sig_str(),
                           doc=self.doc, body=body)
 
@@ -300,8 +315,18 @@ class FunctionBuilder(object):
         try:
             code = compile(src, filename, 'single')
             exec(code, execdict)
-        except:
-            sys.stderr.write('Error in generated code:\n')
-            sys.stderr.write(src)
+        except Exception:
             raise
         return execdict
+
+
+"""decorator.py is bad because it excessively changes your decorator
+API to be reliant on decorator.py's strange aesthetic. A pre-existing
+decorator can't easily be migrated, and a decorator.py decorator is
+not compatible with functools.wraps.
+
+Function signature propagation is orthogonal to closure usage. The
+author of decorator.py seems to find a problem with having a function
+inside of a function and/or relying on closures and/or functools.wraps
+interface.
+"""
