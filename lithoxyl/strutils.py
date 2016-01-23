@@ -1,16 +1,33 @@
 # -*- coding: utf-8 -*-
+"""So much practical programming involves string manipulation, which
+Python readily accomodates. Still, there are dozens of basic and
+common capabilities missing from the standard library, several of them
+provided by ``strutils``.
+"""
+
+from __future__ import print_function
 
 import re
+import zlib
 import string
 import unicodedata
 import collections
 
-from compat import unicode, bytes
+try:
+    unicode, str, bytes, basestring = unicode, str, str, basestring
+    from HTMLParser import HTMLParser
+    import htmlentitydefs
+except NameError:  # basestring not defined in Python 3
+    unicode, str, bytes, basestring = str, bytes, bytes, str
+    unichr = chr
+    from html.parser import HTMLParser
+    from html import entities as htmlentitydefs
 
 
-__all__ = ['camel2under', 'under2camel', 'StringBuffer',
-           'slugify', 'split_punct_ws', 'asciify', 'pluralize',
-           'singularize', 'cardinalize']
+__all__ = ['camel2under', 'under2camel', 'slugify', 'split_punct_ws',
+           'unit_len', 'ordinalize', 'cardinalize', 'pluralize', 'singularize',
+           'asciify', 'html2text', 'strip_ansi', 'bytes2human', 'find_hashtags',
+           'a10n', 'gunzip_bytes', 'iter_splitlines']  # 'StringBuffer']
 
 
 _punct_ws_str = string.punctuation + string.whitespace
@@ -19,9 +36,8 @@ _camel2under_re = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
 
 
 def camel2under(camel_string):
-    """
-    Converts a camelcased string to underscores. Useful for
-    turning a class name into a function name.
+    """Converts a camelcased string to underscores. Useful for turning a
+    class name into a function name.
 
     >>> camel2under('BasicParseTest')
     'basic_parse_test'
@@ -30,9 +46,8 @@ def camel2under(camel_string):
 
 
 def under2camel(under_string):
-    """
-    Converts an underscored string to camelcased. Useful for
-    turning a function name into a class name.
+    """Converts an underscored string to camelcased. Useful for turning a
+    function name into a class name.
 
     >>> under2camel('complex_tokenizer')
     'ComplexTokenizer'
@@ -45,15 +60,22 @@ def slugify(text, delim='_', lower=True, ascii=False):
     A basic function that turns text full of scary characters
     (i.e., punctuation and whitespace), into a relatively safe
     lowercased string separated only by the delimiter specified
-    by `delim`, which defaults to '_'.
+    by *delim*, which defaults to ``_``.
 
-    The `ascii` convenience flag will asciify the slug if you require
-    ascii-only slugs.
+    The *ascii* convenience flag will :func:`asciify` the slug if
+    you require ascii-only slugs.
 
     >>> slugify('First post! Hi!!!!~1    ')
     'first_post_hi_1'
-    >>> slugify("Kurt Gödel's pretty cool.", ascii=True)
-    'kurt_goedel_s_pretty_cool'
+
+    # TODO: repr under Py3k
+    # >>> slugify("Kurt Gödel's pretty cool.", ascii=True)
+    # 'kurt_goedel_s_pretty_cool'
+
+    >>> slugify("Kurt Gödel's pretty cool.", ascii=True) == \
+        b'kurt_goedel_s_pretty_cool'
+    True
+
     """
     ret = delim.join(split_punct_ws(text))
     if ascii:
@@ -64,10 +86,9 @@ def slugify(text, delim='_', lower=True, ascii=False):
 
 
 def split_punct_ws(text):
-    """
-    str.split() will split on whitespace, split_punct_ws will
-    split on punctuation and whitespace. This is mostly here
-    for use by slugify(), above.
+    """While :meth:`str.split` will split on whitespace,
+    :func:`split_punct_ws` will split on punctuation and
+    whitespace. This used internally by :func:`slugify`, above.
 
     >>> split_punct_ws('First post! Hi!!!!~1    ')
     ['First', 'post', 'Hi', '1']
@@ -76,15 +97,15 @@ def split_punct_ws(text):
 
 
 def unit_len(sized_iterable, unit_noun='item'):  # TODO: len_units()/unitize()?
-    """
-    Returns a plain-English description of an iterable's len(),
-    conditionally pluralized with cardinalize() (below).
+    """Returns a plain-English description of an iterable's
+    :func:`len()`, conditionally pluralized with :func:`cardinalize`,
+    detailed below.
 
-    >>> print unit_len(range(10), 'number')
+    >>> print(unit_len(range(10), 'number'))
     10 numbers
-    >>> print unit_len('aeiou', 'vowel')
+    >>> print(unit_len('aeiou', 'vowel'))
     5 vowels
-    >>> print unit_len([], 'worry')
+    >>> print(unit_len([], 'worry'))
     No worries
     """
     count = len(sized_iterable)
@@ -100,21 +121,35 @@ _ORDINAL_MAP = {'1': 'st',
 
 
 def ordinalize(number, ext_only=False):
-    """\
-    Turns a number into 1st, 2nd, 3rd, 4th, etc. If the last character
-    isn't a digit, it returns the string value unchanged.
+    """Turns *number* into its cardinal form, i.e., 1st, 2nd,
+    3rd, 4th, etc. If the last character isn't a digit, it returns the
+    string value unchanged.
 
-    >>> ordinalize(1)
-    '1st'
-    >>> ordinalize(3694839230)
-    '3694839230th'
+    Args:
+        number (int or str): Number to be cardinalized.
+        ext_only (bool): Whether to return only the suffix. Default ``False``.
+
+    >>> print(ordinalize(1))
+    1st
+    >>> print(ordinalize(3694839230))
+    3694839230th
+    >>> print(ordinalize('hi'))
+    hi
+    >>> print(ordinalize(1515))
+    1515th
     """
-    numstr = str(number)
-    ldig, ext = numstr[-1:], ''
-    if not ldig:
-        return ''
-    if ldig in string.digits:
-        ext = _ORDINAL_MAP.get(ldig, 'th')
+    numstr, ext = unicode(number), ''
+    if numstr and numstr[-1] in string.digits:
+        try:
+            # first check for teens
+            if numstr[-2] == '1':
+                ext = 'th'
+            else:
+                # all other cases
+                ext = _ORDINAL_MAP.get(numstr[-1], 'th')
+        except IndexError:
+            # single digit numbers (will reach here based on [-2] above)
+            ext = _ORDINAL_MAP.get(numstr[-1], 'th')
     if ext_only:
         return ext
     else:
@@ -122,14 +157,13 @@ def ordinalize(number, ext_only=False):
 
 
 def cardinalize(unit_noun, count):
-    """\
-    Conditionally pluralizes a singular word ``unit_noun`` if
-    ``count`` is not one, preserving case when possible.
+    """Conditionally pluralizes a singular word *unit_noun* if
+    *count* is not one, preserving case when possible.
 
     >>> vowels = 'aeiou'
-    >>> print len(vowels), cardinalize('vowel', len(vowels))
+    >>> print(len(vowels), cardinalize('vowel', len(vowels)))
     5 vowels
-    >>> print 3, cardinalize('Wish', 3)
+    >>> print(3, cardinalize('Wish', 3))
     3 Wishes
     """
     if count == 1:
@@ -138,6 +172,15 @@ def cardinalize(unit_noun, count):
 
 
 def singularize(word):
+    """Semi-intelligently converts an English plural *word* to its
+    singular form, preserving case pattern.
+
+    >>> singularize('records')
+    'record'
+    >>> singularize('FEET')
+    'FOOT'
+
+    """
     orig_word, word = word, word.strip().lower()
     if not word or word in _IRR_S2P:
         return orig_word
@@ -159,6 +202,16 @@ def singularize(word):
 
 
 def pluralize(word):
+    """Semi-intelligently converts an English *word* from singular form to
+    plural, preserving case pattern.
+
+    >>> pluralize('friend')
+    'friends'
+    >>> pluralize('enemy')
+    'enemies'
+    >>> pluralize('Sheep')
+    'Sheep'
+    """
     orig_word, word = word, word.strip().lower()
     if not word or word in _IRR_P2S:
         return orig_word
@@ -196,7 +249,7 @@ _IRR_S2P = {'alumnus': 'alumni', 'analysis': 'analyses', 'antenna': 'antennae',
             'diagnosis': 'diagnoses', 'ellipsis': 'ellipses', 'fish': 'fish',
             'focus': 'foci', 'foot': 'feet', 'formula': 'formulae',
             'fungus': 'fungi', 'genus': 'genera', 'goose': 'geese',
-            'hypothesis': 'hypotheses', 'index': 'indeces', 'louse': 'lice',
+            'hypothesis': 'hypotheses', 'index': 'indices', 'louse': 'lice',
             'man': 'men', 'matrix': 'matrices', 'means': 'means',
             'medium': 'media', 'memorandum': 'memoranda', 'mouse': 'mice',
             'nebula': 'nebulae', 'nucleus': 'nuclei', 'oasis': 'oases',
@@ -212,6 +265,44 @@ _IRR_S2P = {'alumnus': 'alumni', 'analysis': 'analyses', 'antenna': 'antennae',
 # Reverse index of the above
 _IRR_P2S = dict([(v, k) for k, v in _IRR_S2P.items()])
 
+HASHTAG_RE = re.compile(r"(?:^|\s)[＃#]{1}(\w+)", re.UNICODE)
+
+
+def find_hashtags(string):
+    """Finds and returns all hashtags in a string, with the hashmark
+    removed. Supports full-width hashmarks for Asian languages and
+    does not false-positive on URL anchors.
+
+    >>> find_hashtags('#atag http://asite/#ananchor')
+    ['atag']
+
+    ``find_hashtags`` also works with unicode hashtags.
+    """
+
+    # the following works, doctest just struggles with it
+    # >>> find_hashtags(u"can't get enough of that dignity chicken #肯德基 woo")
+    # [u'\u80af\u5fb7\u57fa']
+    return HASHTAG_RE.findall(string)
+
+
+def a10n(string):
+    """That thing where "internationalization" becomes "i18n", what's it
+    called? Abbreviation? Oh wait, no: ``a10n``. (It's actually a form
+    of `numeronym`_.)
+
+    >>> a10n('abbreviation')
+    'a10n'
+    >>> a10n('internationalization')
+    'i18n'
+    >>> a10n('')
+    ''
+
+    .. _numeronym: http://en.wikipedia.org/wiki/Numeronym
+    """
+    if len(string) < 3:
+        return string
+    return '%s%s%s' % (string[0], len(string[1:-1]), string[-1])
+
 
 class StringBuffer(object):
     """
@@ -220,6 +311,8 @@ class StringBuffer(object):
 
     This one is for unicode text strings. Look for ByteBuffer if you
     want to handle byte strings.
+
+    (NOTE: not quite done yet)
     """
     def __init__(self, default_encoding=None, errors='strict'):
         self.data = collections.deque()
@@ -249,22 +342,22 @@ ANSI_TERMINATORS = ('H', 'f', 'A', 'B', 'C', 'D', 'R', 's', 'u', 'J',
 
 
 def strip_ansi(text):
-    """\
-    Strips (doesn't interpret) ANSI escape codes from ``text``. Useful
-    for the occasional time when a log or redirected output
-    accidentally captures console color codes and the like.
+    """Strips ANSI escape codes from *text*. Useful for the occasional
+    time when a log or redirected output accidentally captures console
+    color codes and the like.
 
     >>> strip_ansi('\x1b[0m\x1b[1;36mart\x1b[46;34m\xdc')
     'art'
 
-    (The test above is an excerpt from ANSI art on
-    http://sixteencolors.net. Sadly, this function does not interpret
-    or render ANSI art, but you can do so with
-    http://www.bedroomlan.org/projects/ansi2img or
-    https://github.com/atdt/escapes.js)
+    The test above is an excerpt from ANSI art on
+    `sixteencolors.net`_. This function does not interpret or render
+    ANSI art, but you can do so with `ansi2img`_ or `escapes.js`_.
 
-    TODO: move to cliutils.py
+    .. _sixteencolors.net: http://sixteencolors.net
+    .. _ansi2img: http://www.bedroomlan.org/projects/ansi2img
+    .. _escapes.js: https://github.com/atdt/escapes.js
     """
+    # TODO: move to cliutils.py
     nansi, keep, i, text_len = [], True, 0, len(text)
     while i < text_len:
         if not keep and text[i] in ANSI_TERMINATORS:
@@ -283,20 +376,28 @@ def strip_ansi(text):
 
 
 def asciify(text, ignore=False):
-    """
-    Converts a unicode or bytestring into a bytestring with
+    """Converts a unicode or bytestring, *text*, into a bytestring with
     just ascii characters. Performs basic deaccenting for all you
     Europhiles out there.
 
-    Also, a gentle reminder that this is a _utility_, primarily meant
+    Also, a gentle reminder that this is a **utility**, primarily meant
     for slugification. Whenever possible, make your application work
-    _with_ unicode, not against it.
+    **with** unicode, not against it.
 
-    >>> asciify('Beyoncé')
-    'Beyonce'
+    Args:
+        text (str or unicode): The string to be asciified.
+        ignore (bool): Configures final encoding to ignore remaining
+            unasciified unicode instead of replacing it.
 
-    TODO: Python 3 compliance.
+    # TODO: repr under Py3k
+    # >>> asciify('Beyoncé')
+    # 'Beyonce'
+
+    >>> asciify('Beyoncé') == b'Beyonce'
+    True
+
     """
+    # TODO: Python 3 compliance.
     try:
         try:
             return text.encode('ascii')
@@ -314,6 +415,7 @@ def asciify(text, ignore=False):
 
 
 class DeaccenterDict(dict):
+    "A small caching dictionary for deaccenting."
     def __missing__(self, key):
         ch = self.get(key)
         if ch is not None:
@@ -404,11 +506,14 @@ DEACCENT_MAP = DeaccenterDict(_BASE_DEACCENT_MAP)
 
 _SIZE_SYMBOLS = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
 _SIZE_BOUNDS = [(1024 ** i, sym) for i, sym in enumerate(_SIZE_SYMBOLS)]
-_SIZE_RANGES = zip(_SIZE_BOUNDS, _SIZE_BOUNDS[1:])
+_SIZE_RANGES = list(zip(_SIZE_BOUNDS, _SIZE_BOUNDS[1:]))
 
 
 def bytes2human(nbytes, ndigits=0):
-    """
+    """Turns an integer value of *nbytes* into a human readable format. Set
+    *ndigits* to control how many digits after the decimal point
+    should be shown (default ``0``).
+
     >>> bytes2human(128991)
     '126K'
     >>> bytes2human(100001221)
@@ -426,42 +531,99 @@ def bytes2human(nbytes, ndigits=0):
                                                   symbol=symbol)
 
 
-if __name__ == '__main__':
-    b = asciify(u'Beyoncé')
-    print ord(b[-1])
-    print b
-    print DEACCENT_MAP
+class HTMLTextExtractor(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.result = []
+
+    def handle_data(self, d):
+        self.result.append(d)
+
+    def handle_charref(self, number):
+        if number[0] == u'x' or number[0] == u'X':
+            codepoint = int(number[1:], 16)
+        else:
+            codepoint = int(number)
+        self.result.append(unichr(codepoint))
+
+    def handle_entityref(self, name):
+        try:
+            codepoint = htmlentitydefs.name2codepoint[name]
+        except KeyError:
+            self.result.append(u'&' + name + u';')
+        else:
+            self.result.append(unichr(codepoint))
+
+    def get_text(self):
+        return u''.join(self.result)
 
 
-_pos_farg_re = re.compile('({{)|'         # escaped open-brace
-                          '(}})|'         # escaped close-brace
-                          '({[:!.\[}])')  # anon positional format arg
+def html2text(html):
+    """Strips tags from HTML text, returning markup-free text. Also, does
+    a best effort replacement of entities like "&nbsp;"
 
-
-def infer_positional_format_args(fstr):
+    >>> r = html2text(u'<a href="#">Test &amp;<em>(\u0394&#x03b7;&#956;&#x03CE;)</em></a>')
+    >>> r == u'Test &(\u0394\u03b7\u03bc\u03ce)'
+    True
     """
-    Infers positional arguments from a format string, for Python 2.6
-    backwards compatibility and also fixing/mixing explicit and
-    implicit positional arguments in newer Pythons.
+    # based on answers to http://stackoverflow.com/questions/753052/
+    s = HTMLTextExtractor()
+    s.feed(html)
+    return s.get_text()
 
-    >>> infer_positional_format_args('{} {} {}')
-    '{0} {1} {2}'
-    >>> infer_positional_format_args('{:d} {!s} {1} {[hi]} {{joek}}')
-    '{0:d} {1!s} {1} {2[hi]} {{joek}}'
+
+_EMPTY_GZIP_BYTES = b'\x1f\x8b\x08\x089\xf3\xb9U\x00\x03empty\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+_NON_EMPTY_GZIP_BYTES = b'\x1f\x8b\x08\x08\xbc\xf7\xb9U\x00\x03not_empty\x00K\xaa,I-N\xcc\xc8\xafT\xe4\x02\x00\xf3nb\xbf\x0b\x00\x00\x00'
+
+
+def gunzip_bytes(bytestring):
+    """The :mod:`gzip` module is great if you have a file or file-like
+    object, but what if you just have bytes. StringIO is one
+    possibility, but it's often faster, easier, and simpler to just
+    use this one-liner. Use this tried-and-true utility function to
+    decompress gzip from bytes.
+
+    >>> gunzip_bytes(_EMPTY_GZIP_BYTES) == b''
+    True
+    >>> gunzip_bytes(_NON_EMPTY_GZIP_BYTES).rstrip() == b'bytesahoy!'
+    True
     """
-    # TODO: memoize
-    ret, max_anon = '', 0
-    # look for {: or {! or {. or {[ or {}
-    start, end, prev_end = 0, 0, 0
-    for match in _pos_farg_re.finditer(fstr):
-        start, end, group = match.start(), match.end(), match.group()
-        if prev_end < start:
-            ret += fstr[prev_end:start]
+    return zlib.decompress(bytestring, 16 + zlib.MAX_WBITS)
+
+
+_line_ending_re = re.compile(r'(\r\n|\n|\x0b|\f|\r|\x85|\x2028|\x2029)',
+                             re.UNICODE)
+
+
+def iter_splitlines(text):
+    r"""Like :meth:`str.splitlines`, but returns an iterator of lines
+    instead of a list. Also similar to :meth:`file.next`, as that also
+    lazily reads and yields lines from a file.
+
+    This function works with a variety of line endings, but as always,
+    be careful when mixing line endings within a file.
+
+    >>> list(iter_splitlines('\nhi\nbye\n'))
+    ['', 'hi', 'bye', '']
+    >>> list(iter_splitlines('\r\nhi\rbye\r\n'))
+    ['', 'hi', 'bye', '']
+    >>> list(iter_splitlines(''))
+    []
+    """
+    prev_end, len_text = 0, len(text)
+    # print('last: %r' % last_idx)
+    # start, end = None, None
+    for match in _line_ending_re.finditer(text):
+        start, end = match.start(1), match.end(1)
+        # print(start, end)
+        if prev_end <= start:
+            yield text[prev_end:start]
+        if end == len_text:
+            yield ''
         prev_end = end
-        if group == '{{' or group == '}}':
-            ret += group
-            continue
-        ret += '{%s%s' % (max_anon, group[1:])
-        max_anon += 1
-    ret += fstr[prev_end:]
-    return ret
+    tail = text[prev_end:]
+    if tail:
+        yield tail
+    return
