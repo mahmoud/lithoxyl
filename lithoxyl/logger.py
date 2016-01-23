@@ -177,17 +177,20 @@ class Logger(object):
         return self.record_type(**kw)
 
     def wrap(self, name, level, inject_as=None, **kw):
-        def wrapper(func):
-            def logged_func(func, *a, **kw):
+
+        def record_wrapper(func_to_log):
+
+            @wraps(func_to_log, injected=inject_as)
+            def logged_func(*a, **kw):
                 rec = self.record(name, level, **kw)
                 if inject_as:
                     kw[inject_as] = rec
                 with rec:
-                    return func(*a, **kw)
+                    return func_to_log(*a, **kw)
 
-            return decorate(func, logged_func, injected=inject_as)
+            return logged_func
 
-        return wrapper
+        return record_wrapper
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -197,7 +200,7 @@ class Logger(object):
             return object.__repr__(self)
 
 
-def decorate(func, caller, injected=None):
+def wraps(func, injected=None, **kw):
     # TODO: docstring
     # TODO: py3 for this and FunctionBuilder
     if injected is None:
@@ -205,23 +208,28 @@ def decorate(func, caller, injected=None):
     elif isinstance(injected, basestring):
         injected = [injected]
 
+    update_dict = kw.pop('update_dict', True)
+    if kw:
+        raise TypeError('unexpected kwargs: %r' % kw.keys())
+
     fb = FunctionBuilder.from_func(func)
-
-    execdict = dict(_call=caller, _func=func)
-
     for arg in injected:
-        # test for existence of argument
-        # can't inject into what's not there
         try:
             fb.args.remove(arg)
             fb.defaults.pop(arg, None)
         except ValueError:
+            # can't inject into what's not there
             raise TypeError('expected %r in %r args' % (arg, func))
 
-    fb.body = 'return _call(_func, %s)' % fb.get_sig_str()
-    ret = fb.get_func(execdict)
+    fb.body = 'return _call(%s)' % fb.get_sig_str()
 
-    return ret
+    def wrapper_wrapper(wrapper_func):
+        execdict = dict(_call=wrapper_func, _func=func)
+        fully_wrapped = fb.get_func(execdict, with_dict=update_dict)
+
+        return fully_wrapped
+
+    return wrapper_wrapper
 
 
 import inspect
@@ -243,6 +251,7 @@ class FunctionBuilder(object):
                  'keywords': None,
                  'defaults': {},
                  'doc': '',
+                 'dict': {},
                  'module': None,
                  'body': 'pass',
                  'indent': 4}
@@ -251,9 +260,7 @@ class FunctionBuilder(object):
 
     def __init__(self, name, **kw):
         self.name = name
-
-        for a in ('args', 'varargs', 'keywords', 'defaults',
-                  'doc', 'module', 'body', 'indent'):
+        for a in self._defaults.keys():
             val = kw.pop(a, None)
             if val is None:
                 val = self._defaults[a]
@@ -273,16 +280,16 @@ class FunctionBuilder(object):
     @classmethod
     def from_func(cls, func):
         argspec = inspect.getargspec(func)
-        # TODO: lambda hack?
         kwargs = {'name': func.__name__,
                   'doc': func.__doc__,
-                  'module': func.__module__}
+                  'module': func.__module__,
+                  'dict': getattr(func, '__dict__', {})}
 
         for a in ('args', 'varargs', 'keywords', 'defaults'):
             kwargs[a] = getattr(argspec, a)
         return cls(**kwargs)
 
-    def get_func(self, execdict=None, add_source=True):
+    def get_func(self, execdict=None, add_source=True, with_dict=True):
         execdict = execdict or {}
         body = self.body or self._default_body
 
@@ -293,15 +300,17 @@ class FunctionBuilder(object):
 
         body = indent(self.body, ' ' * self.indent)
 
-        src = tmpl.format(name=self.name, sig_str=self.get_sig_str(),
+        name = self.name.replace('<', '_').replace('>', '_')  # lambdas
+        src = tmpl.format(name=name, sig_str=self.get_sig_str(),
                           doc=self.doc, body=body)
 
         self._compile(src, execdict)
-        func = execdict[self.name]
+        func = execdict[name]
 
         func.__name__ = self.name
         func.__doc__ = self.doc
-        # func.__dict__  # TODO
+        if with_dict:
+            func.__dict__.update(self.dict)
         func.__module__ = self.module
         # TODO: caller module fallback?
 
@@ -311,7 +320,8 @@ class FunctionBuilder(object):
         return func
 
     def _compile(self, src, execdict):
-        filename = '<gen-%d>' % (next(self._compile_count),)
+        filename = ('<boltons.FunctionBuilder-%d>'
+                    % (next(self._compile_count),))
         try:
             code = compile(src, filename, 'single')
             exec(code, execdict)
