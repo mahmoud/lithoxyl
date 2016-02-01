@@ -214,12 +214,7 @@ def wraps(func, injected=None, **kw):
 
     fb = FunctionBuilder.from_func(func)
     for arg in injected:
-        try:
-            fb.args.remove(arg)
-            fb.defaults.pop(arg, None)
-        except ValueError:
-            # can't inject into what's not there
-            raise TypeError('expected %r in %r args' % (arg, func))
+        fb.remove_arg(arg)
 
     fb.body = 'return _call(%s)' % fb.get_sig_str()
 
@@ -249,7 +244,7 @@ class FunctionBuilder(object):
     _defaults = {'args': [],
                  'varargs': None,
                  'keywords': None,
-                 'defaults': {},
+                 'defaults': (),
                  'doc': '',
                  'dict': {},
                  'module': None,
@@ -274,8 +269,7 @@ class FunctionBuilder(object):
 
     def get_sig_str(self):
         return inspect.formatargspec(self.args, self.varargs,
-                                     self.keywords, self.defaults,
-                                     formatvalue=lambda x: '')[1:-1]
+                                     self.keywords, self.defaults)[1:-1]
 
     @classmethod
     def from_func(cls, func):
@@ -318,6 +312,22 @@ class FunctionBuilder(object):
             func.__source__ = src
 
         return func
+
+    def get_defaults_dict(self):
+        ret = dict(reversed(zip(reversed(self.args),
+                                reversed(self.defaults or []))))
+        return ret
+
+    def remove_arg(self, arg_name):
+        d_dict = self.get_defaults_dict()
+        try:
+            self.args.remove(arg_name)
+        except ValueError:
+            raise ValueError('arg %r not found in %s argument list: %r'
+                             % (arg_name, self.name, self.args))
+        d_dict.pop(arg_name)
+        self.defaults = tuple([d_dict[a] for a in self.args if a in d_dict])
+        return
 
     def _compile(self, src, execdict):
         filename = ('<boltons.FunctionBuilder-%d>'
