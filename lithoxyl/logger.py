@@ -170,19 +170,19 @@ class Logger(object):
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
-    def record(self, name, level, **kw):
+    def record(self, level, name, **kw):
         "Create and return a new :class:`Record` named *name* classified as *level*."
         kw['name'], kw['level'], kw['logger'] = name, get_level(level), self
         kw['frame'] = sys._getframe(1)
         return self.record_type(**kw)
 
-    def wrap(self, name, level, inject_as=None, **kw):
-
-        def record_wrapper(func_to_log):
-
+    def wrap(self, level, name=None, inject_as=None, **kw):
+        def record_wrapper(func_to_log, _name=name):
+            if _name is None:  # wooo nonlocal
+                _name = func_to_log.__name__
             @wraps(func_to_log, injected=inject_as)
             def logged_func(*a, **kw):
-                rec = self.record(name, level, **kw)
+                rec = self.record(level, _name, **kw)
                 if inject_as:
                     kw[inject_as] = rec
                 with rec:
