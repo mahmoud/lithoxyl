@@ -1,6 +1,6 @@
 
 import inspect
-from lithoxyl.logger import FunctionBuilder
+from lithoxyl.utils import FunctionBuilder
 
 
 def example_func(a, b, c=1, d=1):
