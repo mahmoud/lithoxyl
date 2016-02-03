@@ -10,6 +10,16 @@ TODO
 * autoincremented IDs for loggers and records?
 * First-class datetime Formatter/FormatField support (type_func)
 
+Formatting
+----------
+
+* Shorteners
+  * Bytes shortening (strutils.bytes2human)
+  * Numeric shortening (K, M, etc.)
+  * Time shortening (h, m, s, ms, us)
+  * Shortened string
+  * reprlib
+
 Sinks/emitters
 --------------
 

@@ -180,6 +180,7 @@ class Logger(object):
         def record_wrapper(func_to_log, _name=name):
             if _name is None:  # wooo nonlocal
                 _name = func_to_log.__name__
+
             @wraps(func_to_log, injected=inject_as)
             def logged_func(*a, **kw):
                 rec = self.record(level, _name, **kw)
@@ -269,18 +270,21 @@ class FunctionBuilder(object):
 
     def get_sig_str(self):
         return inspect.formatargspec(self.args, self.varargs,
-                                     self.keywords, self.defaults)[1:-1]
+                                     self.keywords, [])[1:-1]
 
     @classmethod
     def from_func(cls, func):
+        # TODO: copy_body? gonna need a good signature regex.
         argspec = inspect.getargspec(func)
         kwargs = {'name': func.__name__,
                   'doc': func.__doc__,
+                  'defaults': func.__defaults__,
                   'module': func.__module__,
                   'dict': getattr(func, '__dict__', {})}
 
         for a in ('args', 'varargs', 'keywords', 'defaults'):
             kwargs[a] = getattr(argspec, a)
+
         return cls(**kwargs)
 
     def get_func(self, execdict=None, add_source=True, with_dict=True):
@@ -303,6 +307,7 @@ class FunctionBuilder(object):
 
         func.__name__ = self.name
         func.__doc__ = self.doc
+        func.__defaults__ = self.defaults
         if with_dict:
             func.__dict__.update(self.dict)
         func.__module__ = self.module
