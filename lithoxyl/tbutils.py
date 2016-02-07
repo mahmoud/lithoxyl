@@ -1,6 +1,25 @@
 # -*- coding: utf-8 -*-
+"""One of the oft-cited tenets of Python is that it is better to ask
+forgiveness than permission. That is, there are many cases where it is
+more inclusive and correct to handle exceptions than spend extra lines
+and execution time checking for conditions. This philosophy makes good
+exception handling features all the more important. Unfortunately
+Python's :mod:`traceback` module is woefully behind the times.
 
-"""Extract, format and print information about Python stack traces."""
+The ``tbutils`` module provides two disparate but complementary featuresets:
+
+  1. With :class:`ExceptionInfo` and :class:`TracebackInfo`, the
+     ability to extract, construct, manipulate, format, and serialize
+     exceptions, tracebacks, and callstacks.
+  2. With :class:`ParsedException`, the ability to find and parse tracebacks
+     from captured output such as logs and stdout.
+
+There is also the :class:`ContextualTracebackInfo` variant of
+:class:`TracebackInfo`, which includes much more information from each
+frame of the callstack, including values of locals and neighboring
+lines of code.
+"""
+
 from __future__ import print_function
 
 import re
@@ -8,10 +27,13 @@ import sys
 import linecache
 
 
-# TODO: cross compatibility (jython, etc.)
-# TODO: parser
+if str is bytes:  # py2
+    text = unicode
+else:  # py3
+    text = str
+
+
 # TODO: chaining primitives?  what are real use cases where these help?
-# TODO: intelligently truncating repr
 
 # TODO: print_* for backwards compatability
 # __all__ = ['extract_stack', 'extract_tb', 'format_exception',
@@ -20,9 +42,28 @@ import linecache
 #            'print_last', 'print_stack', 'print_tb']
 
 
+__all__ = ['ExceptionInfo', 'TracebackInfo', 'Callpoint',
+           'ContextualExceptionInfo', 'ContextualTracebackInfo',
+           'ContextualCallpoint', 'print_exception', 'ParsedException']
+
+
 class Callpoint(object):
+    """The Callpoint is a lightweight object used to represent a single
+    entry in the code of a call stack. It stores the code-related
+    metadata of a given frame. Available attributes are the same as
+    the parameters below.
+
+    Args:
+        func_name (str): the function name
+        lineno (int): the line number
+        module_name (str): the module name
+        module_path (str): the filesystem path of the module
+        lasti (int): the index of bytecode execution
+        line (str): the single-line code content (if available)
+
+    """
     __slots__ = ('func_name', 'lineno', 'module_name', 'module_path', 'lasti',
-                 'line')  # line is for the actual single-line code content
+                 'line')
 
     def __init__(self, module_name, module_path, func_name,
                  lineno, lasti, line=None):
@@ -34,6 +75,7 @@ class Callpoint(object):
         self.line = line
 
     def to_dict(self):
+        "Get a :class:`dict` copy of the Callpoint. Useful for serialization."
         ret = {}
         for slot in self.__slots__:
             try:
@@ -44,11 +86,13 @@ class Callpoint(object):
 
     @classmethod
     def from_current(cls, level=1):
+        "Creates a Callpoint from the location of the calling function."
         frame = sys._getframe(level)
         return cls.from_frame(frame)
 
     @classmethod
     def from_frame(cls, frame):
+        "Create a Callpoint object from data extracted from the given frame."
         func_name = frame.f_code.co_name
         lineno = frame.f_lineno
         module_name = frame.f_globals.get('__name__', '')
@@ -60,10 +104,12 @@ class Callpoint(object):
 
     @classmethod
     def from_tb(cls, tb):
-        # main difference with from_frame is that lineno and lasti
-        # come from the traceback, which is to say the line that
-        # failed in the try block, not the line currently being
-        # executed (in the except block)
+        """Create a Callpoint from the traceback of the current
+        exception. Main difference with :meth:`from_frame` is that
+        ``lineno`` and ``lasti`` come from the traceback, which is to
+        say the line that failed in the try block, not the line
+        currently being executed (in the except block).
+        """
         func_name = tb.tb_frame.f_code.co_name
         lineno = tb.tb_lineno
         lasti = tb.tb_lasti
@@ -82,6 +128,11 @@ class Callpoint(object):
             return '%s(%s)' % (cn, ', '.join([repr(a) for a in args]))
 
     def tb_frame_str(self):
+        """Render the Callpoint as it would appear in a standard printed
+        Python traceback. Returns a string with filename, line number,
+        function name, and the actual code line of the error on up to
+        two lines.
+        """
         ret = '  File "%s", line %s, in %s\n' % (self.module_path,
                                                  self.lineno,
                                                  self.func_name)
@@ -91,6 +142,19 @@ class Callpoint(object):
 
 
 class _DeferredLine(object):
+    """The _DeferredLine type allows Callpoints and TracebackInfos to be
+    constructed without potentially hitting the filesystem, as is the
+    normal behavior of the standard Python :mod:`traceback` and
+    :mod:`linecache` modules. Calling :func:`str` fetches and caches
+    the line.
+
+    Args:
+        filename (str): the path of the file containing the line
+        lineno (int): the number of the line in question
+        module_globals (dict): an optional dict of module globals,
+            used to handle advanced use cases using custom module loaders.
+
+    """
     def __init__(self, filename, lineno, module_globals=None):
         self.filename = filename
         self.lineno = lineno
@@ -132,17 +196,49 @@ class _DeferredLine(object):
 
 # TODO: dedup frames, look at __eq__ on _DeferredLine
 class TracebackInfo(object):
+    """The TracebackInfo class provides a basic representation of a stack
+    trace, be it from an exception being handled or just part of
+    normal execution. It is basically a wrapper around a list of
+    :class:`Callpoint` objects representing frames.
 
+    Args:
+        frames (list): A list of frame objects in the stack.
+
+    .. note ::
+
+      ``TracebackInfo`` can represent both exception tracebacks and
+      non-exception tracebacks (aka stack traces). As a result, there
+      is no ``TracebackInfo.from_current()``, as that would be
+      ambiguous. Instead, call :meth:`TracebackInfo.from_frame`
+      without the *frame* argument for a stack trace, or
+      :meth:`TracebackInfo.from_traceback` without the *tb* argument
+      for an exception traceback.
+    """
     callpoint_type = Callpoint
 
     def __init__(self, frames):
         self.frames = frames
 
     @classmethod
-    def from_frame(cls, frame, limit=None):
+    def from_frame(cls, frame=None, level=1, limit=None):
+        """Create a new TracebackInfo *frame* by recurring up in the stack a
+        max of *limit* times. If *frame* is unset, get the frame from
+        :func:`sys._getframe` using *level*.
+
+        Args:
+            frame (types.FrameType): frame object from
+                :func:`sys._getframe` or elsewhere. Defaults to result
+                of :func:`sys.get_frame`.
+            level (int): If *frame* is unset, the desired frame is
+                this many levels up the stack from the invocation of
+                this method. Default ``1`` (i.e., caller of this method).
+            limit (int): max number of parent frames to extract
+                (defaults to :data:`sys.tracebacklimit`)
+
+        """
         ret = []
         if frame is None:
-            frame = sys._getframe(1)  # cross-impl yadayada
+            frame = sys._getframe(1)
         if limit is None:
             limit = getattr(sys, 'tracebacklimit', 1000)
         n = 0
@@ -155,8 +251,28 @@ class TracebackInfo(object):
         return cls(ret)
 
     @classmethod
-    def from_traceback(cls, tb, limit=None):
+    def from_traceback(cls, tb=None, limit=None):
+        """Create a new TracebackInfo from the traceback *tb* by recurring
+        up in the stack a max of *limit* times. If *tb* is unset, get
+        the traceback from the currently handled exception. If no
+        exception is being handled, raise a :exc:`ValueError`.
+
+        Args:
+
+            frame (types.TracebackType): traceback object from
+                :func:`sys.exc_info` or elsewhere. If absent or set to
+                ``None``, defaults to ``sys.exc_info()[2]``, and
+                raises a :exc:`ValueError` if no exception is
+                currently being handled.
+            limit (int): max number of parent frames to extract
+                (defaults to :data:`sys.tracebacklimit`)
+
+        """
         ret = []
+        if tb is None:
+            tb = sys.exc_info()[2]
+            if tb is None:
+                raise ValueError('no tb set and no exception being handled')
         if limit is None:
             limit = getattr(sys, 'tracebacklimit', 1000)
         n = 0
@@ -169,9 +285,14 @@ class TracebackInfo(object):
 
     @classmethod
     def from_dict(cls, d):
+        "Complements :meth:`TracebackInfo.to_dict`."
+        # TODO: check this.
         return cls(d['frames'])
 
     def to_dict(self):
+        """Returns a dict with a list of :class:`Callpoint` frames converted
+        to dicts.
+        """
         return {'frames': [f.to_dict() for f in self.frames]}
 
     def __len__(self):
@@ -194,13 +315,42 @@ class TracebackInfo(object):
         return self.get_formatted()
 
     def get_formatted(self):
+        """Returns a string as formatted in the traditional Python
+        built-in style observable when an exception is not caught. In
+        other words, mimics :func:`traceback.format_tb` and
+        :func:`traceback.format_stack`.
+        """
         ret = 'Traceback (most recent call last):\n'
         ret += ''.join([f.tb_frame_str() for f in self.frames])
         return ret
 
 
 class ExceptionInfo(object):
+    """An ExceptionInfo object ties together three main fields suitable
+    for representing an instance of an exception: The exception type
+    name, a string representation of the exception itself (the
+    exception message), and information about the traceback (stored as
+    a :class:`TracebackInfo` object).
 
+    These fields line up with :func:`sys.exc_info`, but unlike the
+    values returned by that function, ExceptionInfo does not hold any
+    references to the real exception or traceback. This property makes
+    it suitable for serialization or long-term retention, without
+    worrying about formatting pitfalls, circular references, or leaking memory.
+
+    Args:
+
+        exc_type (str): The exception type name.
+        exc_msg (str): String representation of the exception value.
+        tb_info (TracebackInfo): Information about the stack trace of the
+            exception.
+
+    Like the :class:`TracebackInfo`, ExceptionInfo is most commonly
+    instantiated from one of its classmethods: :meth:`from_exc_info`
+    or :meth:`from_current`.
+    """
+
+    #: Override this in inherited types to control the TracebackInfo type used
     tb_info_type = TracebackInfo
 
     def __init__(self, exc_type, exc_msg, tb_info):
@@ -211,9 +361,13 @@ class ExceptionInfo(object):
 
     @classmethod
     def from_exc_info(cls, exc_type, exc_value, traceback):
+        """Create an :class:`ExceptionInfo` object from the exception's type,
+        value, and traceback, as returned by :func:`sys.exc_info`. See
+        also :meth:`from_current`.
+        """
         type_str = exc_type.__name__
         type_mod = exc_type.__module__
-        if type_mod not in ("__main__", "__builtin__", "exceptions"):
+        if type_mod not in ("__main__", "__builtin__", "exceptions", "builtins"):
             type_str = '%s.%s' % (type_mod, type_str)
         val_str = _some_str(exc_value)
         tb_info = cls.tb_info_type.from_traceback(traceback)
@@ -221,9 +375,16 @@ class ExceptionInfo(object):
 
     @classmethod
     def from_current(cls):
+        """Create an :class:`ExceptionInfo` object from the current exception
+        being handled, by way of :func:`sys.exc_info`. Will raise an
+        exception if no exception is currently being handled.
+        """
         return cls.from_exc_info(*sys.exc_info())
 
     def to_dict(self):
+        """Get a :class:`dict` representation of the ExceptionInfo, suitable
+        for JSON serialization.
+        """
         return {'exc_type': self.exc_type,
                 'exc_msg': self.exc_msg,
                 'exc_tb': self.tb_info.to_dict()}
@@ -233,19 +394,31 @@ class ExceptionInfo(object):
         try:
             len_frames = len(self.tb_info.frames)
             last_frame = ', last=%r' % (self.tb_info.frames[-1],)
-        except:
+        except Exception:
             len_frames = 0
             last_frame = ''
         args = (cn, self.exc_type, self.exc_msg, len_frames, last_frame)
         return '<%s [%s: %s] (%s frames%s)>' % args
 
     def get_formatted(self):
+        """Returns a string formatted in the traditional Python
+        built-in style observable when an exception is not caught. In
+        other words, mimics :func:`traceback.format_exception`.
+        """
         # TODO: add SyntaxError formatting
-        tb_str = str(self.tb_info)
+        tb_str = self.tb_info.get_formatted()
         return ''.join([tb_str, '%s: %s' % (self.exc_type, self.exc_msg)])
 
 
 class ContextualCallpoint(Callpoint):
+    """The ContextualCallpoint is a :class:`Callpoint` subtype with the
+    exact same API and storing two additional values:
+
+      1. :func:`repr` outputs for local variables from the Callpoint's scope
+      2. A number of lines before and after the Callpoint's line of code
+
+    The ContextualCallpoint is used by the :class:`ContextualTracebackInfo`.
+    """
     def __init__(self, *a, **kw):
         self.local_reprs = kw.pop('local_reprs', {})
         self.pre_lines = kw.pop('pre_lines', [])
@@ -254,6 +427,7 @@ class ContextualCallpoint(Callpoint):
 
     @classmethod
     def from_frame(cls, frame):
+        "Identical to :meth:`Callpoint.from_frame`"
         ret = super(ContextualCallpoint, cls).from_frame(frame)
         ret._populate_local_reprs(frame.f_locals)
         ret._populate_context_lines()
@@ -261,6 +435,7 @@ class ContextualCallpoint(Callpoint):
 
     @classmethod
     def from_tb(cls, tb):
+        "Identical to :meth:`Callpoint.from_tb`"
         ret = super(ContextualCallpoint, cls).from_tb(tb)
         ret._populate_local_reprs(tb.tb_frame.f_locals)
         ret._populate_context_lines()
@@ -270,7 +445,7 @@ class ContextualCallpoint(Callpoint):
         DL, lineno = _DeferredLine, self.lineno
         try:
             module_globals = self.line.module_globals
-        except:
+        except Exception:
             module_globals = None
         start_line = max(0, lineno - pivot)
         pre_lines = [DL(self.module_path, ln, module_globals)
@@ -286,12 +461,30 @@ class ContextualCallpoint(Callpoint):
         for k, v in f_locals.items():
             try:
                 local_reprs[k] = repr(v)
-            except:
+            except Exception:
                 surrogate = '<unprintable %s object>' % type(v).__name__
                 local_reprs[k] = surrogate
         return
 
     def to_dict(self):
+        """
+        Same principle as :meth:`Callpoint.to_dict`, but with the added
+        contextual values. With ``ContextualCallpoint.to_dict()``,
+        each frame will now be represented like::
+
+          {'func_name': 'print_example',
+           'lineno': 0,
+           'module_name': 'example_module',
+           'module_path': '/home/example/example_module.pyc',
+           'lasti': 0,
+           'line': 'print "example"',
+           'locals': {'variable': '"value"'},
+           'pre_lines': ['variable = "value"'],
+           'post_lines': []}
+
+        The locals dictionary and line lists are copies and can be mutated
+        freely.
+        """
         ret = super(ContextualCallpoint, self).to_dict()
         ret['locals'] = dict(self.local_reprs)
 
@@ -321,10 +514,23 @@ class ContextualCallpoint(Callpoint):
 
 
 class ContextualTracebackInfo(TracebackInfo):
+    """The ContextualTracebackInfo type is a :class:`TracebackInfo`
+    subtype that is used by :class:`ContextualExceptionInfo` and uses
+    the :class:`ContextualCallpoint` as its frame-representing
+    primitive.
+    """
     callpoint_type = ContextualCallpoint
 
 
 class ContextualExceptionInfo(ExceptionInfo):
+    """The ContextualTracebackInfo type is a :class:`TracebackInfo`
+    subtype that uses the :class:`ContextualCallpoint` as its
+    frame-representing primitive.
+
+    It carries with it most of the exception information required to
+    recreate the widely recognizable "500" page for debugging Django
+    applications.
+    """
     tb_info_type = ContextualTracebackInfo
 
 
@@ -424,6 +630,11 @@ def print_exception(etype, value, tb, limit=None, file=None):
 
 
 def fix_print_exception():
+    """
+    Sets the default exception hook :func:`sys.excepthook` to the
+    :func:`tbutils.print_exception` that uses all the ``tbutils``
+    facilities to provide slightly more correct output behavior.
+    """
     sys.excepthook = print_exception
 
 
@@ -432,9 +643,17 @@ _frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)'
 _se_frame_re = re.compile(r'^File "(?P<filepath>.+)", line (?P<lineno>\d+)')
 
 
-class ParsedTB(object):
-    """
-    Parses a traceback string as typically output by sys.excepthook.
+# TODO: ParsedException generator over large bodies of text
+
+class ParsedException(object):
+    """Stores a parsed traceback and exception as would be typically
+    output by :func:`sys.excepthook` or
+    :func:`traceback.print_exception`.
+
+    .. note:
+
+       Does not currently store SyntaxError details such as column.
+
     """
     def __init__(self, exc_type_name, exc_msg, frames=None):
         self.exc_type = exc_type_name
@@ -443,15 +662,20 @@ class ParsedTB(object):
 
     @property
     def source_file(self):
+        """
+        The file path of module containing the function that raised the
+        exception, or None if not available.
+        """
         try:
             return self.frames[-1]['filepath']
         except IndexError:
             return None
 
     def to_dict(self):
+        "Get a copy as a JSON-serializable :class:`dict`."
         return {'exc_type': self.exc_type,
                 'exc_msg': self.exc_msg,
-                'frames': self.frames}
+                'frames': list(self.frames)}
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -460,11 +684,24 @@ class ParsedTB(object):
 
     @classmethod
     def from_string(cls, tb_str):
-        if not isinstance(tb_str, unicode):
+        """Parse a traceback and exception from the text *tb_str*. This text
+        is expected to have been decoded, otherwise it will be
+        interpreted as UTF-8.
+
+        This method does not search a larger body of text for
+        tracebacks. If the first line of the text passed does not
+        match one of the known patterns, a :exc:`ValueError` will be
+        raised. This method will ignore trailing text after the end of
+        the first traceback.
+
+        Args:
+            tb_str (str): The traceback text (:class:`unicode` or UTF-8 bytes)
+        """
+        if not isinstance(tb_str, text):
             tb_str = tb_str.decode('utf-8')
         tb_lines = tb_str.lstrip().splitlines()
 
-        # first off, handle some ignored exceptions. these can be the
+        # First off, handle some ignored exceptions. These can be the
         # result of exceptions raised by __del__ during garbage
         # collection
         while tb_lines:
@@ -473,112 +710,55 @@ class ParsedTB(object):
                 tb_lines.pop()
             else:
                 break
-
         if tb_lines and tb_lines[0].strip() == 'Traceback (most recent call last):':
             start_line = 1
             frame_re = _frame_re
         elif len(tb_lines) > 1 and tb_lines[-2].lstrip().startswith('^'):
+            # This is to handle the slight formatting difference
+            # associated with SyntaxErrors, which also don't really
+            # have tracebacks
             start_line = 0
             frame_re = _se_frame_re
         else:
             raise ValueError('unrecognized traceback string format')
 
         frames = []
-        for pair_idx in range(start_line, len(tb_lines), 2):
-            frame_line = tb_lines[pair_idx].strip()
+        line_no = start_line
+        while True:
+            frame_line = tb_lines[line_no].strip()
             frame_match = frame_re.match(frame_line)
             if frame_match:
                 frame_dict = frame_match.groupdict()
+                try:
+                    next_line = tb_lines[line_no + 1]
+                except IndexError:
+                    # We read what we could
+                    next_line = ''
+                next_line_stripped = next_line.strip()
+                if (
+                        frame_re.match(next_line_stripped) or
+                        # The exception message will not be indented
+                        # This check is to avoid overrunning on eval-like
+                        # tracebacks where the last frame doesn't have source
+                        # code in the traceback
+                        not next_line.startswith(' ')
+                ):
+                    frame_dict['source_line'] = ''
+                else:
+                    frame_dict['source_line'] = next_line_stripped
+                    line_no += 1
             else:
                 break
-            frame_dict['source_line'] = tb_lines[pair_idx + 1].strip()
+            line_no += 1
             frames.append(frame_dict)
 
-        exc_line_offset = start_line + len(frames) * 2
         try:
-            exc_line = tb_lines[exc_line_offset]
-            exc_type, _, exc_msg = exc_line.partition(':')
-        except:
+            exc_line = '\n'.join(tb_lines[line_no:])
+            exc_type, _, exc_msg = exc_line.partition(': ')
+        except Exception:
             exc_type, exc_msg = '', ''
 
         return cls(exc_type, exc_msg, frames)
 
 
-if __name__ == '__main__':
-    import cStringIO
-
-    builtin_exc_hook = sys.excepthook
-    fix_print_exception()
-    tbi_str = ''
-
-    def test():
-        raise ValueError('yay fun')
-
-    fake_stderr1 = cStringIO.StringIO()
-    fake_stderr2 = cStringIO.StringIO()
-    sys.stderr = fake_stderr1
-
-    try:
-        test()
-    except:
-        _, _, exc_traceback = sys.exc_info()
-        tbi = TracebackInfo.from_traceback(exc_traceback)
-        exc_info = ExceptionInfo.from_exc_info(*sys.exc_info())
-        exc_info2 = ExceptionInfo.from_current()
-        tbi_str = str(tbi)
-        print_exception(*sys.exc_info(), file=fake_stderr2)
-        new_exc_hook_res = fake_stderr2.getvalue()
-        builtin_exc_hook(*sys.exc_info())
-        builtin_exc_hook_res = fake_stderr1.getvalue()
-    finally:
-        sys.stderr = sys.__stderr__
-
-    print()
-    print('# Single frame:\n')
-    print(tbi.frames[-1].tb_frame_str())
-
-    print('# Traceback info:\n')
-    print(tbi_str)
-
-    print('# Full except hook output:\n')
-    print(new_exc_hook_res)
-
-    assert new_exc_hook_res == builtin_exc_hook_res
-
-    FAKE_TB_STR = u"""
-Traceback (most recent call last):
-  File "example.py", line 2, in <module>
-    plarp
-NameError: name 'plarp' is not defined
-"""
-    parsed_tb = ParsedTB.from_string(FAKE_TB_STR)
-    print(parsed_tb)
-
-    def func1():
-        return func2()
-    def func2():
-        x = 5
-        return func3()
-    def func3():
-        return ContextualCallpoint.from_current(level=2)
-
-    callpoint = func1()
-    print(repr(callpoint))
-    assert 'func2' in repr(callpoint)
-
-    def func_a():
-        a = 1
-        raise Exception('func_a exception')
-    def func_b():
-        b = 2
-        return func_a()
-    def func_c():
-        c = 3
-        return func_b()
-
-    try:
-        func_c()
-    except:
-        ctx_ei = ContextualExceptionInfo.from_current()
-        print(ctx_ei.get_formatted())
-        import pdb;pdb.set_trace()
+ParsedTB = ParsedException  # legacy alias
