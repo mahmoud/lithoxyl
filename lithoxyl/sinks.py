@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import pdb
 import sys
 import json
 import time
@@ -377,6 +378,21 @@ class MultiQuantileSink(QuantileSink):
                               for lname, a_map in self.qas.items()])
         ret = '<%s %r>' % (cn, acc_dict_repr)
         return ret
+
+
+class DevDebugSink(object):
+    # TODO: configurable max number of traceback signatures, after
+    #       which exit/ignore?
+
+    def __init__(self, reraise=False, post_mortem=False):
+        self.reraise = reraise
+        self.post_mortem = post_mortem
+
+    def on_exception(self, record, exc_type, exc_obj, exc_tb):
+        if self.post_mortem:
+            pdb.post_mortem()
+        if self.reraise:
+            raise exc_type, exc_obj, exc_tb
 
 
 if __name__ == '__main__':
