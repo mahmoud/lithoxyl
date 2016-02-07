@@ -78,9 +78,8 @@ class Record(object):
     _defer_publish = False
 
     def __init__(self, name, level=None, **kwargs):
-        # TODO: default level
         self.name = name
-        self.level = level
+        self.level = level or CRITICAL
         self.logger = kwargs.pop('logger', None)
         self.status = kwargs.pop('status', 'begin')
         try:
