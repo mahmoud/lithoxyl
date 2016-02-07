@@ -198,5 +198,5 @@ class Logger(object):
         cn = self.__class__.__name__
         try:
             return '<%s name=%r sinks=%r>' % (cn, self.name, self.sinks)
-        except:
+        except Exception:
             return object.__repr__(self)

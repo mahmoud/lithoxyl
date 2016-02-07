@@ -135,7 +135,7 @@ class RateSink(object):
         status_time_map = name_time_map.setdefault(record.name, {})
         try:
             acc = status_time_map[record.status]
-        except:
+        except Exception:
             acc = RateAccumulator(sample_size=self.sample_size)
             status_time_map[record.status] = acc
         acc.add(record.end_time)
@@ -231,7 +231,7 @@ class EWMASink(object):
         status_time_map = name_time_map.setdefault(record.name, {})
         try:
             acc = status_time_map[record.status]
-        except:
+        except Exception:
             acc = self.accumulator_type(periods=self.periods,
                                         interval=self.interval)
             status_time_map[record.status] = acc

@@ -19,7 +19,7 @@ def create_user(name):
             logging.info('successfully created user %r', name)
         else:
             logging.error('failed to create user %r', name)
-    except:
+    except Exception:
         logging.critical('exception encountered while creating user %r',
                          name, exc_info=True)
     return success

@@ -142,7 +142,7 @@ class Formatter(object):
                 if self.quoter_map[t]:
                     seg = self.quoter_map[t](seg)
                 ret += seg
-            except:
+            except Exception:
                 ret += self.default_map[t]
         return ret
 
@@ -172,7 +172,7 @@ class Formatter(object):
     def format_record(self, record):
         try:
             return self.templette.format_record(record)
-        except:
+        except Exception:
             # TODO: basically impossible atm, but eventually log to
             # stderr or something
             raise

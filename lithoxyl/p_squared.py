@@ -46,7 +46,7 @@ class P2Estimator(object):
                 qps = qps[:-1]
             if not qps or not all([0 < x < 100 for x in qps]):
                 raise ValueError()
-        except:
+        except Exception:
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
         else:
             return tuple(qps)
@@ -113,7 +113,7 @@ def test_random(vals=None, nsamples=100000):
                 "in %f seconds (%f ms each)")
         pprint(p)
         print tmpl % (nsamples, duration, 1000 * duration / nsamples)
-    except:
+    except Exception:
         import traceback
         import pdb
         traceback.print_exc()

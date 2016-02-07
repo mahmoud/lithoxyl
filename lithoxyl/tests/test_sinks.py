@@ -35,7 +35,7 @@ def test_sensible_basic():
     try:
         with log.debug('greet') as t:
             raise ZeroDivisionError('narwhalbaconderp')
-    except:
+    except Exception:
         pass
 
     assert fake_emtr.entries[-1][0] == 'E'

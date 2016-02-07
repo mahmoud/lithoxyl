@@ -24,7 +24,7 @@ def check_encoding_settings(encoding, errors):
         u'\xdd'.encode('ascii', errors=errors)
     except LookupError as le:
         raise ErrorBehaviorLookupError(le.message)
-    except:
+    except Exception:
         return
 
 
@@ -75,7 +75,7 @@ class StreamEmitter(object):
             if self.newline:
                 self.stream.write(self.newline)
             self.flush()
-        except:
+        except Exception:
             # TODO: something maybe
             # TODO: built-in logging raises KeyboardInterrupts and
             # SystemExits, special handling for everything else.
@@ -87,7 +87,7 @@ class StreamEmitter(object):
             return
         try:
             self.stream.flush()
-        except:
+        except Exception:
             # TODO: warn
             pass
 
@@ -110,7 +110,7 @@ class FileEmitter(StreamEmitter):
         try:
             self.flush()
             self.stream.close()
-        except:
+        except Exception:
             # TODO: warn
             pass
 

@@ -84,7 +84,7 @@ class Record(object):
         self.status = kwargs.pop('status', 'begin')
         try:
             self.raw_message = kwargs.pop('raw_message')
-        except:
+        except Exception:
             self.raw_message = '%s %s' % (name, self.status)
         self._message = kwargs.pop('message', None)
         self._state_key = None
@@ -117,7 +117,7 @@ class Record(object):
     def level_name(self):
         try:
             return self.level.name
-        except:
+        except Exception:
             return repr(self.level)
 
     def warn(self, message):
@@ -176,7 +176,7 @@ class Record(object):
             exc_info = sys.exc_info()
         try:
             exc_type, exc_val, exc_tb = exc_info
-        except:
+        except Exception:
             exc_type, exc_val, exc_tb = (None, None, None)
         exc_type = exc_type or DefaultException
 
@@ -205,7 +205,7 @@ class Record(object):
             # http://pythondoeswhat.blogspot.com/2013/09/unicodebreakers.html
             try:
                 message = str(message).decode('utf-8', errors='replace')
-            except:
+            except Exception:
                 message = unicode(object.__repr__(message))  # space nuke
         self.raw_message = message
         if not self._defer_publish and self.logger:
@@ -250,7 +250,7 @@ class Record(object):
             exc_info = (exc_type, exc_val, exc_tb)
             try:
                 self._exception(exc_info, message=None)
-            except:
+            except Exception:
                 # TODO: something? grasshopper mode maybe.
                 pass
             # TODO: should probably be three steps:
@@ -298,7 +298,7 @@ class Record(object):
                     ret = 'b'
             else:
                 ret = self.status[:1].lower()
-        except:
+        except Exception:
             pass
         return ret
 

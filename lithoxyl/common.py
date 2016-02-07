@@ -35,7 +35,7 @@ CRITICAL = Level('critical', 90)
 DEFAULT_LEVEL = DEBUG
 BUILTIN_LEVELS = (DEBUG, INFO, CRITICAL)
 
-MIN_LEVEL = Level('_min', 0)  # not to be registered
+MIN_LEVEL = Level('_min', 0)
 MAX_LEVEL = Level('_max', 100)
 
 
