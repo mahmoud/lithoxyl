@@ -134,7 +134,7 @@ class FunctionBuilder(object):
         except ValueError:
             raise ValueError('arg %r not found in %s argument list: %r'
                              % (arg_name, self.name, self.args))
-        d_dict.pop(arg_name)
+        d_dict.pop(arg_name, None)
         self.defaults = tuple([d_dict[a] for a in self.args if a in d_dict])
         return
 
