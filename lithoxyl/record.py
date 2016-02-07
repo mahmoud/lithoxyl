@@ -88,6 +88,7 @@ class Record(object):
         except:
             self.raw_message = '%s %s' % (name, self.status)
         self._message = kwargs.pop('message', None)
+        self._state_key = None
         self.extras = kwargs.pop('extras', {})
         self.begin_time = kwargs.pop('begin_time', time.time())
         self.end_time = kwargs.pop('end_time', None)
@@ -122,6 +123,7 @@ class Record(object):
 
     def warn(self, message):
         "Append a warning *message* to the warnings tracked by this record."
+        # TODO: probably need the same formatting machinery for this message
         self.warnings.append(message)
         return self
 
@@ -211,11 +213,16 @@ class Record(object):
             self.logger.on_complete(self)
         return self
 
+    def _get_state_key(self):
+        # how we know when to invalidate the cached message
+        # e.g., the message changes between begin and complete
+        return (self.status,)
+
     @property
     def message(self):
-        # TODO: will have to invalidate this on record status change
         if self._message is not None:
-            return self._message
+            if self._state_key == self._get_state_key():
+                return self._message
         raw_message = self.raw_message
         if raw_message is None:
             return None
@@ -227,6 +234,7 @@ class Record(object):
             fmtr = Formatter(raw_message, quoter=False)
             args = getattr(self, '_pos_args', [])
             self._message = fmtr.format_record(self, *args)
+        self._state_key = self._get_state_key()
         return self._message
 
     def __enter__(self):
