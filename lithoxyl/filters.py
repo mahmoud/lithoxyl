@@ -29,13 +29,16 @@ from common import MAX_LEVEL, LEVEL_ALIAS_MAP
 
 
 class ThresholdFilter(object):
-    def __init__(self, **kwargs):
+    def __init__(self, base=None, **kwargs):
         # TODO: filter for warnings?
         # TODO: on-bind lookup behaviors?
-        # TODO: add "default" response?
+        base = LEVEL_ALIAS_MAP[base or MAX_LEVEL]
+
         self.event_kw_vals = {}
         for event in ('begin', 'success', 'failure', 'exception'):
-            level = kwargs.pop(event, MAX_LEVEL)
+            level = kwargs.pop(event, base)
+            if not level:  # False or explicit None
+                level = MAX_LEVEL  # MAX_LEVEL filters all
             level = LEVEL_ALIAS_MAP[level]
             self.event_kw_vals[event] = level
 
