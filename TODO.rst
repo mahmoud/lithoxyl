@@ -1,6 +1,10 @@
 TODO
 ====
 
+* Need to get rid of statefulness if async-through-Logger is going to
+  work (or otherwise separate begin/end messages)
+* Level remapping
+
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
 * "auto" mode for escaping (eliminate excessive quoting)

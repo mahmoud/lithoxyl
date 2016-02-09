@@ -82,12 +82,13 @@ class Formatter(object):
         else:
             self.quoter = quoter or self._default_quoter
         if not callable(self.quoter):
-            raise TypeError('expected callable for Formatter.quoter, not %r'
-                            % self.quoter)
+            raise TypeError('expected callable or False for Formatter.quoter,'
+                            ' not %r' % self.quoter)
 
-        # NOTE: making this copy will be detrimental to a Formatter cache
-        extra_field_map = dict([(f.fname, f) for f in extra_fields or []])
-        self._field_map = dict(BUILTIN_FIELD_MAP, **extra_field_map)
+        self._field_map = dict(BUILTIN_FIELD_MAP)
+        if extra_fields:
+            extra_field_map = dict([(f.fname, f) for f in extra_fields or []])
+            self._field_map.update(extra_field_map)
         self._getter_map = dict([(f.fname, f.getter)
                                  for f in self._field_map.values()])
 
@@ -159,29 +160,6 @@ class Formatter(object):
 
     __call__ = format_record
 
-
-"""
-class Formatter(object):
-    def __init__(self, format_str, on_err=None):
-        # TODO: check that templette complies with reversability
-        # requirements
-        # TODO: check field type compatibilty when
-        # default format specs have been overridden for built-in
-        # format fields
-
-    def format_record(self, record):
-        try:
-            return self.templette.format_record(record)
-        except Exception:
-            # TODO: basically impossible atm, but eventually log to
-            # stderr or something
-            raise
-
-    __call__ = format_record
-
-    def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self._format_str)
-"""
 
 """
 reversability requirements:
