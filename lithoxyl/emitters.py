@@ -100,6 +100,7 @@ class StreamEmitter(object):
 class FileEmitter(StreamEmitter):
     def __init__(self, filepath, encoding=None, **kwargs):
         self.filepath = os.path.abspath(filepath)
+        self.encoding = encoding
         self.mode = 'a'  # always 'a'?
         stream = open(self.filepath, self.mode)
         super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)

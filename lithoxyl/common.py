@@ -3,6 +3,13 @@
 from functools import total_ordering
 
 
+def to_unicode(obj):
+    try:
+        return unicode(obj)
+    except UnicodeDecodeError:
+        return unicode(obj, encoding='utf8', errors='replace')
+
+
 @total_ordering
 class Level(object):
     def __init__(self, name, value):

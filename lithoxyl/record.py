@@ -5,7 +5,7 @@ import time
 
 from tbutils import ExceptionInfo, Callpoint
 
-from common import DEBUG, INFO, CRITICAL
+from common import DEBUG, INFO, CRITICAL, to_unicode
 from formatters import Formatter
 
 
@@ -77,35 +77,28 @@ class Record(object):
     _is_trans = None
     _defer_publish = False
 
-    def __init__(self, name, level=None, **kwargs):
-        self.name = name
-        self.level = level or CRITICAL
-        self.logger = kwargs.pop('logger', None)
-        self.status = kwargs.pop('status', 'begin')
-        try:
-            self.raw_message = kwargs.pop('raw_message')
-        except Exception:
-            self.raw_message = '%s %s' % (name, self.status)
-        self._message = kwargs.pop('message', None)
-        self._state_key = None
-        self.extras = kwargs.pop('extras', {})
-        self.begin_time = kwargs.pop('begin_time', time.time())
-        self.end_time = kwargs.pop('end_time', None)
-        # TODO: make end_time - begin_time if end_time is not None?
-        self.duration = kwargs.pop('duration', 0.0)
-        self._reraise = kwargs.pop('reraise', True)
-        self.warnings = []
+    # itertools.count?
 
-        self.exc_info = None
+    def __init__(self, logger, level, name, **kwargs):
+        self.logger = logger
+        self.level = level
+        self.name = name
+
+        self.data_map = kwargs.pop('data', {})
+        self._reraise = kwargs.pop('reraise', True)
 
         frame = kwargs.pop('frame', None)
         if frame is None:
             frame = sys._getframe(1)
-        # TODO: should Callpoint actually be at __exit__?
         self.callpoint = Callpoint.from_frame(frame)
-
         if kwargs:
-            self.extras.update(kwargs)
+            self.data_map.update(kwargs)
+
+        self.begin_record = None  # TODO: may have to make BeginRecord here
+        self.complete_record = None
+        self.warn_records = []
+        self.exc_records = []
+        return
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -120,10 +113,17 @@ class Record(object):
         except Exception:
             return repr(self.level)
 
-    def warn(self, message):
-        "Append a warning *message* to the warnings tracked by this record."
-        # TODO: probably need the same formatting machinery for this message
-        self.warnings.append(message)
+    def begin(self, message=None, *a, **kw):
+        self.data_map.update(kw)
+        self.begin_record = BeginRecord(self, time.time(), message, a)
+        self.logger.on_begin(self.begin_record)
+        return self
+
+    def warn(self, message, *a, **kw):
+        self.data_map.update(kw)
+        warn_rec = WarnRecord(self, time.time(), message, a)
+        self.warn_records.append(warn_rec)
+        self.logger.on_complete(warn_rec)
         return self
 
     def success(self, message=None, *a, **kw):
@@ -139,8 +139,8 @@ class Record(object):
         u'important_task success: this is fun'
         """
         if not message:
-            message = self.name + ' succeeded'  # TODO: localize
-        return self._complete('success', message, *a, **kw)
+            message = self.name + ' succeeded'
+        return self._complete('success', message, a, kw)
 
     def failure(self, message=None, *a, **kw):
         """Mark this Record as complete and failed. Also set the Record's
@@ -156,7 +156,7 @@ class Record(object):
         """
         if not message:
             message = self.name + ' failed'
-        return self._complete('failure', message, *a, **kw)
+        return self._complete('failure', message, a, kw)
 
     def exception(self, message=None, *a, **kw):
         """Mark this Record as complete and having had an exception. Also
@@ -169,9 +169,9 @@ class Record(object):
         exception fields. When called explicitly, this method should
         only be called in an :keyword:`except` block.
         """
-        return self._exception(None, message, *a, **kw)
+        return self._exception(None, message, a, kw)
 
-    def _exception(self, exc_info, message, *a, **kw):
+    def _exception(self, exc_info, message, fargs, data):
         if not exc_info:
             exc_info = sys.exc_info()
         try:
@@ -180,86 +180,55 @@ class Record(object):
             exc_type, exc_val, exc_tb = (None, None, None)
         exc_type = exc_type or DefaultException
 
+        # have to capture the time now in case the on_exception sinks
+        # take their sweet time
+        ctime = time.time()
+
         self.logger.on_exception(self, exc_type, exc_val, exc_tb)
 
-        self.exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
+        exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
-        return self._complete('exception', message, *a, **kw)
+        return self._complete('exception', message, fargs, data,
+                              ctime, exc_info)
 
-    def _complete(self, status, message=None, *a, **kw):
-        self._pos_args = a
-        self.extras.update(kw)
-        if self._is_trans:
-            self.end_time = time.time()
-            self.duration = self.end_time - self.begin_time
+    def _complete(self, status, message, fargs, data,
+                  ctime=None, exc_info=None):
+        self.data_map.update(data)
+        if ctime is not None:
+            end_time = ctime
+        elif self._is_trans:
+            end_time = time.time()
         else:
-            self.end_time, self.duration = self.begin_time, 0.0
-        self.status = status
-        if message is None:
-            message = u''
-        elif not isinstance(message, unicode):
-            # TODO: use to_unicode
-            # if you think this is excessive, see the issue with the
-            # unicode constructor as semi-detailed here:
-            # http://pythondoeswhat.blogspot.com/2013/09/unicodebreakers.html
-            try:
-                message = str(message).decode('utf-8', errors='replace')
-            except Exception:
-                message = unicode(object.__repr__(message))  # space nuke
-        self.raw_message = message
+            end_time = self.begin_time
+
+        message = to_unicode(message)
+        self.complete_record = CompleteRecord(self, end_time, message,
+                                              fargs, status, exc_info)
+
         if not self._defer_publish and self.logger:
-            self.logger.on_complete(self)
+            self.logger.on_complete(self.complete_record)
+
         return self
-
-    def _get_state_key(self):
-        # how we know when to invalidate the cached message
-        # e.g., the message changes between begin and complete
-        return (self.status,)
-
-    @property
-    def message(self):
-        if self._message is not None:
-            if self._state_key == self._get_state_key():
-                return self._message
-        raw_message = self.raw_message
-        if raw_message is None:
-            return None
-
-        if '{' not in raw_message:  # yay premature optimization
-            self._message = raw_message
-        else:
-            # TODO: Formatter cache
-            fmtr = Formatter(raw_message, quoter=False)
-            args = getattr(self, '_pos_args', [])
-            self._message = fmtr.format_record(self, *args)
-        self._state_key = self._get_state_key()
-        return self._message
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        if self.logger:
-            self.logger.on_begin(self)
+        self.logger.on_begin(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # TODO: handle logger = None
         self._defer_publish = False
         if exc_type:
-            # then, normal completion behavior
-            exc_info = (exc_type, exc_val, exc_tb)
-            try:
-                self._exception(exc_info, message=None)
-            except Exception:
-                # TODO: something? grasshopper mode maybe.
-                pass
-            # TODO: should probably be three steps:
-            # set certain attributes, then do on_exception, then do completion.
-        elif self.status is 'begin':
+            # try:  # TODO: uncomment
+            self._exception(exc_type, exc_val, exc_tb, message=None)
+            # except Exception:
+            #    # TODO: something? grasshopper mode maybe.
+            #    pass
+        elif not self.complete_record:
             self.success()
-        else:
-            # TODO: a bit questionable
-            self._complete(self.status, self.message)
+
+        self.logger.on_complete(self.complete_record)
+
         if self._reraise is False:
             return True  # ignore exception
         return
@@ -268,19 +237,21 @@ class Record(object):
         try:
             return getattr(self, key)
         except AttributeError:
-            return self.extras[key]
+            return self.data_map[key]
 
     def __setitem__(self, key, value):
         if hasattr(self, key):
             setattr(self, key, value)
         else:
-            self.extras[key] = value
+            self.data_map[key] = value
 
     def get_elapsed_time(self):
         """Simply get the amount of time that has passed since the record was
         created or begun. This method has no side effects.
         """
-        return time.time() - self.begin_time
+        if self.begin_record:
+            return time.time() - self.begin_record.create_time
+        return 0.0
 
     @property
     def status_char(self):
@@ -306,3 +277,70 @@ class Record(object):
     def warn_char(self):
         "``'W'`` if the Record has warnings, ``' '`` otherwise."
         return 'W' if self.warnings else ' '
+
+
+class SubRecord(object):
+    def __getitem__(self, key):
+        return self.root_record[key]
+
+    # TODO
+    @property
+    def message(self):
+        raw_message = self.raw_message
+        if raw_message is None:
+            return None
+
+        if '{' not in raw_message:  # yay premature optimization
+            self._message = raw_message
+        else:
+            # TODO: Formatter cache
+            fmtr = Formatter(raw_message, quoter=False)
+            self._message = fmtr.format_record(self.root_record, self.fargs)
+        return self._message
+
+
+class BeginRecord(object):
+    def __init__(self, root_record, ctime, raw_message, fargs):
+        self.root_record = root_record
+        self.create_time = ctime
+        self.raw_message = raw_message
+        self.fargs = fargs
+        self.create_time = ctime
+
+
+class CompleteRecord(object):
+    def __init__(self, root_record, ctime, raw_message, fargs, status,
+                 exc_info=None):
+        self.root_record = root_record
+        self.create_time = ctime
+        self.raw_message = raw_message
+        self.fargs = fargs
+        self.status = status
+        self.exc_info = exc_info
+
+
+class WarnRecord(object):
+    def __init__(self, root_record, ctime, raw_message, fargs):
+        self.root_record = root_record
+        self.create_time = ctime
+        self.raw_message = raw_message
+        self.fargs = fargs
+
+
+"""What to do on multiple begins and multiple completes?
+
+If a record is atomic (i.e., never entered/begun), then should it fire
+a logger on_begin? Leaning no.
+
+Things that normally change on a Record currently:
+
+ - Status
+ - Message
+ - Extras
+
+Things which are populated:
+
+ - end_time
+ - duration
+
+"""
