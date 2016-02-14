@@ -9,7 +9,7 @@ import sys
 
 from utils import wraps
 from record import Record
-from common import DEBUG, INFO, CRITICAL, get_level
+from common import DEBUG, INFO, CRITICAL
 
 
 def _get_previous_frame(frame):
@@ -21,6 +21,7 @@ def _get_previous_frame(frame):
 
 # TODO: should all sys._getframes be converted to use this?
 # TODO: could precalculate offsets based on which methods are overridden
+# TODO: also precalculation could happen in a metaclass
 def get_frame_excluding_subtypes(target_type, offset=0):
     """
     `offset` is the number of additional frames to look up after
@@ -115,6 +116,7 @@ class Logger(object):
         """Add *sink* to this Logger's sinks. Does nothing if *sink* is
         already in this Logger's sinks.
         """
+        # TODO: check signatures?
         if sink in self._all_sinks:
             return
         begin_hook = getattr(sink, 'on_begin', None)
@@ -131,51 +133,49 @@ class Logger(object):
             self._exc_hooks.append(exc_hook)
         self._all_sinks.append(sink)
 
-    def on_complete(self, record):
+    def on_complete(self, complete_record):
         "Publish *record* to all sinks with ``on_complete()`` hooks."
         for complete_hook in self._complete_hooks:
-            complete_hook(record)
+            complete_hook(complete_record)
 
-    def on_begin(self, record):
+    def on_begin(self, begin_record):
         "Publish *record* to all sinks with ``on_begin()`` hooks."
         for begin_hook in self._begin_hooks:
-            begin_hook(record)
+            begin_hook(begin_record)
 
-    def on_warn(self, record):
-        "Publish *record* to all sinks with ``on_warning()`` hooks."
-        # TODO: need the actual warning as an argument?
-        # TODO: warning module integration goes somewhere
+    def on_warn(self, warn_record):
+        "Publish *record* to all sinks with ``on_warn()`` hooks."
         for warn_hook in self._warn_hooks:
-            warn_hook(record)
+            warn_hook(warn_record)
 
-    def on_exception(self, record, exc_type, exc_obj, exc_tb):
+    def on_exception(self, exc_record, exc_type, exc_obj, exc_tb):
         "Publish *record* to all sinks with ``on_exception()`` hooks."
         for exc_hook in self._exc_hooks:
-            exc_hook(record, exc_type, exc_obj, exc_tb)
+            exc_hook(exc_record, exc_type, exc_obj, exc_tb)
 
     def debug(self, name, **kw):
         "Create and return a new :data:`DEBUG`-level :class:`Record` named *name*."
-        kw['name'], kw['level'], kw['logger'] = name, DEBUG, self
-        kw['frame'] = sys._getframe(1)
-        return self.record_type(**kw)
+        return self.record_type(logger=self, level=DEBUG, name=name,
+                                data=kw, reraise=kw.pop('reraise', None),
+                                frame=sys._getframe(1))
 
     def info(self, name, **kw):
         "Create and return a new :data:`INFO`-level :class:`Record` named *name*."
-        kw['name'], kw['level'], kw['logger'] = name, INFO, self
-        kw['frame'] = sys._getframe(1)
-        return self.record_type(**kw)
+        return self.record_type(logger=self, level=INFO, name=name,
+                                data=kw, reraise=kw.pop('reraise', None),
+                                frame=sys._getframe(1))
 
     def critical(self, name, **kw):
         "Create and return a new :data:`CRITICAL`-level :class:`Record` named *name*."
-        kw['name'], kw['level'], kw['logger'] = name, CRITICAL, self
-        kw['frame'] = sys._getframe(1)
-        return self.record_type(**kw)
+        return self.record_type(logger=self, level=CRITICAL, name=name,
+                                data=kw, reraise=kw.pop('reraise', None),
+                                frame=sys._getframe(1))
 
     def record(self, level, name, **kw):
         "Create and return a new :class:`Record` named *name* classified as *level*."
-        kw['name'], kw['level'], kw['logger'] = name, get_level(level), self
-        kw['frame'] = sys._getframe(1)
-        return self.record_type(**kw)
+        return self.record_type(logger=self, level=level, name=name,
+                                data=kw, reraise=kw.pop('reraise', None),
+                                frame=sys._getframe(1))
 
     def wrap(self, level, name=None, inject_as=None, **kw):
         def record_wrapper(func_to_log, _name=name):

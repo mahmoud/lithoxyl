@@ -5,7 +5,7 @@ import time
 
 from tbutils import ExceptionInfo, Callpoint
 
-from common import DEBUG, INFO, CRITICAL, to_unicode
+from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
 from formatters import Formatter
 
 
@@ -40,13 +40,6 @@ class Record(object):
             Defaults to ``'<name> <status>'``, using the values above.
         message (str): A pre-formatted message that similar to
             *raw_message*, but will not be treated as a template.
-        begin_time (float): A timestamp of when the Record was created
-            or started. Defaults to the output of :func:`time.time`.
-        end_time (float): A timestamp of when the Record was
-            completed, assuming it is a transactional record. Defaults
-            to ``None``, which is valid when a record is incomplete or
-            is not transactional and thus has no duration.
-        duration (float): The duration of the record. Defaults to ``0.0``.
         frame: Frame of the callpoint creating the Record. Defaults to
             the caller's frame.
         reraise (bool): Whether or not the Record should catch and
@@ -79,20 +72,18 @@ class Record(object):
 
     # itertools.count?
 
-    def __init__(self, logger, level, name, **kwargs):
+    def __init__(self, logger, level, name,
+                 data=None, reraise=True, frame=None):
         self.logger = logger
-        self.level = level
+        self.level = get_level(level)
         self.name = name
 
-        self.data_map = kwargs.pop('data', {})
-        self._reraise = kwargs.pop('reraise', True)
+        self.data_map = data or {}
+        self._reraise = reraise
 
-        frame = kwargs.pop('frame', None)
         if frame is None:
             frame = sys._getframe(1)
         self.callpoint = Callpoint.from_frame(frame)
-        if kwargs:
-            self.data_map.update(kwargs)
 
         self.begin_record = None  # TODO: may have to make BeginRecord here
         self.complete_record = None
@@ -115,15 +106,16 @@ class Record(object):
 
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)
-        self.begin_record = BeginRecord(self, time.time(), message, a)
-        self.logger.on_begin(self.begin_record)
+        if not self.begin_record:
+            self.begin_record = BeginRecord(self, time.time(), message, a)
+            self.logger.on_begin(self.begin_record)
         return self
 
     def warn(self, message, *a, **kw):
         self.data_map.update(kw)
         warn_rec = WarnRecord(self, time.time(), message, a)
         self.warn_records.append(warn_rec)
-        self.logger.on_complete(warn_rec)
+        self.logger.on_warn(warn_rec)
         return self
 
     def success(self, message=None, *a, **kw):
@@ -183,12 +175,14 @@ class Record(object):
         # have to capture the time now in case the on_exception sinks
         # take their sweet time
         ctime = time.time()
-
-        self.logger.on_exception(self, exc_type, exc_val, exc_tb)
-
         exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
+
+        self.exc_record = ExceptionRecord(self, ctime, message,
+                                          fargs, exc_info)
+        self.logger.on_exception(self.exc_record, exc_type, exc_val, exc_tb)
+
         return self._complete('exception', message, fargs, data,
                               ctime, exc_info)
 
@@ -200,7 +194,7 @@ class Record(object):
         elif self._is_trans:
             end_time = time.time()
         else:
-            end_time = self.begin_time
+            end_time = self.begin_record.create_time  # TODO: property?
 
         message = to_unicode(message)
         self.complete_record = CompleteRecord(self, end_time, message,
@@ -213,8 +207,7 @@ class Record(object):
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        self.logger.on_begin(self)
-        return self
+        return self.begin()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._defer_publish = False
@@ -224,10 +217,11 @@ class Record(object):
             # except Exception:
             #    # TODO: something? grasshopper mode maybe.
             #    pass
-        elif not self.complete_record:
+        if self.complete_record:
+            self.logger.on_complete(self.complete_record)
+        else:
+            # now that _defer_publish=False, this will also publish
             self.success()
-
-        self.logger.on_complete(self.complete_record)
 
         if self._reraise is False:
             return True  # ignore exception
@@ -253,6 +247,7 @@ class Record(object):
             return time.time() - self.begin_record.create_time
         return 0.0
 
+    '''
     @property
     def status_char(self):
         """A single-character representation of the status of the Record. See
@@ -277,6 +272,7 @@ class Record(object):
     def warn_char(self):
         "``'W'`` if the Record has warnings, ``' '`` otherwise."
         return 'W' if self.warnings else ' '
+    '''
 
 
 class SubRecord(object):
@@ -308,6 +304,15 @@ class BeginRecord(object):
         self.create_time = ctime
 
 
+class ExceptionRecord(object):
+    def __init__(self, root_record, ctime, raw_message, fargs, exc_info):
+        self.root_record = root_record
+        self.create_time = ctime
+        self.raw_message = raw_message
+        self.fargs = fargs
+        self.exc_info = exc_info
+
+
 class CompleteRecord(object):
     def __init__(self, root_record, ctime, raw_message, fargs, status,
                  exc_info=None):
@@ -327,10 +332,23 @@ class WarnRecord(object):
         self.fargs = fargs
 
 
+class CommentRecord(object):
+    # TODO
+    def __init__(self, root_record, ctime, raw_message, fargs):
+        self.root_record = root_record
+        self.create_time = ctime
+        self.raw_message = raw_message
+        self.fargs = fargs
+
+
 """What to do on multiple begins and multiple completes?
 
 If a record is atomic (i.e., never entered/begun), then should it fire
 a logger on_begin? Leaning no.
+
+Should the BeginRecord be created on record creation? currently its
+presence is used to track whether on_begin has been called on the
+Logger yet.
 
 Things that normally change on a Record currently:
 
@@ -342,5 +360,13 @@ Things which are populated:
 
  - end_time
  - duration
+
+"""
+
+"""naming rationale:
+
+* 'warn', an action verb, was chosen over 'warning' because it implies
+  repeatability, where as success/failure/exception are nouns, to
+  indicate singular conclusion.
 
 """
