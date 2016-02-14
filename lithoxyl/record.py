@@ -22,31 +22,24 @@ class Record(object):
     relevant data.
 
     Args:
-        name (str): The name of the Record.
+        logger: The Logger instance responsible for creating (and
+            publishing) the Record.
         level: Log level of the Record. Generally one of
             :data:`~lithoxyl.common.DEBUG`,
             :data:`~lithoxyl.common.INFO`, or
             :data:`~lithoxyl.common.CRITICAL`. Defaults to ``None``.
-        logger: The Logger instance responsible for creating (and
-            publishing) the Record.
-        status (str): State of the task represented by the Record. One
-            of 'begin', 'success', 'failure', or 'exception'. Defaults
-            to 'begin'.
-        extras (dict): A mapping of non-builtin fields to user
-            values. Defaults to ``{}`` and can be populated after
-            Record creation by accessing the Record like a ``dict``.
-        raw_message (str): A message or message template that further
-            describes the status of the record.
-            Defaults to ``'<name> <status>'``, using the values above.
-        message (str): A pre-formatted message that similar to
-            *raw_message*, but will not be treated as a template.
-        frame: Frame of the callpoint creating the Record. Defaults to
-            the caller's frame.
+        name (str): The Record name describes some application action.
+        data (dict): A mapping of non-builtin fields to user
+            values. Defaults to an empty dict (``{}``) and can be
+            populated after Record creation by accessing the Record
+            like a ``dict``.
         reraise (bool): Whether or not the Record should catch and
             reraise exceptions. Defaults to ``True``. Setting to
             ``False`` will cause all exceptions to be caught and
             logged appropriately, but not reraised. This should be
             used to eliminate ``try``/``except`` verbosity.
+        frame: Frame of the callpoint creating the Record. Defaults to
+            the caller's frame.
 
     All additional keyword arguments are automatically included in the
     Record's ``extras`` attribute.
@@ -66,6 +59,7 @@ class Record(object):
     >>> from pprint import pprint
     >>> pprint(record.extras)
     {'mission': 'explore new worlds', 'my_data': 20.0, 'my_lore': -2.0}
+
     """
     _is_trans = None
     _defer_publish = False
@@ -103,6 +97,13 @@ class Record(object):
             return self.level.name
         except Exception:
             return repr(self.level)
+
+    @property
+    def status(self):
+        try:
+            return self.complete_record.status
+        except AttributeError:
+            return 'begin'
 
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)
@@ -187,16 +188,16 @@ class Record(object):
                               ctime, exc_info)
 
     def _complete(self, status, message, fargs, data,
-                  ctime=None, exc_info=None):
+                  end_time=None, exc_info=None):
         self.data_map.update(data)
-        if ctime is not None:
-            end_time = ctime
-        elif self._is_trans:
-            end_time = time.time()
+
+        if self._is_trans:
+            end_time = end_time or time.time()
         else:
+            if not self.begin_record:
+                self.begin()
             end_time = self.begin_record.create_time  # TODO: property?
 
-        message = to_unicode(message)
         self.complete_record = CompleteRecord(self, end_time, message,
                                               fargs, status, exc_info)
 
@@ -276,68 +277,76 @@ class Record(object):
 
 
 class SubRecord(object):
+    _message = None
+
     def __getitem__(self, key):
         return self.root_record[key]
+
+    def __getattr__(self, name):
+        return getattr(self.root_record, name)
 
     # TODO
     @property
     def message(self):
+        if self._message:
+            return self._message
+
         raw_message = self.raw_message
         if raw_message is None:
-            return None
-
-        if '{' not in raw_message:  # yay premature optimization
+            self._message = ''
+        elif '{' not in raw_message:  # yay premature optimization
             self._message = raw_message
         else:
             # TODO: Formatter cache
             fmtr = Formatter(raw_message, quoter=False)
-            self._message = fmtr.format_record(self.root_record, self.fargs)
+            self._message = fmtr.format_record(self.root_record, self.fargs,
+                                               **self.root_record.data_map)
         return self._message
 
 
-class BeginRecord(object):
+class BeginRecord(SubRecord):
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
-        self.raw_message = raw_message
+        self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.create_time = ctime
 
 
-class ExceptionRecord(object):
+class ExceptionRecord(SubRecord):
     def __init__(self, root_record, ctime, raw_message, fargs, exc_info):
         self.root_record = root_record
         self.create_time = ctime
-        self.raw_message = raw_message
+        self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.exc_info = exc_info
 
 
-class CompleteRecord(object):
+class CompleteRecord(SubRecord):
     def __init__(self, root_record, ctime, raw_message, fargs, status,
                  exc_info=None):
         self.root_record = root_record
         self.create_time = ctime
-        self.raw_message = raw_message
+        self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.status = status
         self.exc_info = exc_info
 
 
-class WarnRecord(object):
+class WarnRecord(SubRecord):
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
-        self.raw_message = raw_message
+        self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
-class CommentRecord(object):
+class CommentRecord(SubRecord):
     # TODO
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
-        self.raw_message = raw_message
+        self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
