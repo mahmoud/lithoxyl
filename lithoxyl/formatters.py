@@ -4,6 +4,7 @@
 """
 import json
 
+from common import EVENTS
 from fields import BUILTIN_FIELD_MAP
 from formatutils import tokenize_format_str
 
@@ -39,6 +40,31 @@ class LazyExtrasDict(dict):
 
 
 class Formatter(object):
+    def __init__(self, base=None, **kwargs):
+        defaulter = kwargs.pop('defaulter', None)
+        quoter = kwargs.pop('quoter', None)
+        extra_fields = kwargs.pop('extra_fields', None)
+
+        self.event_formatters = {}
+        for event in EVENTS:
+            cur_fmt = kwargs.pop(event, base)
+            if not cur_fmt:
+                cur_fmt = ''
+            rf = RecordFormatter(cur_fmt, extra_fields=extra_fields,
+                                 quoter=quoter, defaulter=defaulter)
+            self.event_formatters[event] = rf
+        return
+
+    def on_begin(self, begin_record):
+        rf = self.event_formatters['begin']
+        return rf(begin_record)
+
+    def on_complete(self, complete_record):
+        rf = self.event_formatters['complete']
+        return rf(complete_record)
+
+
+class RecordFormatter(object):
     """The basic ``Formatter`` type implements a constrained, but robust,
     microtemplating system rendering Records to strings that are both
     human-readable *and* machine-readable. This system is based on

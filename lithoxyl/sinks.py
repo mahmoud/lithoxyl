@@ -7,6 +7,7 @@ import time
 import bisect
 from collections import deque
 
+from common import EVENTS
 from formatters import Formatter
 from emitters import StreamEmitter
 from quantile import QuantileAccumulator, P2QuantileAccumulator
@@ -15,26 +16,30 @@ from quantile import QuantileAccumulator, P2QuantileAccumulator
 class AggregateSink(object):
     "A 'dummy' sink that just aggregates the messages."
     def __init__(self, max_length=None):
-        self.begun_records = deque(maxlen=max_length)
+        self.begin_records = deque(maxlen=max_length)
+        self.warn_records = deque(maxlen=max_length)
         self.complete_records = deque(maxlen=max_length)
 
-    def on_begin(self, record):
-        self.begun_records.append(record)
+    def on_begin(self, begin_record):
+        self.begin_records.append(begin_record)
 
-    def on_complete(self, record):
-        self.complete_records.append(record)
+    def on_warn(self, warn_record):
+        self.warn_records.append(warn_record)
+
+    def on_complete(self, complete_record):
+        self.complete_records.append(complete_record)
 
 
 _MSG_ATTRS = ('name', 'level_name', 'status', 'message',
               'begin_time', 'end_time', 'duration')
 
 
-class StructuredFileSink(object):
+class SimpleStructuredFileSink(object):
     def __init__(self, fileobj=None):
         self.fileobj = fileobj or sys.stdout
 
     def on_complete(self, record):
-        msg_data = dict(record.extras)
+        msg_data = dict(record.data_map)
         for attr in _MSG_ATTRS:
             msg_data[attr] = getattr(record, attr, None)
         json_str = json.dumps(msg_data, sort_keys=True)
@@ -276,33 +281,36 @@ class EWMASink(object):
 
 
 class SensibleSink(object):
-    def __init__(self, formatter=None, emitter=None, filters=None, on=None):
+    def __init__(self, formatter=None, emitter=None, filters=None, on=EVENTS):
         events = on
-        if events is None:
-            events = ['complete']
-        elif isinstance(events, basestring):
+        if isinstance(events, basestring):
             events = [events]
-        self.events = [e.lower() for e in events]
+        unknown_events = [e for e in events if e not in EVENTS]
+        if unknown_events:
+            raise ValueError('unrecognized events: %r (must be one of %r)'
+                             % (unknown_events, EVENTS))
+
+        self._events = [e.lower() for e in events]
         self.filters = list(filters or [])
         self.formatter = formatter
         self.emitter = emitter
 
-        if 'complete' in self.events:
+        if 'complete' in self._events:
             self.on_complete = self._on_complete
-        if 'begin' in self.events:
+        if 'begin' in self._events:
             self.on_begin = self._on_begin
         # TODO warn and exc
 
     def _on_complete(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
-        entry = self.formatter(record)
+        entry = self.formatter.on_complete(record)
         return self.emitter(entry)
 
     def _on_begin(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
-        entry = self.formatter(record)
+        entry = self.formatter.on_begin(record)
         return self.emitter(entry)
 
     def __repr__(self):

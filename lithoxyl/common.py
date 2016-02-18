@@ -2,6 +2,8 @@
 
 from functools import total_ordering
 
+EVENTS = ('begin', 'warn', 'complete', 'exception', 'comment')
+
 
 def to_unicode(obj):
     try:

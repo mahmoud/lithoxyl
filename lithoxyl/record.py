@@ -2,11 +2,15 @@
 
 import sys
 import time
+import itertools
 
 from tbutils import ExceptionInfo, Callpoint
 
 from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
 from formatters import Formatter
+
+
+_REC_ID_ITER = itertools.count()
 
 
 class DefaultException(Exception):
@@ -71,6 +75,7 @@ class Record(object):
         self.logger = logger
         self.level = get_level(level)
         self.name = name
+        self.record_id = next(_REC_ID_ITER)
 
         self.data_map = data or {}
         self._reraise = reraise
@@ -114,7 +119,7 @@ class Record(object):
 
     def warn(self, message, *a, **kw):
         self.data_map.update(kw)
-        warn_rec = WarnRecord(self, time.time(), message, a)
+        warn_rec = WarningRecord(self, time.time(), message, a)
         self.warn_records.append(warn_rec)
         self.logger.on_warn(warn_rec)
         return self
@@ -162,15 +167,10 @@ class Record(object):
         exception fields. When called explicitly, this method should
         only be called in an :keyword:`except` block.
         """
-        return self._exception(None, message, a, kw)
+        exc_type, exc_val, exc_tb = sys.exc_info()
+        return self._exception(exc_type, exc_val, exc_tb, message, a, kw)
 
-    def _exception(self, exc_info, message, fargs, data):
-        if not exc_info:
-            exc_info = sys.exc_info()
-        try:
-            exc_type, exc_val, exc_tb = exc_info
-        except Exception:
-            exc_type, exc_val, exc_tb = (None, None, None)
+    def _exception(self, exc_type, exc_val, exc_tb, message, fargs, data):
         exc_type = exc_type or DefaultException
 
         # have to capture the time now in case the on_exception sinks
@@ -213,11 +213,12 @@ class Record(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._defer_publish = False
         if exc_type:
-            # try:  # TODO: uncomment
-            self._exception(exc_type, exc_val, exc_tb, message=None)
-            # except Exception:
-            #    # TODO: something? grasshopper mode maybe.
-            #    pass
+            try:
+                self._exception(exc_type, exc_val, exc_tb,
+                                message=None, fargs=(), data={})
+            except Exception as e:
+                # TODO: something? grasshopper mode maybe.
+                pass  # TODO: still have to create complete_record
         if self.complete_record:
             self.logger.on_complete(self.complete_record)
         else:
@@ -305,18 +306,23 @@ class SubRecord(object):
 
 
 class BeginRecord(SubRecord):
+    status_char = 'b'
+
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
+        self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
-        self.create_time = ctime
 
 
 class ExceptionRecord(SubRecord):
+    status_char = '!'
+
     def __init__(self, root_record, ctime, raw_message, fargs, exc_info):
         self.root_record = root_record
         self.create_time = ctime
+        self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.exc_info = exc_info
@@ -327,25 +333,41 @@ class CompleteRecord(SubRecord):
                  exc_info=None):
         self.root_record = root_record
         self.create_time = ctime
+        self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.status = status
         self.exc_info = exc_info
 
 
-class WarnRecord(SubRecord):
+    @property
+    def status_char(self):
+        if self.root_record._is_trans:
+            ret = self.status[:1].upper()
+        else:
+            ret = self.status[:1].lower()
+        return ret
+
+
+class WarningRecord(SubRecord):
+    status_char = 'W'
+
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
+        self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
 class CommentRecord(SubRecord):
+    status_char = '#'
+
     # TODO
     def __init__(self, root_record, ctime, raw_message, fargs):
         self.root_record = root_record
         self.create_time = ctime
+        self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 

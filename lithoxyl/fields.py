@@ -221,9 +221,9 @@ ISO8601_FIELDS = [
         FF('end_local_iso8601_noms', 's',
            lambda r: timestamp2iso8601_noms(r.end_time, local=True)),
         FF('begin_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.begin_time, local=True, with_tz=False)),
+           lambda r: timestamp2iso8601_noms(r.root_record.begin_record.create_time, local=True, with_tz=False)),
         FF('end_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.end_time, local=True, with_tz=False))]
+           lambda r: timestamp2iso8601_noms(r.root_record.complete_record.create_time, local=True, with_tz=False))]
 
 # using the T separator means no whitespace and thus no quoting
 for f in ISO8601_FIELDS:
