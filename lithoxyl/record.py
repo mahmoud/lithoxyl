@@ -72,10 +72,10 @@ class Record(object):
 
     def __init__(self, logger, level, name,
                  data=None, reraise=True, frame=None):
+        self.record_id = next(_REC_ID_ITER)
         self.logger = logger
         self.level = get_level(level)
         self.name = name
-        self.record_id = next(_REC_ID_ITER)
 
         self.data_map = data or {}
         self._reraise = reraise
@@ -110,9 +110,19 @@ class Record(object):
         except AttributeError:
             return 'begin'
 
+    @property
+    def duration(self):
+        try:
+            return self.complete_record.ctime - self.begin_record.ctime
+        except Exception:
+            return 0
+
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)
         if not self.begin_record:
+            if not message:
+                message = self.name + ' begun'
+
             self.begin_record = BeginRecord(self, time.time(), message, a)
             self.logger.on_begin(self.begin_record)
         return self
@@ -196,7 +206,7 @@ class Record(object):
         else:
             if not self.begin_record:
                 self.begin()
-            end_time = self.begin_record.create_time  # TODO: property?
+            end_time = self.begin_record.ctime  # TODO: property?
 
         self.complete_record = CompleteRecord(self, end_time, message,
                                               fargs, status, exc_info)
@@ -216,7 +226,7 @@ class Record(object):
             try:
                 self._exception(exc_type, exc_val, exc_tb,
                                 message=None, fargs=(), data={})
-            except Exception as e:
+            except Exception:
                 # TODO: something? grasshopper mode maybe.
                 pass  # TODO: still have to create complete_record
         if self.complete_record:
@@ -246,7 +256,7 @@ class Record(object):
         created or begun. This method has no side effects.
         """
         if self.begin_record:
-            return time.time() - self.begin_record.create_time
+            return time.time() - self.begin_record.ctime
         return 0.0
 
     '''
@@ -281,10 +291,10 @@ class SubRecord(object):
     _message = None
 
     def __getitem__(self, key):
-        return self.root_record[key]
+        return self.root[key]
 
     def __getattr__(self, name):
-        return getattr(self.root_record, name)
+        return getattr(self.root, name)
 
     # TODO
     @property
@@ -300,17 +310,17 @@ class SubRecord(object):
         else:
             # TODO: Formatter cache
             fmtr = Formatter(raw_message, quoter=False)
-            self._message = fmtr.format_record(self.root_record, self.fargs,
-                                               **self.root_record.data_map)
+            self._message = fmtr.format_record(self.root, self.fargs,
+                                               **self.root.data_map)
         return self._message
 
 
 class BeginRecord(SubRecord):
     status_char = 'b'
 
-    def __init__(self, root_record, ctime, raw_message, fargs):
-        self.root_record = root_record
-        self.create_time = ctime
+    def __init__(self, root, ctime, raw_message, fargs):
+        self.root = root
+        self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -319,9 +329,9 @@ class BeginRecord(SubRecord):
 class ExceptionRecord(SubRecord):
     status_char = '!'
 
-    def __init__(self, root_record, ctime, raw_message, fargs, exc_info):
-        self.root_record = root_record
-        self.create_time = ctime
+    def __init__(self, root, ctime, raw_message, fargs, exc_info):
+        self.root = root
+        self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -329,10 +339,10 @@ class ExceptionRecord(SubRecord):
 
 
 class CompleteRecord(SubRecord):
-    def __init__(self, root_record, ctime, raw_message, fargs, status,
+    def __init__(self, root, ctime, raw_message, fargs, status,
                  exc_info=None):
-        self.root_record = root_record
-        self.create_time = ctime
+        self.root = root
+        self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -342,7 +352,7 @@ class CompleteRecord(SubRecord):
 
     @property
     def status_char(self):
-        if self.root_record._is_trans:
+        if self.root._is_trans:
             ret = self.status[:1].upper()
         else:
             ret = self.status[:1].lower()
@@ -352,9 +362,9 @@ class CompleteRecord(SubRecord):
 class WarningRecord(SubRecord):
     status_char = 'W'
 
-    def __init__(self, root_record, ctime, raw_message, fargs):
-        self.root_record = root_record
-        self.create_time = ctime
+    def __init__(self, root, ctime, raw_message, fargs):
+        self.root = root
+        self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -364,9 +374,9 @@ class CommentRecord(SubRecord):
     status_char = '#'
 
     # TODO
-    def __init__(self, root_record, ctime, raw_message, fargs):
-        self.root_record = root_record
-        self.create_time = ctime
+    def __init__(self, root, ctime, raw_message, fargs):
+        self.root = root
+        self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs

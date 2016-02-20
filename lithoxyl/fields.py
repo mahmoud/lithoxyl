@@ -4,96 +4,6 @@ with the standard :class:`~lithoxyl.logger.Logger` and
 :class:`~lithoxyl.record.Record`. Sinks can take advantage of these
 with the :class:`~lithoxyl.formatters.Formatter` type or subtypes.
 
-General Fields
---------------
-
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | Name                 | Example                                       | Description                      | Quoted   |
-    +======================+===============================================+==================================+==========+
-    | ``logger_name``      | ``"test_logger"``                             | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``logger_id``        | ``139890693478288``                           | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``record_name``      | ``"test_task"``                               | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``record_id``        | ``139890664630288``                           | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``status_str``       | ``exception``                                 | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``status_char``      | ``E``                                         | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``warn_char``        | ``W``                                         | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``level_name``       | ``critical``                                  | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``extras``           | ``{"item": "my_item"}``                       | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``level_name_upper`` | ``CRITICAL``                                  | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``level_number``     | ``90``                                        | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``message``          | ``"test_task raised ... ue for my_item',)"``  | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``raw_message``      | ``"test_task raised ... lue for {item}',)"``  | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``begin_timestamp``  | ``1429320301.9148``                           | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``end_timestamp``    | ``1429320302.6157``                           | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``duration_secs``    | ``0.701``                                     | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``duration_msecs``   | ``700.887``                                   | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``module_name``      | ``"__main__"``                                | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``module_path``      | ``"gen_field_table.py"``                      | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``func_name``        | ``get_test_record``                           | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``line_number``      | ``27``                                        | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``exc_type``         | ``ValueError``                                | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``exc_message``      | ``"unexpected value for {item}"``             | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``exc_tb_str``       | ``"Traceback (most r ... ue for {item}')"``   | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``exc_tb_list``      | ``"[Callpoint('get_t ... for {item}')\\")]"``  | X                              X | Y        |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-    | ``process_id``       | ``{process_id}``                              | X                              X |          |
-    +----------------------+-----------------------------------------------+----------------------------------+----------+
-
-
-Timestamp Fields
-----------------
-
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | Name                              | Example                             | Description                      |
-    +===================================+=====================================+==================================+
-    | ``begin_iso8601``                 | ``2015-04-18T01:25:01.914817+0000`` | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_iso8601``                   | ``2015-04-18T01:25:02.615704+0000`` | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``begin_iso8601_notz``            | ``2015-04-18T01:25:01.914817``      | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_iso8601_notz``              | ``2015-04-18T01:25:02.615704``      | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``begin_local_iso8601``           | ``2015-04-17T18:25:01.914817-0700`` | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_local_iso8601``             | ``2015-04-17T18:25:02.615704-0700`` | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``begin_local_iso8601_notz``      | ``2015-04-17T18:25:01.914817``      | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_local_iso8601_notz``        | ``2015-04-17T18:25:02.615704``      | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``begin_local_iso8601_noms``      | ``2015-04-17 18:25:01 PDT``         | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_local_iso8601_noms``        | ``2015-04-17 18:25:02 PDT``         | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``begin_local_iso8601_noms_notz`` | ``2015-04-17 18:25:01``             | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
-    | ``end_local_iso8601_noms_notz``   | ``2015-04-17 18:25:02``             | X                              X |
-    +-----------------------------------+-------------------------------------+----------------------------------+
 
 """
 # NOTE: docstring table needs slashes double escaped. Also, newline literals "\n" removed.
@@ -109,7 +19,19 @@ import datetime
 from timeutils import UTC, LocalTZ
 from formatutils import BaseFormatField
 
+from common import IMPORT_TIME
+
+FIELD_MAP = {}
 BUILTIN_FIELD_MAP = {}  # populated below
+
+
+def register_builtin_field(field):
+    register_field(field)
+    BUILTIN_FIELD_MAP[field.fname] = field
+
+
+def register_field(field):
+    FIELD_MAP[field.fname] = field
 
 
 def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
@@ -168,9 +90,9 @@ class FormatField(BaseFormatField):
 # default, fmt_specs
 FF = FormatField
 BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
-                FF('logger_id', 'd', lambda r: id(r.logger)),  # TODO
+                FF('logger_id', 'd', lambda r: r.logger.logger_id),
                 FF('record_name', 's', lambda r: r.name),
-                FF('record_id', 'd', lambda r: id(r)),  # TODO
+                FF('record_id', 'd', lambda r: r.record_id),
                 FF('status_str', 's', lambda r: r.status, quote=False),
                 FF('status_char', 's', lambda r: r.status_char, quote=False),
                 FF('warn_char', 's', lambda r: r.warn_char, quote=False),
@@ -179,8 +101,10 @@ BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('level_name_upper', 's', lambda r: r.level_name.upper(), quote=False),
                 FF('level_char', 's', lambda r: r.level_name.upper()[0], quote=False),
                 FF('level_number', 'd', lambda r: r.level._value),
-                FF('message', 's', lambda r: r.message),
-                FF('raw_message', 's', lambda r: r.raw_message),
+                FF('begin_message', 's', lambda r: r.begin_record.message),
+                FF('begin_raw_message', 's', lambda r: r.begin_record.raw_message),
+                FF('end_message', 's', lambda r: r.complete_record.message),
+                FF('end_raw_message', 's', lambda r: r.complete_record.raw_message),
                 FF('begin_timestamp', '.14g', lambda r: r.begin_time),
                 FF('end_timestamp', '.14g', lambda r: r.end_time),
                 FF('duration_secs', '.3f', lambda r: r.duration),
@@ -221,22 +145,25 @@ ISO8601_FIELDS = [
         FF('end_local_iso8601_noms', 's',
            lambda r: timestamp2iso8601_noms(r.end_time, local=True)),
         FF('begin_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.root_record.begin_record.create_time, local=True, with_tz=False)),
+           lambda r: timestamp2iso8601_noms(r.root.begin_record.ctime, local=True, with_tz=False)),
         FF('end_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.root_record.complete_record.create_time, local=True, with_tz=False))]
+           lambda r: timestamp2iso8601_noms(r.root.complete_record.ctime, local=True, with_tz=False))]
 
 # using the T separator means no whitespace and thus no quoting
 for f in ISO8601_FIELDS:
     f.quote = False
 
 
-def register_builtin_field(f):
-    BUILTIN_FIELD_MAP[f.fname] = f
+DELTA_FIELDS = [
+    FF('import_delta', '.5g', lambda r: r.ctime - IMPORT_TIME),
+    FF('import_delta_ms', '.5g', lambda r: (r.ctime - IMPORT_TIME) * 1000)]
 
 
 for f in BASIC_FIELDS:
     register_builtin_field(f)
 for f in ISO8601_FIELDS:
+    register_builtin_field(f)
+for f in DELTA_FIELDS:
     register_builtin_field(f)
 
 del f

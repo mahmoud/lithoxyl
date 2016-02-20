@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import time
 from functools import total_ordering
 
 EVENTS = ('begin', 'warn', 'complete', 'exception', 'comment')
+IMPORT_TIME = time.time()
 
 
 def to_unicode(obj):

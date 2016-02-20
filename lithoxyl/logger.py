@@ -6,10 +6,14 @@ interface to using Lithoxyl. It is used to conveniently create
 """
 
 import sys
+import itertools
 
 from utils import wraps
 from record import Record
 from common import DEBUG, INFO, CRITICAL
+
+
+_LOG_ID_ITER = itertools.count()
 
 
 def _get_previous_frame(frame):
@@ -79,6 +83,8 @@ class Logger(object):
     "Override *record_type* in subtypes for custom Record behavior."
 
     def __init__(self, name, sinks=None, **kwargs):
+        self.logger_id = next(_LOG_ID_ITER)
+
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
         if self.module is None:

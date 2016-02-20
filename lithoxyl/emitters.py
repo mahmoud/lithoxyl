@@ -3,14 +3,17 @@
 and output it to a persistence resource, such as stdout/stderr, files,
 or network streams.
 """
+
 import os
 import sys
 
-# TODO: should separators (i.e., newline) be handled here or in the Formatter?
+
+class EncodingLookupError(LookupError):
+    pass
 
 
-class EncodingLookupError(LookupError): pass
-class ErrorBehaviorLookupError(LookupError): pass
+class ErrorBehaviorLookupError(LookupError):
+    pass
 
 
 def check_encoding_settings(encoding, errors):
