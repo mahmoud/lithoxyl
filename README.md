@@ -41,6 +41,23 @@ def create_user(name):
 ```
 
 
+## Feature brief
+
+* Transactional logging
+* Semantic instrumentation
+* Pure Python
+* Context manager API is Pythonic and minimizes developer errors
+* Decorator syntax is convenient and unobtrusive
+* Human-readable structured logs
+* Reparseability thanks to autoescaping
+* Statistical accumulators for prerolled metrics
+* Programmatic configuration with sensible defaults just an import away
+* Synchronous mode for simplicity
+* Asynchronous operation for performance (TBI)
+* Log file headers for metadata handling (TBI)
+* Heartbeat for periodic output and checkpointing (TBI)
+* Automatic, fast log parser generation (TBI)
+
 ## Reasons to use Lithoxyl
 
 * More specific: distinguishes between level and status

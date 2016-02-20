@@ -39,3 +39,10 @@ Stats TODOs
 * Moving/decaying average (for rates/load)
 * calculate accumulated machine epsilon on some of the accumulators
 * try out Decimal-based moment accumulator (to see how slow it is
+
+helper: get_record_parent(record):
+
+* Nonconcurrent: logger's last started transaction
+* Greenlet: Greenlet local dict with stacks
+* Threads: thread local dict with stacks
+* Callbacks: Up 2 u
