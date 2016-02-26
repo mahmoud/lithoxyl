@@ -57,6 +57,14 @@ def create_user(name):
 * Log file headers for metadata handling (TBI)
 * Heartbeat for periodic output and checkpointing (TBI)
 * Automatic, fast log parser generation (TBI)
+* Sinks
+    * EWMASink
+    * DebuggerSink
+    * MomentSink
+    * QuantileSink
+    * StreamSink
+    * ...
+    * Syslog (TBI)
 
 ## Reasons to use Lithoxyl
 

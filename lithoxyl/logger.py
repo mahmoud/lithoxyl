@@ -7,12 +7,16 @@ interface to using Lithoxyl. It is used to conveniently create
 
 import sys
 import itertools
+from collections import deque
+
 
 from utils import wraps
 from record import Record
+from context import get_context
 from common import DEBUG, INFO, CRITICAL
 
 
+QUEUE_LIMIT = 10000
 _LOG_ID_ITER = itertools.count()
 
 
@@ -85,6 +89,12 @@ class Logger(object):
     def __init__(self, name, sinks=None, **kwargs):
         self.logger_id = next(_LOG_ID_ITER)
 
+        self.context = kwargs.pop('context', None) or get_context()
+        self.context.add_logger(self)
+        # TODO context-configurable
+        self.record_queue = deque(maxlen=QUEUE_LIMIT)
+        self.async = kwargs.pop('async', False)
+
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
         if self.module is None:
@@ -95,6 +105,21 @@ class Logger(object):
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
         self.name = name or self.module
         self.set_sinks(sinks)
+
+    def flush(self):
+        queue = self.record_queue
+        while queue:
+            rec_type, rec = queue.popleft()
+            if rec_type == 'begin':
+                for begin_hook in self._begin_hooks:
+                    begin_hook(rec)
+            elif rec_type == 'complete':
+                for complete_hook in self._complete_hooks:
+                    complete_hook(rec)
+            elif rec_type == 'warn':
+                for warn_hook in self._warn_hooks:
+                    warn_hook(rec)
+        return
 
     @property
     def sinks(self):
@@ -141,21 +166,34 @@ class Logger(object):
 
     def on_complete(self, complete_record):
         "Publish *record* to all sinks with ``on_complete()`` hooks."
-        for complete_hook in self._complete_hooks:
-            complete_hook(complete_record)
+        if self.async:
+            self.record_queue.append(('complete', complete_record))
+        else:
+            for complete_hook in self._complete_hooks:
+                complete_hook(complete_record)
+        return
 
     def on_begin(self, begin_record):
         "Publish *record* to all sinks with ``on_begin()`` hooks."
-        for begin_hook in self._begin_hooks:
-            begin_hook(begin_record)
+        if self.async:
+            self.record_queue.append(('begin', begin_record))
+        else:
+            for begin_hook in self._begin_hooks:
+                begin_hook(begin_record)
+        return
 
     def on_warn(self, warn_record):
         "Publish *record* to all sinks with ``on_warn()`` hooks."
-        for warn_hook in self._warn_hooks:
-            warn_hook(warn_record)
+        if self.async:
+            self.record_queue.append(('warn', warn_record))
+        else:
+            for warn_hook in self._warn_hooks:
+                warn_hook(warn_record)
+        return
 
     def on_exception(self, exc_record, exc_type, exc_obj, exc_tb):
         "Publish *record* to all sinks with ``on_exception()`` hooks."
+        # async handling doesn't make sense here
         for exc_hook in self._exc_hooks:
             exc_hook(exc_record, exc_type, exc_obj, exc_tb)
 
