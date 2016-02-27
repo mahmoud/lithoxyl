@@ -32,48 +32,46 @@ class LithoxylContext(object):
         self.async_actor = None
         self.async_timeout = DEFAULT_JOIN_TIMEOUT
 
-        atexit.register(self._stop_async)
+        # graceful thread shutdown and sink flushing
+        atexit.register(self.disable_async)
 
-    def _stop_async(self, timeout=None):
-        print 'stop_async start'
-        if timeout is None:
-            timeout = self.async_timeout
-        if self.async_actor:
-            self.async_actor.stop()
-            self.async_actor.join(timeout)
-        self.flush()
-        print 'stop_async done'
-
-    def set_async(self, enabled, **kwargs):
-        update_actor = kwargs.pop('update_actor', True)
-        join_timeout = kwargs.pop('join_timeout', None)
+    def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
-
+        update_actor = kwargs.pop('update_actor', True)
         actor_kw = {'interval': kwargs.pop('interval', None),
                     'max_interval': kwargs.pop('max_interval', None),
+                    # be very careful when not daemonizing thread
                     'daemonize_thread': kwargs.pop('daemonize_thread', True)}
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
 
-        self.async_mode = enabled
+        self.async_mode = True
 
-        if enabled:
-            if update_actor:
-                if not self.async_actor:
-                    self.async_actor = IntervalThreadActor(task=self.flush,
-                                                           **actor_kw)
-                self.async_actor.start()
-        else:
-            if update_actor and self.async_actor:
-                self.async_actor.stop()
-                self.async_actor.join(join_timeout)
-                self.flush()
+        if update_actor:
+            if not self.async_actor:
+                self.async_actor = IntervalThreadActor(self.flush, **actor_kw)
+            self.async_actor.start()
 
         if update_loggers:
             for logger in self.loggers:
-                logger.set_async(enabled)
-
+                logger.set_async(False)
         return
+
+    def disable_async(self, **kwargs):
+        update_loggers = kwargs.pop('update_loggers', True)
+        update_actor = kwargs.pop('update_actor', True)
+        join_timeout = kwargs.pop('join_timeout', self.async_timeout)
+
+        if update_actor and self.async_actor:
+            self.async_actor.stop()
+            self.async_actor.join(join_timeout)
+
+        if update_loggers:
+            for logger in self.loggers:
+                logger.set_async(False)
+
+        self.flush()
+        self.async_mode = False
 
     def flush(self):
         for logger in self.loggers:
