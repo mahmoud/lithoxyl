@@ -27,7 +27,8 @@ def set_context(context):
 
 
 def signal_sysexit(signum, frame):
-    sys.exit(143)
+    # 241 for sigterm, See page 544 Kerrisk for more
+    sys.exit(-signum)
 
 
 def install_sigterm_handler():
