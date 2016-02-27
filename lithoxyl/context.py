@@ -27,7 +27,7 @@ def set_context(context):
 
 
 def signal_sysexit(signum, frame):
-    sys.exit(-signum)
+    sys.exit(143)
 
 
 def install_sigterm_handler():
@@ -38,6 +38,14 @@ def install_sigterm_handler():
     cur = signal.getsignal(signal.SIGTERM)
     if cur == signal.SIG_DFL:
         signal.signal(signal.SIGTERM, signal_sysexit)
+        return True
+    return False
+
+
+def uninstall_sigterm_handler():
+    cur = signal.getsignal(signal.SIGTERM)
+    if cur is signal_sysexit:
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
         return True
     return False
 
