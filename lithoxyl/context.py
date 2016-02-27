@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import atexit
+import signal
 
 from actors import IntervalThreadActor
 
@@ -24,6 +26,22 @@ def set_context(context):
     return context
 
 
+def signal_sysexit(signum, frame):
+    sys.exit(-signum)
+
+
+def install_sigterm_handler():
+    """This installs a no-op Python SIGTERM handler to ensure that atexit
+    functions are called. If there is already a SIGTERM handler, no
+    new handler is installed.
+    """
+    cur = signal.getsignal(signal.SIGTERM)
+    if cur == signal.SIG_DFL:
+        signal.signal(signal.SIGTERM, signal_sysexit)
+        return True
+    return False
+
+
 class LithoxylContext(object):
     def __init__(self, **kwargs):
         self.loggers = []
@@ -34,6 +52,7 @@ class LithoxylContext(object):
 
         # graceful thread shutdown and sink flushing
         atexit.register(self.disable_async)
+        install_sigterm_handler()
 
     def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
