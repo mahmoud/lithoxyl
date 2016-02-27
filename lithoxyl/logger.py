@@ -8,7 +8,7 @@ interface to using Lithoxyl. It is used to conveniently create
 import sys
 import itertools
 from collections import deque
-
+from threading import RLock
 
 from utils import wraps
 from record import Record
@@ -94,6 +94,7 @@ class Logger(object):
         # TODO context-configurable
         self.record_queue = deque(maxlen=QUEUE_LIMIT)
         self.async_mode = kwargs.pop('async', self.context.async_mode)
+        self.async_lock = RLock()
 
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
@@ -110,18 +111,21 @@ class Logger(object):
         self.async_mode = enabled
 
     def flush(self):
-        queue = self.record_queue
-        while queue:
-            rec_type, rec = queue.popleft()
-            if rec_type == 'begin':
-                for begin_hook in self._begin_hooks:
-                    begin_hook(rec)
-            elif rec_type == 'complete':
-                for complete_hook in self._complete_hooks:
-                    complete_hook(rec)
-            elif rec_type == 'warn':
-                for warn_hook in self._warn_hooks:
-                    warn_hook(rec)
+        # only one flush allowed to run at a time
+        # ensures that records are delivered to sinks in order
+        with self.async_lock:
+            queue = self.record_queue
+            while queue:
+                rec_type, rec = queue.popleft()
+                if rec_type == 'begin':
+                    for begin_hook in self._begin_hooks:
+                        begin_hook(rec)
+                elif rec_type == 'complete':
+                    for complete_hook in self._complete_hooks:
+                        complete_hook(rec)
+                elif rec_type == 'warn':
+                    for warn_hook in self._warn_hooks:
+                        warn_hook(rec)
         return
 
     @property
