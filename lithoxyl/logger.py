@@ -93,7 +93,7 @@ class Logger(object):
         self.context.add_logger(self)
         # TODO context-configurable
         self.record_queue = deque(maxlen=QUEUE_LIMIT)
-        self.async = kwargs.pop('async', False)
+        self.async_mode = kwargs.pop('async', self.context.async_mode)
 
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
@@ -105,6 +105,9 @@ class Logger(object):
             raise TypeError('unexpected keyword arguments: %r' % kwargs)
         self.name = name or self.module
         self.set_sinks(sinks)
+
+    def set_async(self, enabled):
+        self.async_mode = enabled
 
     def flush(self):
         queue = self.record_queue
@@ -166,7 +169,7 @@ class Logger(object):
 
     def on_complete(self, complete_record):
         "Publish *record* to all sinks with ``on_complete()`` hooks."
-        if self.async:
+        if self.async_mode:
             self.record_queue.append(('complete', complete_record))
         else:
             for complete_hook in self._complete_hooks:
@@ -175,7 +178,7 @@ class Logger(object):
 
     def on_begin(self, begin_record):
         "Publish *record* to all sinks with ``on_begin()`` hooks."
-        if self.async:
+        if self.async_mode:
             self.record_queue.append(('begin', begin_record))
         else:
             for begin_hook in self._begin_hooks:
@@ -184,7 +187,7 @@ class Logger(object):
 
     def on_warn(self, warn_record):
         "Publish *record* to all sinks with ``on_warn()`` hooks."
-        if self.async:
+        if self.async_mode:
             self.record_queue.append(('warn', warn_record))
         else:
             for warn_hook in self._warn_hooks:
