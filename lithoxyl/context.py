@@ -114,10 +114,10 @@ class LithoxylContext(object):
 
 
 def signal_sysexit(signum, frame):
-    # return codeends up being 241 for sigterm, See page 544 Kerrisk
+    # return code ends up being 143 for sigterm, See page 544 Kerrisk
     # for more see atexit_reissue_sigterm docstring for more details
     atexit.register(atexit_reissue_sigterm)
-    sys.exit(-signum)
+    sys.exit(143)  # approximate sigterm (128 + 15)
 
 
 def atexit_reissue_sigterm():
