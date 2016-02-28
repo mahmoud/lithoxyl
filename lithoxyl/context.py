@@ -66,6 +66,7 @@ class LithoxylContext(object):
             # disable_async is safe to call multiple times but this is cleaner
             atexit.register(self.disable_async)
             self._async_atexit_registered = True
+
         return
 
     def disable_async(self, **kwargs):
@@ -111,6 +112,7 @@ class LithoxylContext(object):
 
 """
 
+
 def signal_sysexit(signum, frame):
     # return codeends up being 241 for sigterm, See page 544 Kerrisk
     # for more see atexit_reissue_sigterm docstring for more details
@@ -132,9 +134,11 @@ def atexit_reissue_sigterm():
 
     """
     # best attempt at ensuring that we run last
+    global _ASYNC_ATEXIT_ATTEMPT_LAST
     try:
-        func, _, _ = atexit._exithandlers[-1]
-        if func is not atexit_reissue_sigterm:
+        func, _, _ = atexit._exithandlers[0]
+        if func is not atexit_reissue_sigterm and _ASYNC_ATEXIT_ATTEMPT_LAST:
+            _ASYNC_ATEXIT_ATTEMPT_LAST = False
             atexit._exithandlers.insert(0, (atexit_reissue_sigterm, (), {}))
             return
     except IndexError:
@@ -145,8 +149,11 @@ def atexit_reissue_sigterm():
         return
 
     uninstall_sigterm_handler(force=True)
-    os.kill(0, 15)
+    os.kill(os.getpid(), 15)
     return
+
+
+_ASYNC_ATEXIT_ATTEMPT_LAST = True
 
 
 def install_sigterm_handler():
