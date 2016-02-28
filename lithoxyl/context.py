@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import atexit
 import signal
@@ -26,31 +27,6 @@ def set_context(context):
     return context
 
 
-def signal_sysexit(signum, frame):
-    # 241 for sigterm, See page 544 Kerrisk for more
-    sys.exit(-signum)
-
-
-def install_sigterm_handler():
-    """This installs a no-op Python SIGTERM handler to ensure that atexit
-    functions are called. If there is already a SIGTERM handler, no
-    new handler is installed.
-    """
-    cur = signal.getsignal(signal.SIGTERM)
-    if cur == signal.SIG_DFL:
-        signal.signal(signal.SIGTERM, signal_sysexit)
-        return True
-    return False
-
-
-def uninstall_sigterm_handler():
-    cur = signal.getsignal(signal.SIGTERM)
-    if cur is signal_sysexit:
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
-        return True
-    return False
-
-
 class LithoxylContext(object):
     def __init__(self, **kwargs):
         self.loggers = []
@@ -58,13 +34,11 @@ class LithoxylContext(object):
         self.async_mode = False
         self.async_actor = None
         self.async_timeout = DEFAULT_JOIN_TIMEOUT
-
-        # graceful thread shutdown and sink flushing
-        atexit.register(self.disable_async)
-        install_sigterm_handler()
+        self._async_atexit_registered = False
 
     def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
+        update_sigterm = kwargs.pop('update_sigterm', True)
         update_actor = kwargs.pop('update_actor', True)
         actor_kw = {'interval': kwargs.pop('interval', None),
                     'max_interval': kwargs.pop('max_interval', None),
@@ -75,6 +49,9 @@ class LithoxylContext(object):
 
         self.async_mode = True
 
+        if update_sigterm:
+            install_sigterm_handler()
+
         if update_actor:
             if not self.async_actor:
                 self.async_actor = IntervalThreadActor(self.flush, **actor_kw)
@@ -83,12 +60,22 @@ class LithoxylContext(object):
         if update_loggers:
             for logger in self.loggers:
                 logger.set_async(False)
+
+        # graceful thread shutdown and sink flushing
+        if not self._async_atexit_registered:
+            # disable_async is safe to call multiple times but this is cleaner
+            atexit.register(self.disable_async)
+            self._async_atexit_registered = True
         return
 
     def disable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
+        update_sigterm = kwargs.pop('update_sigterm', True)
         update_actor = kwargs.pop('update_actor', True)
         join_timeout = kwargs.pop('join_timeout', self.async_timeout)
+
+        if update_sigterm:
+            uninstall_sigterm_handler()
 
         if update_actor and self.async_actor:
             self.async_actor.stop()
@@ -123,3 +110,60 @@ class LithoxylContext(object):
    actor if it is running
 
 """
+
+def signal_sysexit(signum, frame):
+    # return codeends up being 241 for sigterm, See page 544 Kerrisk
+    # for more see atexit_reissue_sigterm docstring for more details
+    atexit.register(atexit_reissue_sigterm)
+    sys.exit(-signum)
+
+
+def atexit_reissue_sigterm():
+    """The only way to "transparently" handle SIGTERM and terminate with
+    the same status code as if we did not have a handler installed is
+    to uninstall the handler and reissue the SIGTERM signal. Kerrisk
+    p549 details more.
+
+    So our signal handler registers this atexit handler, which calls
+    :func:`os.kill`.
+
+    Because that will end the process, extra precautions are built in
+    to make sure we are the last exit handler running.
+
+    """
+    # best attempt at ensuring that we run last
+    try:
+        func, _, _ = atexit._exithandlers[-1]
+        if func is not atexit_reissue_sigterm:
+            atexit._exithandlers.insert(0, (atexit_reissue_sigterm, (), {}))
+            return
+    except IndexError:
+        pass  # _exithandlers is empty, this is the last exitfunc
+    except Exception:
+        # TODO: effing atexit runs exitfuncs LIFO. If we os.exit early,
+        # it's less grace, so abort reissuing the signal
+        return
+
+    uninstall_sigterm_handler(force=True)
+    os.kill(0, 15)
+    return
+
+
+def install_sigterm_handler():
+    """This installs a no-op Python SIGTERM handler to ensure that atexit
+    functions are called. If there is already a SIGTERM handler, no
+    new handler is installed.
+    """
+    cur = signal.getsignal(signal.SIGTERM)
+    if cur == signal.SIG_DFL:
+        signal.signal(signal.SIGTERM, signal_sysexit)
+        return True
+    return False
+
+
+def uninstall_sigterm_handler(force=False):
+    cur = signal.getsignal(signal.SIGTERM)
+    if force or cur is signal_sysexit:
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        return True
+    return False
