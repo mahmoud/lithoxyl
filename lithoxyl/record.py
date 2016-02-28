@@ -229,14 +229,16 @@ class Record(object):
             except Exception:
                 # TODO: something? grasshopper mode maybe.
                 pass  # TODO: still have to create complete_record
-        if self.complete_record:
-            self.logger.on_complete(self.complete_record)
         else:
-            # now that _defer_publish=False, this will also publish
-            self.success()
+            if self.complete_record:
+                self.logger.on_complete(self.complete_record)
+            else:
+                # now that _defer_publish=False, this will also publish
+                self.success()
 
         if self._reraise is False:
             return True  # ignore exception
+
         return
 
     def __getitem__(self, key):
@@ -314,6 +316,10 @@ class SubRecord(object):
                                                **self.root.data_map)
         return self._message
 
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return '<%s %s %r>' % (cn, self.record_id, self.raw_message)
+
 
 class BeginRecord(SubRecord):
     status_char = 'b'
@@ -348,7 +354,6 @@ class CompleteRecord(SubRecord):
         self.fargs = fargs
         self.status = status
         self.exc_info = exc_info
-
 
     @property
     def status_char(self):

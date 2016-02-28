@@ -130,21 +130,22 @@ class RateSink(object):
     """
     def __init__(self, sample_size=128, getter=None):
         if getter is None:
-            getter = lambda record: record.end_time
+            getter = lambda complete_record: complete_record.ctime
         self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size
         self.creation_time = time.time()
 
-    def on_complete(self, record):
-        name_time_map = self.acc_map.setdefault(record.logger, {})
-        status_time_map = name_time_map.setdefault(record.name, {})
+    def on_complete(self, complete_record):
+        rec = complete_record
+        name_time_map = self.acc_map.setdefault(rec.logger, {})
+        status_time_map = name_time_map.setdefault(rec.name, {})
         try:
-            acc = status_time_map[record.status]
+            acc = status_time_map[rec.status]
         except Exception:
             acc = RateAccumulator(sample_size=self.sample_size)
-            status_time_map[record.status] = acc
-        acc.add(record.end_time)
+            status_time_map[rec.status] = acc
+        acc.add(self.getter(rec))
 
     def get_rates(self, max_time=None, **kw):
         """\

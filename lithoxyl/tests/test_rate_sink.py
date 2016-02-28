@@ -10,17 +10,17 @@ def test_rate_sink():
     sink = RateSink()
     logger = Logger('testlog', sinks=[sink])
 
-    for i in range(8):
+    for i in range(10):
         with logger.info('sleeping', reraise=False):
             time.sleep(0.02)
             if i % 2:
                 raise ValueError()
     test_rates = sink.get_rates()['testlog']['sleeping']
-    assert 48 <= round(test_rates['__all__']) <= 51.0
+    assert 48 <= round(test_rates['__all__']) <= 51
     assert 24 <= round(test_rates['exception']) <= 26
 
     counts = sink.get_total_counts()
-    assert counts['__all__'] == 8
+    assert counts['__all__'] == 10
 
     assert repr(sink)
 

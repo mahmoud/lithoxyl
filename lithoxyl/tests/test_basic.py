@@ -2,7 +2,7 @@
 
 import time
 
-from lithoxyl.sinks import AggregateSink, StructuredFileSink
+from lithoxyl.sinks import AggregateSink, SimpleStructuredFileSink
 from lithoxyl.logger import Logger
 
 
@@ -26,7 +26,7 @@ def test_logger_success(trans_count=2):
 
 
 def test_structured(trans_count=5):
-    acc = StructuredFileSink()
+    acc = SimpleStructuredFileSink()
     log = Logger('test_logger', [acc])
     for i in range(trans_count):
         do_debug_trans(log)
