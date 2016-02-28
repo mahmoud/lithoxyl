@@ -169,7 +169,9 @@ class RecordFormatter(object):
                 if self.quoter_map[t]:
                     seg = self.quoter_map[t](seg)
                 ret += seg
-            except Exception:
+            except Exception as e:
+                if 'end_message' in str(t):
+                    import pdb;pdb.post_mortem()
                 ret += self.default_map[t]
         return ret
 

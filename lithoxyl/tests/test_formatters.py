@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from lithoxyl.logger import Record, DEBUG
+from lithoxyl.logger import Logger, Record, DEBUG
 from lithoxyl.formatters import Formatter
 from lithoxyl.formatutils import DeferredValue
 
@@ -10,29 +10,31 @@ template = ('{status_char}{record_warn_char}{begin_timestamp}'
             ' - {logger_name} - {status_str} - {record_name}')
 
 
-RECS = [Record('Riker', DEBUG).success('Hello, Thomas.')]
+t_log = Logger('1off')
+t_riker = Record(t_log, 'DEBUG', 'Riker').success('Hello, Thomas.')
+
+RECS = [t_riker]
 
 
-TCS = [[('{logger_name}', '{logger_name}'),
+TCS = [[('{logger_name}', '"1off"'),
         ('{status_str}', 'success'),
         ('{level_number}', '20'),
         ('{record_name}', '"Riker"'),
-        ('{message}', '"Hello, Thomas."')]
+        ('{end_message}', '"Hello, Thomas."')]
        ]
 
 
 def test_formatter_basic():
-    riker = Record('hello_thomas', DEBUG).success('')
     forming = Formatter(template)
-    output = forming.format_record(riker)
-    expected = '{logger_name} - success - "hello_thomas"'
+    output = forming.on_complete(t_riker.complete_record)
+    expected = '"1off" - success - "Riker"'
     print output
     assert output[-len(expected):] == expected
 
-    rec = Record('Wharf')
+    rec = Record(t_log, 'DEBUG', 'Wharf')
     robf = Formatter(template)
     rec.success('Mr. Wolf')
-    ret = robf.format_record(rec)
+    ret = robf.on_complete(rec.complete_record)
     print ret
     return ret
 
@@ -41,7 +43,7 @@ def test_individual_fields():
     for record, field_pairs in zip(RECS, TCS):
         for field_tmpl, result in field_pairs:
             forming = Formatter(field_tmpl)
-            output = forming.format_record(record)
+            output = forming.on_complete(record.complete_record)
             assert output == result
     return
 
@@ -51,11 +53,11 @@ def test_deferred():
     expensive_ops = [(lambda: 5, '"oh, 5"'),
                      (lambda: 'hi', '"oh, hi"'),
                      (lambda: 2.0, '"oh, 2.0"')]
-    formatter = Formatter('{message}')
+    formatter = Formatter('{end_message}')
 
     for eo, expected in expensive_ops:
-        record = Record('spendy_op', DEBUG).success('oh, {dv}', dv=DV(eo))
-        output = formatter.format_record(record)
+        rec = Record(t_log, 'DEBUG', 'spendy').success('oh, {dv}', dv=DV(eo))
+        output = formatter.on_complete(rec.complete_record)
         assert output == expected
     return
 

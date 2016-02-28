@@ -7,7 +7,7 @@ import itertools
 from tbutils import ExceptionInfo, Callpoint
 
 from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
-from formatters import Formatter
+from formatters import RecordFormatter
 
 
 _REC_ID_ITER = itertools.count()
@@ -311,7 +311,7 @@ class SubRecord(object):
             self._message = raw_message
         else:
             # TODO: Formatter cache
-            fmtr = Formatter(raw_message, quoter=False)
+            fmtr = RecordFormatter(raw_message, quoter=False)
             self._message = fmtr.format_record(self.root, self.fargs,
                                                **self.root.data_map)
         return self._message
