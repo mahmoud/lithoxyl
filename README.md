@@ -14,7 +14,7 @@ import logging
 def create_user(name):
     logging.info('creating user with name %r', name)
     try:
-        success = _create_user()
+        success = _create_user(name)
         if success:
             logging.info('successfully created user %r', name)
         else:
@@ -34,10 +34,11 @@ Here's lithoxyl's take:
 from lithoxyl import stderr_log
 
 def create_user(name):
-    with stderr_log.critical('user creation', reraise=False) as r:
-        success = _create_user()
+    with stderr_log.critical('user creation', username=name, reraise=False) as r:
+        success = _create_user(name)
         if not success:
             r.failure()
+    return success
 ```
 
 
