@@ -12,6 +12,7 @@ with the :class:`~lithoxyl.formatters.Formatter` type or subtypes.
 # ephemeral, but records are; there are chances of id reuse.
 # TODO: exc_repr field
 
+import os
 import time
 import json
 import datetime
@@ -117,7 +118,7 @@ BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
                 FF('exc_message', 's', lambda r: r.exc_info.exc_msg),
                 FF('exc_tb_str', 's', lambda r: str(r.exc_info.tb_info)),
                 FF('exc_tb_list', 's', lambda r: r.exc_info.tb_info.frames),
-                FF('process_id', 'd', lambda r: 'TODO')]
+                FF('process_id', 'd', lambda r: os.getpid())]
 
 # ISO8601 and variants. combinations of:
 #   * begin/end
@@ -126,28 +127,40 @@ BASIC_FIELDS = [FF('logger_name', 's', lambda r: r.logger.name),
 #   * with/without timezone (_noms variants have textual timezone)
 # TODO: rename to just ISO
 ISO8601_FIELDS = [
-        FF('begin_iso8601', 's', lambda r: timestamp2iso8601(r.begin_time)),
-        FF('end_iso8601', 's', lambda r: timestamp2iso8601(r.end_time)),
-        FF('begin_iso8601_notz', 's',
-           lambda r: timestamp2iso8601(r.begin_time, with_tz=False)),
-        FF('end_iso8601_notz', 's',
-           lambda r: timestamp2iso8601(r.end_time, with_tz=False)),
-        FF('begin_local_iso8601', 's',
-           lambda r: timestamp2iso8601(r.begin_time, local=True)),
-        FF('end_local_iso8601', 's',
-           lambda r: timestamp2iso8601(r.end_time, local=True)),
-        FF('begin_local_iso8601_notz', 's',
-           lambda r: timestamp2iso8601(r.begin_time, local=True, with_tz=False)),
-        FF('end_local_iso8601_notz', 's',
-           lambda r: timestamp2iso8601(r.end_time, local=True, with_tz=False)),
-        FF('begin_local_iso8601_noms', 's',
-           lambda r: timestamp2iso8601_noms(r.begin_time, local=True)),
-        FF('end_local_iso8601_noms', 's',
-           lambda r: timestamp2iso8601_noms(r.end_time, local=True)),
-        FF('begin_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.root.begin_record.ctime, local=True, with_tz=False)),
-        FF('end_local_iso8601_noms_notz', 's',
-           lambda r: timestamp2iso8601_noms(r.root.complete_record.ctime, local=True, with_tz=False))]
+    FF('begin_iso8601', 's',
+       lambda r: timestamp2iso8601(r.root.begin_record.ctime)),
+    FF('end_iso8601', 's',
+       lambda r: timestamp2iso8601(r.root.complete_record.ctime)),
+    FF('begin_iso8601_notz', 's',
+       lambda r: timestamp2iso8601(r.root.begin_record.ctime,
+                                   with_tz=False)),
+    FF('end_iso8601_notz', 's',
+       lambda r: timestamp2iso8601(r.root.complete_record.ctime,
+                                   with_tz=False)),
+    FF('begin_local_iso8601', 's',
+       lambda r: timestamp2iso8601(r.root.begin_record.ctime,
+                                   local=True)),
+    FF('end_local_iso8601', 's',
+       lambda r: timestamp2iso8601(r.root.complete_record.ctime,
+                                   local=True)),
+    FF('begin_local_iso8601_notz', 's',
+       lambda r: timestamp2iso8601(r.root.begin_record.ctime,
+                                   local=True, with_tz=False)),
+    FF('end_local_iso8601_notz', 's',
+       lambda r: timestamp2iso8601(r.root.complete_record.ctime,
+                                   local=True, with_tz=False)),
+    FF('begin_local_iso8601_noms', 's',
+       lambda r: timestamp2iso8601_noms(r.root.begin_record.ctime,
+                                        local=True)),
+    FF('end_local_iso8601_noms', 's',
+       lambda r: timestamp2iso8601_noms(r.root.complete_record.ctime,
+                                        local=True)),
+    FF('begin_local_iso8601_noms_notz', 's',
+       lambda r: timestamp2iso8601_noms(r.root.begin_record.ctime,
+                                        local=True, with_tz=False)),
+    FF('end_local_iso8601_noms_notz', 's',
+       lambda r: timestamp2iso8601_noms(r.root.complete_record.ctime,
+                                        local=True, with_tz=False))]
 
 # using the T separator means no whitespace and thus no quoting
 for f in ISO8601_FIELDS:
