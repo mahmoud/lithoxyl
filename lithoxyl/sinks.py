@@ -298,6 +298,8 @@ class SensibleSink(object):
 
         if 'complete' in self._events:
             self.on_complete = self._on_complete
+        if 'warn' in self._events:
+            self.on_warn = self._on_warn
         if 'begin' in self._events:
             self.on_begin = self._on_begin
         # TODO warn and exc
@@ -306,13 +308,19 @@ class SensibleSink(object):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter.on_complete(record)
-        return self.emitter(record, entry)
+        return self.emitter.on_complete(record, entry)
+
+    def _on_warn(self, record):
+        if self.filters and not all([f(record) for f in self.filters]):
+            return
+        entry = self.formatter.on_warn(record)
+        return self.emitter.on_warn(record, entry)
 
     def _on_begin(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter.on_begin(record)
-        return self.emitter(record, entry)
+        return self.emitter.on_begin(record, entry)
 
     def __repr__(self):
         cn = self.__class__.__name__

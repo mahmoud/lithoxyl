@@ -36,9 +36,9 @@ class FakeEmitter(object):
         self.entries = []
 
     def emit_entry(self, record, entry):
-        self.entries.append(entry)
+        self.entries.append((record, entry))
 
-    __call__ = emit_entry
+    on_begin = on_warn = on_complete = emit_entry
 
 
 class StreamEmitter(object):
@@ -84,6 +84,8 @@ class StreamEmitter(object):
             # SystemExits, special handling for everything else.
             raise
 
+    on_begin = on_warn = on_complete = emit_entry
+
     def flush(self):
         #if callable(getattr(self.stream, 'flush', None)):
         if self.stream is None:
@@ -93,8 +95,6 @@ class StreamEmitter(object):
         except Exception:
             # TODO: warn
             pass
-
-    __call__ = emit_entry
 
     def __repr__(self):
         return '<%s stream=%r>' % (self.__class__.__name__, self.stream)
