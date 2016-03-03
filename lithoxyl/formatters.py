@@ -59,6 +59,10 @@ class Formatter(object):
         rf = self.event_formatters['begin']
         return rf(begin_record)
 
+    def on_warn(self, warn_record):
+        rf = self.event_formatters['warn']
+        return rf(warn_record)
+
     def on_complete(self, complete_record):
         rf = self.event_formatters['complete']
         return rf(complete_record)
