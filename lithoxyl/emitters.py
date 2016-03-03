@@ -35,7 +35,7 @@ class FakeEmitter(object):
     def __init__(self):
         self.entries = []
 
-    def emit_entry(self, entry):
+    def emit_entry(self, record, entry):
         self.entries.append(entry)
 
     __call__ = emit_entry
@@ -63,7 +63,7 @@ class StreamEmitter(object):
         self.errors = errors
         self.encoding = encoding
 
-    def emit_entry(self, entry):
+    def emit_entry(self, record, entry):
         try:
             entry = entry.encode(self.encoding, self.errors)
         except UnicodeDecodeError:
@@ -130,7 +130,7 @@ class WatchedFileEmitter(FileEmitter):
             # TODO: check errno? prolly not.
             self.dev, self.inode = None, None
 
-    def emit(self, record):
+    def emit(self, record, entry):
         try:
             stat = os.stat(self.filepath)
             new_dev, new_inode = stat.st_dev, stat.st_ino

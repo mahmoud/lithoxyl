@@ -306,13 +306,13 @@ class SensibleSink(object):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter.on_complete(record)
-        return self.emitter(entry)
+        return self.emitter(record, entry)
 
     def _on_begin(self, record):
         if self.filters and not all([f(record) for f in self.filters]):
             return
         entry = self.formatter.on_begin(record)
-        return self.emitter(entry)
+        return self.emitter(record, entry)
 
     def __repr__(self):
         cn = self.__class__.__name__
