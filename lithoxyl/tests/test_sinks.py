@@ -20,17 +20,17 @@ def test_sensible_basic():
     print
 
     log.debug('greet').success('hey')
-    assert fake_emtr.entries[-1][0] == 's'
+    assert fake_emtr.entries[-1][1][0] == 's'
 
     with log.debug('greet') as t:
         t.success('hello')
         t.warn("everything ok?")
 
-    assert fake_emtr.entries[-1][0] == 'S'
+    assert fake_emtr.entries[-1][1][0] == 'S'
 
     with log.debug('greet') as t:
         t.failure('bye')
-    assert fake_emtr.entries[-1][0] == 'F'
+    assert fake_emtr.entries[-1][1][0] == 'F'
 
     try:
         with log.debug('greet') as t:
@@ -38,7 +38,7 @@ def test_sensible_basic():
     except Exception:
         pass
 
-    assert fake_emtr.entries[-1][0] == 'E'
+    assert fake_emtr.entries[-1][1][0] == 'E'
 
 
 def test_bad_encoding():
