@@ -322,9 +322,6 @@ class SensibleSink(object):
         entry = self.formatter.on_begin(record)
         return self.emitter.on_begin(record, entry)
 
-    def _on_hearbeat(self, record):
-        pass
-
     def __repr__(self):
         cn = self.__class__.__name__
         return ('<%s filters=%r formatter=%r emitter=%r>'

@@ -96,9 +96,8 @@ class Logger(object):
         self.record_queue = deque(maxlen=QUEUE_LIMIT)
         self.async_mode = kwargs.pop('async', self.context.async_mode)
         self.async_lock = RLock()
-        self.heartbeat_interval = kwargs.pop('heartbeat',
-                                             self.context.heartbeat_interval)
-        self.last_heartbeat = time.time() - (self.heartbeat_interval / 1000.0)
+        self.preflush_hooks = []
+        self.last_flush = time.time()
 
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
@@ -118,6 +117,11 @@ class Logger(object):
         # only one flush allowed to run at a time
         # ensures that records are delivered to sinks in order
         with self.async_lock:
+            for preflush_hook in self.preflush_hooks:
+                try:
+                    preflush_hook(self)
+                except Exception:
+                    pass
             queue = self.record_queue
             while queue:
                 rec_type, rec = queue.popleft()
@@ -133,6 +137,9 @@ class Logger(object):
                 elif rec_type == 'comment':
                     for comment_hook in self._comment_hooks:
                         comment_hook(rec)
+                else:
+                    pass  # TODO
+        self.last_flush = time.time()
         return
 
     @property
@@ -150,7 +157,6 @@ class Logger(object):
         self._warn_hooks = []
         self._complete_hooks = []
         self._exc_hooks = []
-        self._hb_hooks = []
         self._comment_hooks = []
         for s in sinks:
             self.add_sink(s)
@@ -178,9 +184,6 @@ class Logger(object):
         exc_hook = getattr(sink, 'on_exception', None)
         if callable(exc_hook):
             self._exc_hooks.append(exc_hook)
-        hb_hook = getattr(sink, 'on_heartbeat', None)
-        if callable(hb_hook):
-            self._hb_hooks.append(hb_hook)
         comment_hook = getattr(sink, 'on_comment', None)
         if callable(comment_hook):
             self._comment_hooks.append(comment_hook)
@@ -222,36 +225,16 @@ class Logger(object):
             exc_hook(exc_record, exc_type, exc_obj, exc_tb)
         return
 
-    def on_heartbeat(self, complete_record=None, force=False):
-        if force:
-            pass
-        elif not self.heartbeat_interval:
-            return
-        elif self.heartbeat_interval > (time.time() - self.last_heartbeat) * 1000:
-            return
-        if not complete_record:
-            # heartbeat takes special construction to avoid hitting other hooks
-            rec_name = '%s_heartbeat' % self.name
-            root_rec = self.record_type(logger=self, level=CRITICAL,
-                                        name=rec_name, frame=sys._getframe(1))
-            root_rec.begin_record = BeginRecord(root_rec, self.last_heartbeat,
-                                                '{} previous heartbeat',
-                                                (self.name,))
-            root_rec.complete_record = CompleteRecord(root_rec, time.time(),
-                                                      '{} current heartbeat ({duration_msecs} since previous)',
-                                                      (self.name,), 'success')
-            complete_record = root_rec.complete_record
-        for hb_hook in self._hb_hooks:
-            hb_hook(complete_record)
-        self.last_heartbeat = time.time()
-        return
-
     def comment(self, message, *a, **kw):
         root = self.record_type(logger=self,
                                 level=CRITICAL,
                                 name='comment',
                                 data=kw)
-        rec = CommentRecord(root, time.time(), message, a)
+        cur_time = time.time()
+        root.begin_record = BeginRecord(root, cur_time, 'comment', ())
+        root.complete_record = CompleteRecord(root, cur_time,
+                                              'comment', (), 'success')
+        rec = CommentRecord(root, cur_time, message, a)
         if self.async_mode:
             self.record_queue.append(('comment', rec))
         else:

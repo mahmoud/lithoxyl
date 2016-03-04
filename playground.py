@@ -31,9 +31,9 @@ stderr_sink = SensibleSink(formatter=stderr_fmt,
 
 from lithoxyl import context
 
-context.get_context().enable_async()
+#context.get_context().enable_async()
 
-log = Logger('test', sinks=[stderr_sink], heartbeat=1000)
+log = Logger('test', sinks=[stderr_sink])
 
 with log.critical('first'):
     print 'did some work'
@@ -42,18 +42,20 @@ import os
 print os.getpid()
 
 
-class HeartbeatSink(object):
-    def on_heartbeat(self, complete_record):
-        print complete_record.message
-
-
 class CommentSink(object):
     def on_comment(self, comment_record):
         print comment_record, comment_record.message
+        # import pdb;pdb.set_trace()
 
 
-log.add_sink(HeartbeatSink())
+def emit_cur_time_hook(logger):
+    logger.comment('simpler heartbeats for a simpler time')
+
+
+log.preflush_hooks.append(emit_cur_time_hook)
 log.add_sink(CommentSink())
+
+# log.flush()
 
 
 log.comment('{} {hah}', 'hah!', hah='HAH!')

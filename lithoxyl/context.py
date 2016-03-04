@@ -7,7 +7,6 @@ import signal
 
 from actors import IntervalThreadActor
 
-DEFAULT_HEARTBEAT_MS = 200
 DEFAULT_JOIN_TIMEOUT = 0.5
 
 LITHOXYL_CONTEXT = None
@@ -32,8 +31,6 @@ class LithoxylContext(object):
     def __init__(self, **kwargs):
         self.loggers = []
 
-        self.heartbeat_interval = kwargs.pop('heartbeat', DEFAULT_HEARTBEAT_MS)
-
         self.async_mode = False
         self.async_actor = None
         self.async_timeout = DEFAULT_JOIN_TIMEOUT
@@ -43,7 +40,7 @@ class LithoxylContext(object):
         update_loggers = kwargs.pop('update_loggers', True)
         update_sigterm = kwargs.pop('update_sigterm', True)
         update_actor = kwargs.pop('update_actor', True)
-        actor_kw = {'task': self._async_task,
+        actor_kw = {'task': self.flush,
                     'interval': kwargs.pop('interval', None),
                     'max_interval': kwargs.pop('max_interval', None),
                     # be very careful when not daemonizing thread
@@ -92,15 +89,6 @@ class LithoxylContext(object):
 
         self.flush()
         self.async_mode = False
-
-    def _async_task(self):
-        self.heartbeat()
-        self.flush()
-
-    def heartbeat(self, complete_record=None, force=False):
-        for logger in self.loggers:
-            logger.on_heartbeat(complete_record=complete_record, force=force)
-        return
 
     def flush(self):
         for logger in self.loggers:
