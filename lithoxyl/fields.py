@@ -168,8 +168,8 @@ for f in ISO8601_FIELDS:
 
 
 DELTA_FIELDS = [
-    FF('import_delta', '.5g', lambda r: r.ctime - IMPORT_TIME),
-    FF('import_delta_ms', '.5g', lambda r: (r.ctime - IMPORT_TIME) * 1000)]
+    FF('import_delta', '0.6f', lambda r: r.ctime - IMPORT_TIME),
+    FF('import_delta_ms', '0.4f', lambda r: (r.ctime - IMPORT_TIME) * 1000)]
 
 
 for f in BASIC_FIELDS:
