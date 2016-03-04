@@ -312,7 +312,7 @@ class SubRecord(object):
         else:
             # TODO: Formatter cache
             fmtr = RecordFormatter(raw_message, quoter=False)
-            self._message = fmtr.format_record(self.root, self.fargs,
+            self._message = fmtr.format_record(self.root, *self.fargs,
                                                **self.root.data_map)
         return self._message
 

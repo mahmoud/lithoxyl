@@ -6,12 +6,13 @@ interface to using Lithoxyl. It is used to conveniently create
 """
 
 import sys
+import time
 import itertools
 from collections import deque
 from threading import RLock
 
 from utils import wraps
-from record import Record
+from record import Record, BeginRecord, CompleteRecord
 from context import get_context
 from common import DEBUG, INFO, CRITICAL
 
@@ -95,6 +96,9 @@ class Logger(object):
         self.record_queue = deque(maxlen=QUEUE_LIMIT)
         self.async_mode = kwargs.pop('async', self.context.async_mode)
         self.async_lock = RLock()
+        self.heartbeat_interval = kwargs.pop('hearbeat',
+                                             self.context.heartbeat_interval)
+        self.last_heartbeat = time.time() - self.heartbeat_interval
 
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
@@ -143,6 +147,7 @@ class Logger(object):
         self._warn_hooks = []
         self._complete_hooks = []
         self._exc_hooks = []
+        self._hb_hooks = []
         for s in sinks:
             self.add_sink(s)
 
@@ -169,6 +174,10 @@ class Logger(object):
         exc_hook = getattr(sink, 'on_exception', None)
         if callable(exc_hook):
             self._exc_hooks.append(exc_hook)
+        hb_hook = getattr(sink, 'on_heartbeat', None)
+        if callable(hb_hook):
+            self._hb_hooks.append(hb_hook)
+
         self._all_sinks.append(sink)
 
     def on_complete(self, complete_record):
@@ -203,6 +212,31 @@ class Logger(object):
         # async handling doesn't make sense here
         for exc_hook in self._exc_hooks:
             exc_hook(exc_record, exc_type, exc_obj, exc_tb)
+        return
+
+    def on_heartbeat(self, complete_record=None, force=False):
+        if force:
+            pass
+        elif not self.heartbeat_interval:
+            return
+        elif self.heartbeat_interval > (time.time() - self.last_heartbeat) * 1000:
+            return
+        if not complete_record:
+            # heartbeat takes special construction to avoid hitting other hooks
+            rec_name = '%s_heartbeat' % self.name
+            root_rec = self.record_type(logger=self, level=CRITICAL,
+                                        name=rec_name, frame=sys._getframe(1))
+            root_rec.begin_record = BeginRecord(root_rec, self.last_heartbeat,
+                                                '{} previous heartbeat',
+                                                (self.name,))
+            root_rec.complete_record = CompleteRecord(root_rec, time.time(),
+                                                      '{} current heartbeat ({duration_msecs} since previous)',
+                                                      (self.name,), 'success')
+            complete_record = root_rec.complete_record
+        for hb_hook in self._hb_hooks:
+            hb_hook(complete_record)
+        self.last_heartbeat = time.time()
+        return
 
     def debug(self, name, **kw):
         "Create and return a new :data:`DEBUG`-level :class:`Record` named *name*."
