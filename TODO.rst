@@ -27,10 +27,7 @@ Formatting
 Sinks/emitters
 --------------
 
-* threaded
 * process + pipe/socket
-* syslog
-
 * rotating file utility
 
 Stats TODOs
