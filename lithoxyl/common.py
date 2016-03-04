@@ -68,8 +68,8 @@ for level in BUILTIN_LEVELS:
 del level
 
 
-def get_level(key):
-    return LEVEL_ALIAS_MAP.get(key, DEFAULT_LEVEL)
+def get_level(key, default=DEFAULT_LEVEL):
+    return LEVEL_ALIAS_MAP.get(key, default)
 
 
 def get_next_level(key, delta=1):

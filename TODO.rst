@@ -46,3 +46,8 @@ helper: get_record_parent(record):
 * Greenlet: Greenlet local dict with stacks
 * Threads: thread local dict with stacks
 * Callbacks: Up 2 u
+
+
+Ideal behavior: Only tell me about completing things unless there is
+an inner task or the task is taking a long time (heartbeat-based
+flush).

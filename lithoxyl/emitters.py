@@ -7,6 +7,12 @@ or network streams.
 import os
 import sys
 
+try:
+    # unix only
+    from _syslog_emitter import SyslogEmitter
+except ImportError:
+    pass
+
 
 class EncodingLookupError(LookupError):
     pass
