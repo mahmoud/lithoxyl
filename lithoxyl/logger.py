@@ -12,7 +12,7 @@ from collections import deque
 from threading import RLock
 
 from utils import wraps
-from record import Record, BeginRecord, CompleteRecord
+from record import Record, BeginRecord, CompleteRecord, CommentRecord
 from context import get_context
 from common import DEBUG, INFO, CRITICAL
 
@@ -96,9 +96,9 @@ class Logger(object):
         self.record_queue = deque(maxlen=QUEUE_LIMIT)
         self.async_mode = kwargs.pop('async', self.context.async_mode)
         self.async_lock = RLock()
-        self.heartbeat_interval = kwargs.pop('hearbeat',
+        self.heartbeat_interval = kwargs.pop('heartbeat',
                                              self.context.heartbeat_interval)
-        self.last_heartbeat = time.time() - self.heartbeat_interval
+        self.last_heartbeat = time.time() - (self.heartbeat_interval / 1000.0)
 
         self.module = kwargs.pop('module', None)
         self._module_offset = kwargs.pop('module_offset', 0)
@@ -130,6 +130,9 @@ class Logger(object):
                 elif rec_type == 'warn':
                     for warn_hook in self._warn_hooks:
                         warn_hook(rec)
+                elif rec_type == 'comment':
+                    for comment_hook in self._comment_hooks:
+                        comment_hook(rec)
         return
 
     @property
@@ -148,6 +151,7 @@ class Logger(object):
         self._complete_hooks = []
         self._exc_hooks = []
         self._hb_hooks = []
+        self._comment_hooks = []
         for s in sinks:
             self.add_sink(s)
 
@@ -177,6 +181,10 @@ class Logger(object):
         hb_hook = getattr(sink, 'on_heartbeat', None)
         if callable(hb_hook):
             self._hb_hooks.append(hb_hook)
+        comment_hook = getattr(sink, 'on_comment', None)
+        if callable(comment_hook):
+            self._comment_hooks.append(comment_hook)
+
 
         self._all_sinks.append(sink)
 
@@ -237,6 +245,18 @@ class Logger(object):
             hb_hook(complete_record)
         self.last_heartbeat = time.time()
         return
+
+    def comment(self, message, *a, **kw):
+        root = self.record_type(logger=self,
+                                level=CRITICAL,
+                                name='comment',
+                                data=kw)
+        rec = CommentRecord(root, time.time(), message, a)
+        if self.async_mode:
+            self.record_queue.append(('comment', rec))
+        else:
+            for comment_hook in self._comment_hooks:
+                comment_hook(rec)
 
     def debug(self, name, **kw):
         "Create and return a new :data:`DEBUG`-level :class:`Record` named *name*."

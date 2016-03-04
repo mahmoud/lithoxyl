@@ -86,6 +86,7 @@ class Record(object):
 
         self.begin_record = None  # TODO: may have to make BeginRecord here
         self.complete_record = None
+        # these can go internal and be lazily created through properties
         self.warn_records = []
         self.exc_records = []
         return
