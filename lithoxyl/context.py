@@ -27,6 +27,10 @@ def set_context(context):
     return context
 
 
+def note(name, message, *a, **kw):
+    return get_context().note(name, message, *a, **kw)
+
+
 class LithoxylContext(object):
     def __init__(self, **kwargs):
         self.loggers = []
@@ -35,6 +39,28 @@ class LithoxylContext(object):
         self.async_actor = None
         self.async_timeout = DEFAULT_JOIN_TIMEOUT
         self._async_atexit_registered = False
+
+        self.note_handlers = []
+
+    def note(self, name, message, *a, **kw):
+        """Lithoxyl can't use itself internally. This is a hook for recording
+        all of those error conditions that need to be robustly
+        ignored, such as if a user's message doesn't format correctly
+        at runtime.
+        """
+        if not self.note_handlers:
+            return
+        # call_level = kw.pop('call_level', None)
+        callpoint = None
+        # if call_level:
+        #    callpoint = None  # TODO: extract callpoint info
+        try:
+            message = message % a
+        except Exception:
+            pass
+        for nh in self.note_handlers:
+            nh(name, message, callpoint=callpoint)
+        return
 
     def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)

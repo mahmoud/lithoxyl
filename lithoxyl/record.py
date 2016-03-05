@@ -6,8 +6,9 @@ import itertools
 
 from tbutils import ExceptionInfo, Callpoint
 
-from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
+from context import note
 from formatters import RecordFormatter
+from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
 
 
 _REC_ID_ITER = itertools.count()
@@ -84,7 +85,7 @@ class Record(object):
             frame = sys._getframe(1)
         self.callpoint = Callpoint.from_frame(frame)
 
-        self.begin_record = None  # TODO: may have to make BeginRecord here
+        self.begin_record = None
         self.complete_record = None
         # these can go internal and be lazily created through properties
         self.warn_records = []
@@ -227,8 +228,9 @@ class Record(object):
             try:
                 self._exception(exc_type, exc_val, exc_tb,
                                 message=None, fargs=(), data={})
-            except Exception:
-                # TODO: something? grasshopper mode maybe.
+            except Exception as e:
+                note('record_exit',
+                     'got %r while already handling exception %r', e, exc_val)
                 pass  # TODO: still have to create complete_record
         else:
             if self.complete_record:
@@ -299,7 +301,6 @@ class SubRecord(object):
     def __getattr__(self, name):
         return getattr(self.root, name)
 
-    # TODO
     @property
     def message(self):
         if self._message:
@@ -379,7 +380,6 @@ class WarningRecord(SubRecord):
 class CommentRecord(SubRecord):
     status_char = '#'
 
-    # TODO
     def __init__(self, root, ctime, raw_message, fargs):
         self.root = root
         self.ctime = ctime

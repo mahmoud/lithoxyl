@@ -120,8 +120,9 @@ class Logger(object):
             for preflush_hook in self.preflush_hooks:
                 try:
                     preflush_hook(self)
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.context.note('preflush', 'hook %r got exception %r',
+                                      preflush_hook, e)
             queue = self.record_queue
             while queue:
                 rec_type, rec = queue.popleft()
@@ -138,7 +139,8 @@ class Logger(object):
                     for comment_hook in self._comment_hooks:
                         comment_hook(rec)
                 else:
-                    pass  # TODO
+                    self.context.note('flush', 'unknown event type: %r %r',
+                                      rec_type, rec)
         self.last_flush = time.time()
         return
 
@@ -187,8 +189,7 @@ class Logger(object):
         comment_hook = getattr(sink, 'on_comment', None)
         if callable(comment_hook):
             self._comment_hooks.append(comment_hook)
-
-
+        # TODO: also pull flush methods?
         self._all_sinks.append(sink)
 
     def on_complete(self, complete_record):
@@ -226,10 +227,8 @@ class Logger(object):
         return
 
     def comment(self, message, *a, **kw):
-        root = self.record_type(logger=self,
-                                level=CRITICAL,
-                                name='comment',
-                                data=kw)
+        root_type = self.record_type
+        root = root_type(logger=self, level=CRITICAL, name='comment', data=kw)
         cur_time = time.time()
         root.begin_record = BeginRecord(root, cur_time, 'comment', ())
         root.complete_record = CompleteRecord(root, cur_time,

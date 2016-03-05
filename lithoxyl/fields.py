@@ -8,8 +8,6 @@ with the :class:`~lithoxyl.formatters.Formatter` type or subtypes.
 """
 # NOTE: docstring table needs slashes double escaped. Also, newline literals "\n" removed.
 
-# TODO: should record_id be combined with logger_id? loggers are not
-# ephemeral, but records are; there are chances of id reuse.
 # TODO: exc_repr field
 
 import os

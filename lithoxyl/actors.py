@@ -35,6 +35,7 @@ class IntervalThreadActor(object):
         max_interval = kwargs.pop('max_interval', None)
         self.max_interval = float(max_interval or interval * 8)
         self._daemonize_thread = kwargs.pop('daemonize_thread', True)
+        self._note = kwargs.pop('note', None)
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
 
@@ -87,8 +88,11 @@ class IntervalThreadActor(object):
             self._stopping.clear()
         return ret
 
-    def log(self, level, name, message):
-        print level, '-', name, '-', message
+    def note(self, name, message, *a, **kw):
+        if self._note:
+            name = 'actor_' + str(name)
+            self._note(name, message)
+        return
 
     def _run(self):
         self._run_start_time = time.time()
@@ -103,8 +107,8 @@ class IntervalThreadActor(object):
                     if not self._daemonize_thread:
                         raise
                 except Exception as e:
-                    self.log('critical', 'task_exception',
-                             '%s - task() raised: %r' % (time.time(), e))
+                    self.note('task_exception', '%s - task() raised: %r'
+                              % (time.time(), e))
                     self.interval = min(self.interval * 2, self.max_interval)
                 else:
                     decrement = (self.max_interval - self._orig_interval) / 8

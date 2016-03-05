@@ -7,6 +7,8 @@ or network streams.
 import os
 import sys
 
+from context import note
+
 try:
     # unix only
     from _syslog_emitter import SyslogEmitter
@@ -47,6 +49,7 @@ class FakeEmitter(object):
     on_begin = on_warn = on_complete = emit_entry
 
 
+# TODO: rename StreamLineEmitter
 class StreamEmitter(object):
     def __init__(self, stream, encoding=None, **kwargs):
         if stream == 'stdout':
@@ -62,7 +65,6 @@ class StreamEmitter(object):
             encoding = getattr(stream, 'encoding', None) or 'UTF-8'
         errors = kwargs.pop('errors', 'backslashreplace')
 
-        # Too late to raise exceptions? Don't think so.
         check_encoding_settings(encoding, errors)  # raises on error
 
         self.newline = kwargs.pop('newline', None) or os.linesep
@@ -72,35 +74,30 @@ class StreamEmitter(object):
     def emit_entry(self, record, entry):
         try:
             entry = entry.encode(self.encoding, self.errors)
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as ude:
             # Note that this is a *decode* error, meaning a bytestring
-            # found its way through and implicit decoding is
-            # happening.
-            # TODO: configurable behavior for if bytes manage to find
-            # their way through?
+            # found its way through and implicit decoding is happening.
+            note('emit_encode', 'got %r on %s.emit_entry();'
+                 ' expected decoded text, not %r', ude, self, entry)
             raise
         try:
             self.stream.write(entry)
             if self.newline:
                 self.stream.write(self.newline)
             self.flush()
-        except Exception:
-            # TODO: something maybe
-            # TODO: built-in logging raises KeyboardInterrupts and
-            # SystemExits, special handling for everything else.
-            raise
+        except Exception as e:
+            note('stream_emit', 'got %r on %r.emit_entry()', e, self)
 
     on_begin = on_warn = on_complete = emit_entry
 
     def flush(self):
-        #if callable(getattr(self.stream, 'flush', None)):
+        # if callable(getattr(self.stream, 'flush', None)):
         if self.stream is None:
             return
         try:
             self.stream.flush()
-        except Exception:
-            # TODO: warn
-            pass
+        except Exception as e:
+            note('stream_flush', 'got %r on %r.flush()', e, self)
 
     def __repr__(self):
         return '<%s stream=%r>' % (self.__class__.__name__, self.stream)
@@ -120,37 +117,5 @@ class FileEmitter(StreamEmitter):
         try:
             self.flush()
             self.stream.close()
-        except Exception:
-            # TODO: warn
-            pass
-
-
-class WatchedFileEmitter(FileEmitter):
-    def __init__(self, *a, **kw):
-        # TODO: warn on windows usage
-        super(WatchedFileEmitter, self).__init__(*a, **kw)
-        try:
-            stat = os.stat(self.filepath)
-            self.dev, self.inode = stat.st_dev, stat.st_ino
-        except OSError:
-            # TODO: check errno? prolly not.
-            self.dev, self.inode = None, None
-
-    def emit(self, record, entry):
-        try:
-            stat = os.stat(self.filepath)
-            new_dev, new_inode = stat.st_dev, stat.st_ino
-        except OSError:
-            new_dev, new_inode = None, None
-        is_changed = (new_dev, new_inode) != (self.dev, self.inode)
-        if is_changed and self.stream is not None:
-            self.close()
-            self.stream = open(self.filepath, self.mode)
-            stat = os.stat(self.filepath)
-            self.dev, self.inode = stat.st_dev, stat.st_ino
-        super(WatchedFileEmitter, self).emit(record)
-
-
-class RotatingFileEmitter(FileEmitter):
-    def __init__(self, filepath):
-        pass
+        except Exception as e:
+            note('file_close', 'got %r on %r.close()', e, self)
