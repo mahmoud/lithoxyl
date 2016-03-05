@@ -36,6 +36,8 @@ class IntervalThreadActor(object):
         self.max_interval = float(max_interval or interval * 8)
         self._daemonize_thread = kwargs.pop('daemonize_thread', True)
         self._note = kwargs.pop('note', None)
+        if not callable(self._note):
+            raise ValueError('expected callable for note, not %r' % self._note)
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
 

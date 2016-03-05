@@ -100,10 +100,7 @@ class Record(object):
 
     @property
     def level_name(self):
-        try:
-            return self.level.name
-        except Exception:
-            return repr(self.level)
+        return self.level.name
 
     @property
     def status(self):
@@ -117,7 +114,7 @@ class Record(object):
         try:
             return self.complete_record.ctime - self.begin_record.ctime
         except Exception:
-            return 0
+            return 0.0
 
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)

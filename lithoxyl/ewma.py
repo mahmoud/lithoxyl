@@ -15,8 +15,8 @@ class EWMAAccumulator(object):
         "Takes an iterable of periods and an update interval, both in seconds."
         self._interval = float(interval or DEFAULT_INTERVAL)
         if not self._interval > 0:
-            raise TypeError('interval must be greater than 0, not: %r'
-                            % self._interval)
+            raise ValueError('interval must be greater than 0, not: %r'
+                             % self._interval)
 
         periods = periods or DEFAULT_PERIODS
         self._rate_map = dict([(p, None) for p in periods])
