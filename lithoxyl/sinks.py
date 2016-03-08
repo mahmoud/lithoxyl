@@ -19,6 +19,7 @@ class AggregateSink(object):
         self.begin_events = deque(maxlen=max_length)
         self.warn_events = deque(maxlen=max_length)
         self.complete_events = deque(maxlen=max_length)
+        self.comment_events = deque(maxlen=max_length)
 
     def on_begin(self, begin_event):
         self.begin_events.append(begin_event)
@@ -28,6 +29,9 @@ class AggregateSink(object):
 
     def on_complete(self, complete_event):
         self.complete_events.append(complete_event)
+
+    def on_comment(self, comment_event):
+        self.comment_events.append(comment_event)
 
 
 _MSG_ATTRS = ('name', 'level_name', 'status', 'message',
@@ -296,18 +300,20 @@ class SensibleSink(object):
         self.formatter = formatter
         self.emitter = emitter
 
-        if 'complete' in self._events:
-            self.on_complete = self._on_complete
-        if 'warn' in self._events:
-            self.on_warn = self._on_warn
         if 'begin' in self._events:
             self.on_begin = self._on_begin
+        if 'warn' in self._events:
+            self.on_warn = self._on_warn
+        if 'complete' in self._events:
+            self.on_complete = self._on_complete
+        if 'comment' in self._events:
+            self.on_comment = self._on_comment
 
-    def _on_complete(self, event):
+    def _on_begin(self, event):
         if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_complete(event)
-        return self.emitter.on_complete(event, entry)
+        entry = self.formatter.on_begin(event)
+        return self.emitter.on_begin(event, entry)
 
     def _on_warn(self, event):
         if self.filters and not all([f(event) for f in self.filters]):
@@ -315,11 +321,17 @@ class SensibleSink(object):
         entry = self.formatter.on_warn(event)
         return self.emitter.on_warn(event, entry)
 
-    def _on_begin(self, event):
+    def _on_complete(self, event):
         if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_begin(event)
-        return self.emitter.on_begin(event, entry)
+        entry = self.formatter.on_complete(event)
+        return self.emitter.on_complete(event, entry)
+
+    def _on_comment(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
+            return
+        entry = self.formatter.on_comment(event)
+        return self.emitter.on_comment(event, entry)
 
     def __repr__(self):
         cn = self.__class__.__name__

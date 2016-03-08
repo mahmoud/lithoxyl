@@ -67,6 +67,10 @@ class Formatter(object):
         rf = self.event_formatters['complete']
         return rf(complete_event)
 
+    def on_comment(self, comment_event):
+        rf = self.event_formatters['comment']
+        return rf(comment_event)
+
 
 class RecordFormatter(object):
     """The basic ``Formatter`` type implements a constrained, but robust,

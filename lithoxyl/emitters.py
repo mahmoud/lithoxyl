@@ -46,7 +46,7 @@ class FakeEmitter(object):
     def emit_entry(self, record, entry):
         self.entries.append((record, entry))
 
-    on_begin = on_warn = on_complete = emit_entry
+    on_begin = on_warn = on_complete = on_comment = emit_entry
 
 
 # TODO: rename StreamLineEmitter
@@ -88,14 +88,14 @@ class StreamEmitter(object):
         except Exception as e:
             note('stream_emit', 'got %r on %r.emit_entry()', e, self)
 
-    on_begin = on_warn = on_complete = emit_entry
+    on_begin = on_warn = on_complete = on_comment = emit_entry
 
     def flush(self):
-        # if callable(getattr(self.stream, 'flush', None)):
-        if self.stream is None:
+        stream_flush = getattr(self.stream, 'flush', None)
+        if not callable(stream_flush):
             return
         try:
-            self.stream.flush()
+            stream_flush()
         except Exception as e:
             note('stream_flush', 'got %r on %r.flush()', e, self)
 
