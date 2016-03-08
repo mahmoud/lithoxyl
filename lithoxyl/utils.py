@@ -3,7 +3,7 @@
 import inspect
 import itertools
 
-from strutils import indent
+from boltons.strutils import indent
 
 
 def wraps(func, injected=None, **kw):

@@ -4,7 +4,7 @@ import sys
 import time
 import itertools
 
-from tbutils import ExceptionInfo, Callpoint
+from boltons.tbutils import ExceptionInfo, Callpoint
 
 from context import note
 from formatters import RecordFormatter

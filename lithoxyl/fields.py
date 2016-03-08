@@ -15,8 +15,8 @@ import time
 import json
 import datetime
 
-from timeutils import UTC, LocalTZ
-from formatutils import BaseFormatField
+from boltons.timeutils import UTC, LocalTZ
+from boltons.formatutils import BaseFormatField
 
 from common import IMPORT_TIME
 

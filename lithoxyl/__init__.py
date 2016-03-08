@@ -6,6 +6,6 @@ from lithoxyl.filters import ThresholdFilter
 from lithoxyl.emitters import StreamEmitter
 
 from lithoxyl.formatters import Formatter
-from lithoxyl.formatutils import DeferredValue
 
-from lithoxyl.tbutils import TracebackInfo, ExceptionInfo, Callpoint
+from boltons.formatutils import DeferredValue
+from boltons.tbutils import TracebackInfo, ExceptionInfo, Callpoint

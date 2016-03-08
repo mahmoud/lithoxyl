@@ -6,7 +6,8 @@ import json
 
 from common import EVENTS
 from fields import BUILTIN_FIELD_MAP
-from formatutils import tokenize_format_str
+
+from boltons.formatutils import tokenize_format_str
 
 DEFAULT_QUOTER = json.dumps
 

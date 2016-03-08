@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Record, DEBUG
 from lithoxyl.formatters import Formatter
-from lithoxyl.formatutils import DeferredValue
+
 
 
 template = ('{status_char}{record_warn_char}{begin_timestamp}'
