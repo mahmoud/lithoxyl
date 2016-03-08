@@ -39,7 +39,7 @@ def check_encoding_settings(encoding, errors):
         return
 
 
-class FakeEmitter(object):
+class AggregateEmitter(object):
     def __init__(self):
         self.entries = []
 

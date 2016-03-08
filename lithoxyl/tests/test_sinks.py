@@ -2,16 +2,16 @@
 
 from lithoxyl.sinks import SensibleSink
 from lithoxyl.formatters import Formatter
-from lithoxyl.emitters import StreamEmitter, FakeEmitter
+from lithoxyl.emitters import StreamEmitter, AggregateEmitter
 from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import Logger
 
 
 fmtr = Formatter('{status_char}{begin_timestamp}')
 strm_emtr = StreamEmitter('stderr')
-fake_emtr = FakeEmitter()
+aggr_emtr = AggregateEmitter()
 strm_sink = SensibleSink(formatter=fmtr, emitter=strm_emtr)
-fake_sink = SensibleSink(formatter=fmtr, emitter=fake_emtr)
+fake_sink = SensibleSink(formatter=fmtr, emitter=aggr_emtr)
 
 
 def test_sensible_basic():
@@ -20,17 +20,17 @@ def test_sensible_basic():
     print
 
     log.debug('greet').success('hey')
-    assert fake_emtr.entries[-1][1][0] == 's'
+    assert aggr_emtr.entries[-1][1][0] == 's'
 
     with log.debug('greet') as t:
         t.success('hello')
         t.warn("everything ok?")
 
-    assert fake_emtr.entries[-1][1][0] == 'S'
+    assert aggr_emtr.entries[-1][1][0] == 'S'
 
     with log.debug('greet') as t:
         t.failure('bye')
-    assert fake_emtr.entries[-1][1][0] == 'F'
+    assert aggr_emtr.entries[-1][1][0] == 'F'
 
     try:
         with log.debug('greet') as t:
@@ -38,7 +38,7 @@ def test_sensible_basic():
     except Exception:
         pass
 
-    assert fake_emtr.entries[-1][1][0] == 'E'
+    assert aggr_emtr.entries[-1][1][0] == 'E'
 
 
 def test_bad_encoding():

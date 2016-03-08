@@ -9,9 +9,6 @@ from lithoxyl import (Logger,
                       StreamEmitter,
                       Formatter)
 
-from lithoxyl.emitters import FakeEmitter
-
-
 stderr_fmt = Formatter(begin='{status_char}{begin_local_iso8601_noms_notz} - {begin_message}',
                        complete='{status_char}{end_local_iso8601_noms_notz} - {duration_msecs}ms - {end_message}')
 
