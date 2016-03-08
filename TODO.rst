@@ -54,3 +54,12 @@ Linty things
 ------------
 
 * Find all sinks that aren't installed in loggers
+
+
+Header things
+-------------
+
+* Encoding
+* File creation time
+* Original hostname, file path
+* Formatter string
