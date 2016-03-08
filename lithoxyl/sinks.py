@@ -16,18 +16,18 @@ from quantile import QuantileAccumulator, P2QuantileAccumulator
 class AggregateSink(object):
     "A 'dummy' sink that just aggregates the messages."
     def __init__(self, max_length=None):
-        self.begin_records = deque(maxlen=max_length)
-        self.warn_records = deque(maxlen=max_length)
-        self.complete_records = deque(maxlen=max_length)
+        self.begin_events = deque(maxlen=max_length)
+        self.warn_events = deque(maxlen=max_length)
+        self.complete_events = deque(maxlen=max_length)
 
-    def on_begin(self, begin_record):
-        self.begin_records.append(begin_record)
+    def on_begin(self, begin_event):
+        self.begin_events.append(begin_event)
 
-    def on_warn(self, warn_record):
-        self.warn_records.append(warn_record)
+    def on_warn(self, warn_event):
+        self.warn_events.append(warn_event)
 
-    def on_complete(self, complete_record):
-        self.complete_records.append(complete_record)
+    def on_complete(self, complete_event):
+        self.complete_events.append(complete_event)
 
 
 _MSG_ATTRS = ('name', 'level_name', 'status', 'message',
@@ -38,10 +38,10 @@ class SimpleStructuredFileSink(object):
     def __init__(self, fileobj=None):
         self.fileobj = fileobj or sys.stdout
 
-    def on_complete(self, record):
-        msg_data = dict(record.data_map)
+    def on_complete(self, event):
+        msg_data = dict(event.data_map)
         for attr in _MSG_ATTRS:
-            msg_data[attr] = getattr(record, attr, None)
+            msg_data[attr] = getattr(event, attr, None)
         json_str = json.dumps(msg_data, sort_keys=True)
         self.fileobj.write(json_str)
         self.fileobj.write('\n')
@@ -121,7 +121,7 @@ class RateAccumulator(object):
 class RateSink(object):
     """\
     The RateSink provides basic accounting and rate estimation
-    facilities records as they pass through the system.
+    facilities for records as they pass through the system.
 
     It uses a reservoir system for predictable and stable memory
     use. See RateAccumulator for more information.
@@ -130,22 +130,22 @@ class RateSink(object):
     """
     def __init__(self, sample_size=128, getter=None):
         if getter is None:
-            getter = lambda complete_record: complete_record.ctime
+            getter = lambda complete_event: complete_event.ctime
         self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size
         self.creation_time = time.time()
 
-    def on_complete(self, complete_record):
-        rec = complete_record
-        name_time_map = self.acc_map.setdefault(rec.logger, {})
-        status_time_map = name_time_map.setdefault(rec.name, {})
+    def on_complete(self, complete_event):
+        ev = complete_event
+        name_time_map = self.acc_map.setdefault(ev.logger, {})
+        status_time_map = name_time_map.setdefault(ev.name, {})
         try:
-            acc = status_time_map[rec.status]
+            acc = status_time_map[ev.status]
         except Exception:
             acc = RateAccumulator(sample_size=self.sample_size)
-            status_time_map[rec.status] = acc
-        acc.add(self.getter(rec))
+            status_time_map[ev.status] = acc
+        acc.add(self.getter(ev))
 
     def get_rates(self, max_time=None, **kw):
         """\
@@ -302,25 +302,24 @@ class SensibleSink(object):
             self.on_warn = self._on_warn
         if 'begin' in self._events:
             self.on_begin = self._on_begin
-        # TODO warn and exc
 
-    def _on_complete(self, record):
-        if self.filters and not all([f(record) for f in self.filters]):
+    def _on_complete(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_complete(record)
-        return self.emitter.on_complete(record, entry)
+        entry = self.formatter.on_complete(event)
+        return self.emitter.on_complete(event, entry)
 
-    def _on_warn(self, record):
-        if self.filters and not all([f(record) for f in self.filters]):
+    def _on_warn(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_warn(record)
-        return self.emitter.on_warn(record, entry)
+        entry = self.formatter.on_warn(event)
+        return self.emitter.on_warn(event, entry)
 
-    def _on_begin(self, record):
-        if self.filters and not all([f(record) for f in self.filters]):
+    def _on_begin(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_begin(record)
-        return self.emitter.on_begin(record, entry)
+        entry = self.formatter.on_begin(event)
+        return self.emitter.on_begin(event, entry)
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -351,12 +350,12 @@ class QuantileSink(object):
             self._qa_type = P2QuantileAccumulator
         self.qas = {}
 
-    def on_complete(self, record):
+    def on_complete(self, event):
         try:
-            acc = self.qas[record.name]
+            acc = self.qas[event.name]
         except KeyError:
-            acc = self.qas[record.name] = self._qa_type()
-        acc.add(record.duration)
+            acc = self.qas[event.name] = self._qa_type()
+        acc.add(event.duration)
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -375,17 +374,17 @@ class QuantileSink(object):
 
 
 class MultiQuantileSink(QuantileSink):
-    def on_complete(self, record):
+    def on_complete(self, event):
         try:
-            logger_accs = self.qas[record.logger.name]
+            logger_accs = self.qas[event.logger.name]
         except KeyError:
-            logger_accs = self.qas[record.logger.name] = {}
+            logger_accs = self.qas[event.logger.name] = {}
         try:
-            acc = logger_accs[record.name]
+            acc = logger_accs[event.name]
         except KeyError:
-            acc = logger_accs[record.name] = self._qa_type()
+            acc = logger_accs[event.name] = self._qa_type()
 
-        acc.add(record.duration)
+        acc.add(event.duration)
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -405,7 +404,7 @@ class DevDebugSink(object):
         self.reraise = reraise
         self.post_mortem = post_mortem
 
-    def on_exception(self, record, exc_type, exc_obj, exc_tb):
+    def on_exception(self, event, exc_type, exc_obj, exc_tb):
         if self.post_mortem:
             pdb.post_mortem()
         if self.reraise:

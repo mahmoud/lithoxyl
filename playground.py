@@ -29,6 +29,13 @@ stderr_sink = SensibleSink(formatter=stderr_fmt,
                            emitter=stderr_emt,
                            filters=[stderr_filter])
 
+
+#ff = FancyFilter(success='info',
+#                 failure='debug',
+#                 exception='debug',
+#                 begin='debug',
+#                 with_begin=True)
+
 from lithoxyl import context
 
 #context.get_context().enable_async()
@@ -43,8 +50,8 @@ print os.getpid()
 
 
 class CommentSink(object):
-    def on_comment(self, comment_record):
-        print comment_record, comment_record.message
+    def on_comment(self, comment_event):
+        print comment_event, comment_event.message
         # import pdb;pdb.set_trace()
 
 

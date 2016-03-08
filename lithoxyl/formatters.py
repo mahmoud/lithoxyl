@@ -34,7 +34,7 @@ class LazyExtrasDict(dict):
         try:
             getter = self.getters[key]
         except KeyError:
-            return self.record.extras.get(key)
+            return self.record.data_map.get(key)
         else:
             return getter(self.record)
 
@@ -55,17 +55,17 @@ class Formatter(object):
             self.event_formatters[event] = rf
         return
 
-    def on_begin(self, begin_record):
+    def on_begin(self, begin_event):
         rf = self.event_formatters['begin']
-        return rf(begin_record)
+        return rf(begin_event)
 
-    def on_warn(self, warn_record):
+    def on_warn(self, warn_event):
         rf = self.event_formatters['warn']
-        return rf(warn_record)
+        return rf(warn_event)
 
-    def on_complete(self, complete_record):
+    def on_complete(self, complete_event):
         rf = self.event_formatters['complete']
-        return rf(complete_record)
+        return rf(complete_event)
 
 
 class RecordFormatter(object):

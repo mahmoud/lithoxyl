@@ -12,7 +12,7 @@ from collections import deque
 from threading import RLock
 
 from utils import wraps
-from record import Record, BeginRecord, CompleteRecord, CommentRecord
+from record import Record, BeginEvent, CompleteEvent, CommentEvent
 from context import get_context
 from common import DEBUG, INFO, CRITICAL
 
@@ -93,7 +93,7 @@ class Logger(object):
         self.context = kwargs.pop('context', None) or get_context()
         self.context.add_logger(self)
         # TODO context-configurable
-        self.record_queue = deque(maxlen=QUEUE_LIMIT)
+        self.event_queue = deque(maxlen=QUEUE_LIMIT)
         self.async_mode = kwargs.pop('async', self.context.async_mode)
         self.async_lock = RLock()
         self.preflush_hooks = []
@@ -123,24 +123,24 @@ class Logger(object):
                 except Exception as e:
                     self.context.note('preflush', 'hook %r got exception %r',
                                       preflush_hook, e)
-            queue = self.record_queue
+            queue = self.event_queue
             while queue:
-                rec_type, rec = queue.popleft()
-                if rec_type == 'begin':
+                ev_type, ev = queue.popleft()
+                if ev_type == 'begin':
                     for begin_hook in self._begin_hooks:
-                        begin_hook(rec)
-                elif rec_type == 'complete':
+                        begin_hook(ev)
+                elif ev_type == 'complete':
                     for complete_hook in self._complete_hooks:
-                        complete_hook(rec)
-                elif rec_type == 'warn':
+                        complete_hook(ev)
+                elif ev_type == 'warn':
                     for warn_hook in self._warn_hooks:
-                        warn_hook(rec)
-                elif rec_type == 'comment':
+                        warn_hook(ev)
+                elif ev_type == 'comment':
                     for comment_hook in self._comment_hooks:
-                        comment_hook(rec)
+                        comment_hook(ev)
                 else:
                     self.context.note('flush', 'unknown event type: %r %r',
-                                      rec_type, rec)
+                                      ev_type, ev)
         self.last_flush = time.time()
         return
 
@@ -192,74 +192,74 @@ class Logger(object):
         # TODO: also pull flush methods?
         self._all_sinks.append(sink)
 
-    def on_complete(self, complete_record):
-        "Publish *record* to all sinks with ``on_complete()`` hooks."
+    def on_complete(self, complete_event):
+        "Publish *complete_event* to all sinks with ``on_complete()`` hooks."
         if self.async_mode:
-            self.record_queue.append(('complete', complete_record))
+            self.event_queue.append(('complete', complete_event))
         else:
             for complete_hook in self._complete_hooks:
-                complete_hook(complete_record)
+                complete_hook(complete_event)
         return
 
-    def on_begin(self, begin_record):
-        "Publish *record* to all sinks with ``on_begin()`` hooks."
+    def on_begin(self, begin_event):
+        "Publish *begin_event* to all sinks with ``on_begin()`` hooks."
         if self.async_mode:
-            self.record_queue.append(('begin', begin_record))
+            self.event_queue.append(('begin', begin_event))
         else:
             for begin_hook in self._begin_hooks:
-                begin_hook(begin_record)
+                begin_hook(begin_event)
         return
 
-    def on_warn(self, warn_record):
-        "Publish *record* to all sinks with ``on_warn()`` hooks."
+    def on_warn(self, warn_event):
+        "Publish *warn_event* to all sinks with ``on_warn()`` hooks."
         if self.async_mode:
-            self.record_queue.append(('warn', warn_record))
+            self.event_queue.append(('warn', warn_event))
         else:
             for warn_hook in self._warn_hooks:
-                warn_hook(warn_record)
+                warn_hook(warn_event)
         return
 
-    def on_exception(self, exc_record, exc_type, exc_obj, exc_tb):
-        "Publish *record* to all sinks with ``on_exception()`` hooks."
+    def on_exception(self, exc_event, exc_type, exc_obj, exc_tb):
+        "Publish *exc_event* to all sinks with ``on_exception()`` hooks."
         # async handling doesn't make sense here
         for exc_hook in self._exc_hooks:
-            exc_hook(exc_record, exc_type, exc_obj, exc_tb)
+            exc_hook(exc_event, exc_type, exc_obj, exc_tb)
         return
 
     def comment(self, message, *a, **kw):
-        root_type = self.record_type
-        root = root_type(logger=self, level=CRITICAL, name='comment', data=kw)
+        rec_type = self.record_type
+        rec = rec_type(logger=self, level=CRITICAL, name='comment', data=kw)
         cur_time = time.time()
-        root.begin_record = BeginRecord(root, cur_time, 'comment', ())
-        root.complete_record = CompleteRecord(root, cur_time,
-                                              'comment', (), 'success')
-        rec = CommentRecord(root, cur_time, message, a)
+        rec.begin_event = BeginEvent(rec, cur_time, 'comment', ())
+        rec.complete_event = CompleteEvent(rec, cur_time,
+                                           'comment', (), 'success')
+        event = CommentEvent(rec, cur_time, message, a)
         if self.async_mode:
-            self.record_queue.append(('comment', rec))
+            self.event_queue.append(('comment', event))
         else:
             for comment_hook in self._comment_hooks:
-                comment_hook(rec)
+                comment_hook(event)
 
     def debug(self, name, **kw):
-        "Create and return a new :data:`DEBUG`-level :class:`Record` named *name*."
+        "Returns a new :data:`DEBUG`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=DEBUG, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 frame=sys._getframe(1))
 
     def info(self, name, **kw):
-        "Create and return a new :data:`INFO`-level :class:`Record` named *name*."
+        "Returns a new :data:`INFO`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=INFO, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 frame=sys._getframe(1))
 
     def critical(self, name, **kw):
-        "Create and return a new :data:`CRITICAL`-level :class:`Record` named *name*."
+        "Returns a new :data:`CRITICAL`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=CRITICAL, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 frame=sys._getframe(1))
 
     def record(self, level, name, **kw):
-        "Create and return a new :class:`Record` named *name* classified as *level*."
+        "Return a new :class:`Record` named *name* classified as *level*."
         return self.record_type(logger=self, level=level, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 frame=sys._getframe(1))

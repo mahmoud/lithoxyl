@@ -47,7 +47,7 @@ class Record(object):
             the caller's frame.
 
     All additional keyword arguments are automatically included in the
-    Record's ``extras`` attribute.
+    Record's ``data_map`` attribute.
 
     >>> record = Record('our_mission', CRITICAL, mission='explore new worlds')
 
@@ -62,7 +62,7 @@ class Record(object):
     >>> record['my_data'] = 20.0
     >>> record['my_lore'] = -record['my_data'] / 10.0
     >>> from pprint import pprint
-    >>> pprint(record.extras)
+    >>> pprint(record.data_map)
     {'mission': 'explore new worlds', 'my_data': 20.0, 'my_lore': -2.0}
 
     """
@@ -85,11 +85,11 @@ class Record(object):
             frame = sys._getframe(1)
         self.callpoint = Callpoint.from_frame(frame)
 
-        self.begin_record = None
-        self.complete_record = None
+        self.begin_event = None
+        self.complete_event = None
         # these can go internal and be lazily created through properties
-        self.warn_records = []
-        self.exc_records = []
+        self.warn_events = []
+        self.exc_events = []
         return
 
     def __repr__(self):
@@ -105,39 +105,39 @@ class Record(object):
     @property
     def status(self):
         try:
-            return self.complete_record.status
+            return self.complete_event.status
         except AttributeError:
             return 'begin'
 
     @property
     def duration(self):
         try:
-            return self.complete_record.ctime - self.begin_record.ctime
+            return self.complete_event.ctime - self.begin_event.ctime
         except Exception:
             return 0.0
 
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)
-        if not self.begin_record:
+        if not self.begin_event:
             if not message:
                 message = self.name + ' begun'
 
-            self.begin_record = BeginRecord(self, time.time(), message, a)
-            self.logger.on_begin(self.begin_record)
+            self.begin_event = BeginEvent(self, time.time(), message, a)
+            self.logger.on_begin(self.begin_event)
         return self
 
     def warn(self, message, *a, **kw):
         self.data_map.update(kw)
-        warn_rec = WarningRecord(self, time.time(), message, a)
-        self.warn_records.append(warn_rec)
-        self.logger.on_warn(warn_rec)
+        warn_ev = WarningEvent(self, time.time(), message, a)
+        self.warn_events.append(warn_ev)
+        self.logger.on_warn(warn_ev)
         return self
 
     def success(self, message=None, *a, **kw):
         """Mark this Record as complete and successful. Also set the Record's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
-        also be added to the Record's ``extras`` attribute.
+        also be added to the Record's ``data_map`` attribute.
 
         >>> record = Record('important_task', CRITICAL)
         >>> record.success('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='fun')
@@ -153,7 +153,7 @@ class Record(object):
         """Mark this Record as complete and failed. Also set the Record's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
-        also be added to the Record's ``extras`` attribute.
+        also be added to the Record's ``data_map`` attribute.
 
         >>> record = Record('important_task', CRITICAL)
         >>> record.failure('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='no fun')
@@ -189,9 +189,8 @@ class Record(object):
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
 
-        self.exc_record = ExceptionRecord(self, ctime, message,
-                                          fargs, exc_info)
-        self.logger.on_exception(self.exc_record, exc_type, exc_val, exc_tb)
+        self.exc_event = ExceptionEvent(self, ctime, message, fargs, exc_info)
+        self.logger.on_exception(self.exc_event, exc_type, exc_val, exc_tb)
 
         return self._complete('exception', message, fargs, data,
                               ctime, exc_info)
@@ -203,15 +202,15 @@ class Record(object):
         if self._is_trans:
             end_time = end_time or time.time()
         else:
-            if not self.begin_record:
+            if not self.begin_event:
                 self.begin()
-            end_time = self.begin_record.ctime  # TODO: property?
+            end_time = self.begin_event.ctime  # TODO: property?
 
-        self.complete_record = CompleteRecord(self, end_time, message,
-                                              fargs, status, exc_info)
+        self.complete_event = CompleteEvent(self, end_time, message,
+                                            fargs, status, exc_info)
 
         if not self._defer_publish and self.logger:
-            self.logger.on_complete(self.complete_record)
+            self.logger.on_complete(self.complete_event)
 
         return self
 
@@ -228,10 +227,10 @@ class Record(object):
             except Exception as e:
                 note('record_exit',
                      'got %r while already handling exception %r', e, exc_val)
-                pass  # TODO: still have to create complete_record
+                pass  # TODO: still have to create complete_event
         else:
-            if self.complete_record:
-                self.logger.on_complete(self.complete_record)
+            if self.complete_event:
+                self.logger.on_complete(self.complete_event)
             else:
                 # now that _defer_publish=False, this will also publish
                 self.success()
@@ -257,8 +256,8 @@ class Record(object):
         """Simply get the amount of time that has passed since the record was
         created or begun. This method has no side effects.
         """
-        if self.begin_record:
-            return time.time() - self.begin_record.ctime
+        if self.begin_event:
+            return time.time() - self.begin_event.ctime
         return 0.0
 
     '''
@@ -289,14 +288,14 @@ class Record(object):
     '''
 
 
-class SubRecord(object):
+class Event(object):
     _message = None
 
     def __getitem__(self, key):
-        return self.root[key]
+        return self.record[key]
 
     def __getattr__(self, name):
-        return getattr(self.root, name)
+        return getattr(self.record, name)
 
     @property
     def message(self):
@@ -311,8 +310,8 @@ class SubRecord(object):
         else:
             # TODO: Formatter cache
             fmtr = RecordFormatter(raw_message, quoter=False)
-            self._message = fmtr.format_record(self.root, *self.fargs,
-                                               **self.root.data_map)
+            self._message = fmtr.format_record(self.record, *self.fargs,
+                                               **self.record.data_map)
         return self._message
 
     def __repr__(self):
@@ -320,22 +319,22 @@ class SubRecord(object):
         return '<%s %s %r>' % (cn, self.record_id, self.raw_message)
 
 
-class BeginRecord(SubRecord):
+class BeginEvent(Event):
     status_char = 'b'
 
-    def __init__(self, root, ctime, raw_message, fargs):
-        self.root = root
+    def __init__(self, record, ctime, raw_message, fargs):
+        self.record = record
         self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
-class ExceptionRecord(SubRecord):
+class ExceptionEvent(Event):
     status_char = '!'
 
-    def __init__(self, root, ctime, raw_message, fargs, exc_info):
-        self.root = root
+    def __init__(self, record, ctime, raw_message, fargs, exc_info):
+        self.record = record
         self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
@@ -343,10 +342,10 @@ class ExceptionRecord(SubRecord):
         self.exc_info = exc_info
 
 
-class CompleteRecord(SubRecord):
-    def __init__(self, root, ctime, raw_message, fargs, status,
+class CompleteEvent(Event):
+    def __init__(self, record, ctime, raw_message, fargs, status,
                  exc_info=None):
-        self.root = root
+        self.record = record
         self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
@@ -356,29 +355,29 @@ class CompleteRecord(SubRecord):
 
     @property
     def status_char(self):
-        if self.root._is_trans:
+        if self.record._is_trans:
             ret = self.status[:1].upper()
         else:
             ret = self.status[:1].lower()
         return ret
 
 
-class WarningRecord(SubRecord):
+class WarningEvent(Event):
     status_char = 'W'
 
-    def __init__(self, root, ctime, raw_message, fargs):
-        self.root = root
+    def __init__(self, record, ctime, raw_message, fargs):
+        self.record = record
         self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
-class CommentRecord(SubRecord):
+class CommentEvent(Event):
     status_char = '#'
 
-    def __init__(self, root, ctime, raw_message, fargs):
-        self.root = root
+    def __init__(self, record, ctime, raw_message, fargs):
+        self.record = record
         self.ctime = ctime
         self.record_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
@@ -390,7 +389,7 @@ class CommentRecord(SubRecord):
 If a record is atomic (i.e., never entered/begun), then should it fire
 a logger on_begin? Leaning no.
 
-Should the BeginRecord be created on record creation? currently its
+Should the BeginEvent be created on record creation? currently its
 presence is used to track whether on_begin has been called on the
 Logger yet.
 
@@ -398,7 +397,7 @@ Things that normally change on a Record currently:
 
  - Status
  - Message
- - Extras
+ - Data map
 
 Things which are populated:
 

@@ -42,14 +42,14 @@ class SyslogEmitter(object):
             status = record.status
         return self.priority_map[level][status]
 
-    def on_begin(self, begin_record, entry):
-        priority = self._get_syslog_priority('begin', begin_record)
+    def on_begin(self, begin_event, entry):
+        priority = self._get_syslog_priority('begin', begin_event)
         syslog.syslog(priority, entry)
 
-    def on_warn(self, warn_record, entry):
-        priority = self._get_syslog_priority('warn', warn_record)
+    def on_warn(self, warn_event, entry):
+        priority = self._get_syslog_priority('warn', warn_event)
         syslog.syslog(priority, entry)
 
-    def on_complete(self, complete_record, entry):
-        priority = self._get_syslog_priority('complete', complete_record)
+    def on_complete(self, complete_event, entry):
+        priority = self._get_syslog_priority('complete', complete_event)
         syslog.syslog(priority, entry)

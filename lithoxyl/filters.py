@@ -30,7 +30,7 @@ from common import MAX_LEVEL, LEVEL_ALIAS_MAP
 
 class ThresholdFilter(object):
     def __init__(self, base=None, **kwargs):
-        # TODO: filter for warnings?
+        # TODO: filter for warnings
         # TODO: on-bind lookup behaviors?
         base = LEVEL_ALIAS_MAP[base or MAX_LEVEL]
 
