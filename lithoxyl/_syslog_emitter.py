@@ -2,7 +2,7 @@
 
 import syslog
 
-from common import DEBUG, INFO, CRITICAL, get_level
+from lithoxyl.common import DEBUG, INFO, CRITICAL, get_level
 
 
 class SyslogEmitter(object):

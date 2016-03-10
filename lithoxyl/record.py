@@ -6,9 +6,9 @@ import itertools
 
 from boltons.tbutils import ExceptionInfo, Callpoint
 
-from context import note
-from formatters import RecordFormatter
-from common import DEBUG, INFO, CRITICAL, to_unicode, get_level
+from lithoxyl.context import note
+from lithoxyl.formatters import RecordFormatter
+from lithoxyl.common import to_unicode, get_level
 
 
 _REC_ID_ITER = itertools.count()
@@ -138,12 +138,6 @@ class Record(object):
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
         also be added to the Record's ``data_map`` attribute.
-
-        >>> record = Record('important_task', CRITICAL)
-        >>> record.success('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='fun')
-        <Record CRITICAL 'success'>
-        >>> record.message
-        u'important_task success: this is fun'
         """
         if not message:
             message = self.name + ' succeeded'
@@ -154,12 +148,6 @@ class Record(object):
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
         also be added to the Record's ``data_map`` attribute.
-
-        >>> record = Record('important_task', CRITICAL)
-        >>> record.failure('{record_name} {status_str}: {0} {my_kwarg}', 'this is', my_kwarg='no fun')
-        <Record CRITICAL 'failure'>
-        >>> record.message
-        u'important_task failure: this is no fun'
         """
         if not message:
             message = self.name + ' failed'

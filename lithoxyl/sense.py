@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from logger import BaseLogger
-from filters import ThresholdFilter
-from emitters import StreamEmitter
-from formatters import Formatter
-from sinks import SensibleSink, QuantileSink
+from lithoxyl.logger import BaseLogger
+from lithoxyl.formatters import Formatter
+from lithoxyl.emitters import StreamEmitter
+from lithoxyl.filters import ThresholdFilter
+from lithoxyl.sinks import SensibleSink, QuantileSink
 
 
 class SensibleLogger(BaseLogger):

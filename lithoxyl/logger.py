@@ -11,10 +11,10 @@ import itertools
 from collections import deque
 from threading import RLock
 
-from utils import wraps
-from record import Record, BeginEvent, CompleteEvent, CommentEvent
-from context import get_context
-from common import DEBUG, INFO, CRITICAL
+from lithoxyl.utils import wraps
+from lithoxyl.context import get_context
+from lithoxyl.common import DEBUG, INFO, CRITICAL
+from lithoxyl.record import Record, BeginEvent, CompleteEvent, CommentEvent
 
 
 QUEUE_LIMIT = 10000

@@ -7,10 +7,11 @@ import time
 import bisect
 from collections import deque
 
-from common import EVENTS
-from formatters import Formatter
-from emitters import StreamEmitter
-from quantile import QuantileAccumulator, P2QuantileAccumulator
+from lithoxyl.common import EVENTS
+from lithoxyl.formatters import Formatter
+from lithoxyl.emitters import StreamEmitter
+from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
+from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
 class AggregateSink(object):
@@ -218,9 +219,6 @@ class RateSink(object):
         return '<%s total_rate=%.4f total_count=%r>' % (cn,
                                                         total_rate_all,
                                                         total_count_all)
-
-
-from ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
 class EWMASink(object):

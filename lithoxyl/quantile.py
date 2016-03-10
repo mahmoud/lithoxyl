@@ -5,7 +5,7 @@ import random
 from math import floor, ceil
 from collections import namedtuple
 
-from p_squared import P2Estimator
+from lithoxyl.p_squared import P2Estimator
 
 
 HistogramCell = namedtuple('HistogramCell',

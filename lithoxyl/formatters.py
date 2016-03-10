@@ -4,10 +4,11 @@
 """
 import json
 
-from common import EVENTS
-from fields import BUILTIN_FIELD_MAP
-
 from boltons.formatutils import tokenize_format_str
+
+from lithoxyl.common import EVENTS
+from lithoxyl.fields import BUILTIN_FIELD_MAP
+
 
 DEFAULT_QUOTER = json.dumps
 
