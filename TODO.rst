@@ -1,17 +1,13 @@
 TODO
 ====
 
-* Need to get rid of statefulness if async-through-Logger is going to
-  work (or otherwise separate begin/end messages)
 * Level remapping
-
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
 * "auto" mode for escaping (eliminate excessive quoting)
 * register additional levels? remove global level constants?
 * default-on fixed header for formatter?
 * Callpoint for transaction-completion call, too (status call)
-* autoincremented IDs for loggers and records?
 * First-class datetime Formatter/FormatField support (type_func)
 
 Formatting
