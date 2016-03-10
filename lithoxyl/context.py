@@ -116,7 +116,11 @@ class LithoxylContext(object):
 
     def flush(self):
         for logger in self.loggers:
-            logger.flush()
+            try:
+                logger.flush()
+            except Exception as e:
+                self.note('context_flush',
+                          'exception during logger (%r) flush: %r', logger, e)
         return
 
     def add_logger(self, logger):
