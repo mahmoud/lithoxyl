@@ -50,21 +50,23 @@ MIN_LEVEL = Level('_min', 0)
 MAX_LEVEL = Level('_max', 100)
 
 
-def _register_level(level_obj):
-    global _SORTED_LEVELS
+def register_level(level_obj):
+    if not isinstance(level_obj, Level):
+        raise TypeError('expected Level object, not %r' % level_obj)
+
     LEVEL_ALIAS_MAP[level_obj.name.lower()] = level_obj
     LEVEL_ALIAS_MAP[level_obj.name.upper()] = level_obj
     LEVEL_ALIAS_MAP[level_obj._value] = level_obj
     LEVEL_ALIAS_MAP[level_obj] = level_obj
-    _SORTED_LEVELS = sorted(set(LEVEL_ALIAS_MAP.values()))
+    LEVEL_LIST[:] = sorted(set(LEVEL_ALIAS_MAP.values()))
 
 
-_SORTED_LEVELS = None
+LEVEL_LIST = []
 LEVEL_ALIAS_MAP = {}
-_register_level(MIN_LEVEL)
-_register_level(MAX_LEVEL)
+register_level(MIN_LEVEL)
+register_level(MAX_LEVEL)
 for level in BUILTIN_LEVELS:
-    _register_level(level)
+    register_level(level)
 del level
 
 
@@ -74,15 +76,15 @@ def get_level(key, default=DEFAULT_LEVEL):
 
 def get_next_level(key, delta=1):
     level = get_level(key)
-    next_i = min(_SORTED_LEVELS.index(level) + delta, len(_SORTED_LEVELS) - 1)
-    next_level = _SORTED_LEVELS[next_i]
+    next_i = min(LEVEL_LIST.index(level) + delta, len(LEVEL_LIST) - 1)
+    next_level = LEVEL_LIST[next_i]
     return next_level
 
 
 def get_prev_level(key, delta=1):
     level, delta = get_level(key), abs(delta)
-    prev_i = max(_SORTED_LEVELS.index(level) - delta, 0)
-    prev_level = _SORTED_LEVELS[prev_i]
+    prev_i = max(LEVEL_LIST.index(level) - delta, 0)
+    prev_level = LEVEL_LIST[prev_i]
     return prev_level
 
 
