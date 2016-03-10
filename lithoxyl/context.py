@@ -5,7 +5,7 @@ import sys
 import atexit
 import signal
 
-from actors import IntervalThreadActor
+from lithoxyl.actors import IntervalThreadActor
 
 DEFAULT_JOIN_TIMEOUT = 0.5
 
