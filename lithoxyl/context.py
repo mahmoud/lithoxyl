@@ -50,16 +50,13 @@ class LithoxylContext(object):
         """
         if not self.note_handlers:
             return
-        # call_level = kw.pop('call_level', None)
-        callpoint = None
-        # if call_level:
-        #    callpoint = None  # TODO: extract callpoint info
-        try:
-            message = message % a
-        except Exception:
-            pass
+        if a:
+            try:
+                message = message % a
+            except Exception:
+                pass
         for nh in self.note_handlers:
-            nh(name, message, callpoint=callpoint)
+            nh(name, message)
         return
 
     def enable_async(self, **kwargs):
@@ -70,7 +67,8 @@ class LithoxylContext(object):
                     'interval': kwargs.pop('interval', None),
                     'max_interval': kwargs.pop('max_interval', None),
                     # be very careful when not daemonizing thread
-                    'daemonize_thread': kwargs.pop('daemonize_thread', True)}
+                    'daemonize_thread': kwargs.pop('daemonize_thread', True),
+                    'note': self.note}
         if kwargs:
             raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
 
