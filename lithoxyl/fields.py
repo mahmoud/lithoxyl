@@ -18,7 +18,7 @@ import datetime
 from boltons.timeutils import UTC, LocalTZ
 from boltons.formatutils import BaseFormatField
 
-from common import IMPORT_TIME
+from lithoxyl.common import IMPORT_TIME
 
 FIELD_MAP = {}
 BUILTIN_FIELD_MAP = {}  # populated below

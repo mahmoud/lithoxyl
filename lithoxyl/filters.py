@@ -25,21 +25,21 @@ to the left, and lower verbosity, down and to the right.
 
 """
 
-from common import MAX_LEVEL, LEVEL_ALIAS_MAP
+from lithoxyl.common import MAX_LEVEL, get_level
 
 
 class ThresholdFilter(object):
     def __init__(self, base=None, **kwargs):
         # TODO: filter for warnings
         # TODO: on-bind lookup behaviors?
-        base = LEVEL_ALIAS_MAP[base or MAX_LEVEL]
+        base = get_level(base or MAX_LEVEL)
 
         self.event_kw_vals = {}
         for event in ('begin', 'success', 'failure', 'exception'):
             level = kwargs.pop(event, base)
             if not level:  # False or explicit None
                 level = MAX_LEVEL  # MAX_LEVEL filters all
-            level = LEVEL_ALIAS_MAP[level]
+            level = get_level(level)
             self.event_kw_vals[event] = level
 
         self.event_thresh_map = dict(self.event_kw_vals)  # TODO
