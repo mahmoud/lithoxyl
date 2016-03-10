@@ -134,14 +134,6 @@ class LithoxylContext(object):
             pass
 
 
-"""Actors must:
-
- 1. have a re-entrant .stop() function that gracefully shuts down the
-   actor if it is running
-
-"""
-
-
 def signal_sysexit(signum, frame):
     # return code ends up being 143 for sigterm, See page 544 Kerrisk
     # for more see atexit_reissue_sigterm docstring for more details

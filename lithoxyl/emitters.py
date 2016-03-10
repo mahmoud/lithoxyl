@@ -7,11 +7,11 @@ or network streams.
 import os
 import sys
 
-from context import note
+from lithoxyl.context import note
 
 try:
     # unix only
-    from _syslog_emitter import SyslogEmitter
+    from lithoxyl._syslog_emitter import SyslogEmitter
 except ImportError:
     pass
 
