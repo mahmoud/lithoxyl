@@ -109,8 +109,8 @@ class IntervalThreadActor(object):
                     if not self._daemonize_thread:
                         raise
                 except Exception as e:
-                    self.note('task_exception', '%s - task() raised: %r'
-                              % (time.time(), e))
+                    self.note('task_exception', '%s - task() (%r) raised: %r'
+                              % (time.time(), self.task, e))
                     self.interval = min(self.interval * 2, self.max_interval)
                 else:
                     decrement = (self.max_interval - self._orig_interval) / 8
