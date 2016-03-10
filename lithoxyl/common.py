@@ -86,11 +86,3 @@ def get_prev_level(key, delta=1):
     prev_i = max(LEVEL_LIST.index(level) - delta, 0)
     prev_level = LEVEL_LIST[prev_i]
     return prev_level
-
-
-if __name__ == '__main__':
-    assert DEBUG != INFO != CRITICAL
-    assert MIN_LEVEL < DEBUG < INFO < CRITICAL < MAX_LEVEL
-    assert DEBUG <= INFO <= CRITICAL
-    assert DEBUG == DEBUG
-    assert DEBUG == Level('debug', 20)
