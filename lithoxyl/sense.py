@@ -33,14 +33,3 @@ class SensibleLogger(BaseLogger):
                                     on='begin')
             sinks.append(beg_sink)
         super(SensibleLogger, self).__init__(name, sinks)
-
-
-if __name__ == '__main__':
-    sl = SensibleLogger('test_logger')
-
-    for i in range(5):
-        with sl.debug('test_record_%s' % i) as t:
-            pass
-
-    with sl.info('test_exception', reraise=False) as te:
-        raise ValueError('hm')

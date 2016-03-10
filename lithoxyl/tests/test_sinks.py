@@ -70,7 +70,3 @@ def _test_exception():
         print tr
         raise ValueError('E for Exception')
     return
-
-
-if __name__ == '__main__':
-    _test_exception()
