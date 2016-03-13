@@ -90,6 +90,8 @@ class Record(object):
         # these can go internal and be lazily created through properties
         self.warn_events = []
         self.exc_events = []
+
+        self.parent_record = self.logger.context._sync_parent_getter(self)
         return
 
     def __repr__(self):

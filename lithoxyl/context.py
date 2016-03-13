@@ -59,6 +59,37 @@ class LithoxylContext(object):
             nh(name, message)
         return
 
+    def _sync_parent_getter(self, record):
+        import weakref
+
+        logger = record.logger
+
+        try:
+            rec_tree = self._record_tree[logger]
+        except AttributeError:
+            self._record_tree = {}
+            rec_tree = self._record_tree[logger] = weakref.WeakKeyDictionary()
+            self._last_logged = weakref.WeakKeyDictionary({logger: None})
+        except KeyError:
+            rec_tree = self._record_tree[logger] = weakref.WeakKeyDictionary()
+
+        try:
+            ret = rec_tree[record]
+        except KeyError:
+            # haven't seen this one before
+            if self._last_logged.get(logger):
+                ret = self._last_logged[logger]
+                # TODO: might be belt and braces
+                if ret.record_id < record.record_id:
+                    self._last_logged[logger] = record
+            else:
+                # nothing logged yet
+                ret = None
+                self._last_logged[logger] = record
+
+            rec_tree[record] = ret
+        return ret
+
     def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
         update_sigterm = kwargs.pop('update_sigterm', True)
@@ -132,6 +163,23 @@ class LithoxylContext(object):
             self.loggers.remove(logger)
         except ValueError:
             pass
+
+
+class SyncTreeTracker(object):
+    def __init__(self):
+        self.tree = {}
+
+    def get_parent(self, logger, record):
+        try:
+            stack = self.tree[logger]
+        except KeyError:
+            self.tree[logger] = []
+        try:
+            ret = stack[-1]
+        except IndexError:
+            ret = None
+        stack.append(self)
+        return ret
 
 
 def signal_sysexit(signum, frame):

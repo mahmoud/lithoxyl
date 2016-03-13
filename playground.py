@@ -39,8 +39,9 @@ from lithoxyl import context
 
 log = Logger('test', sinks=[stderr_sink])
 
-with log.critical('first'):
-    print 'did some work'
+with log.critical('first') as lr1:
+    with log.critical('second') as lr2:
+        print 'did some work'
 
 import os
 print os.getpid()
