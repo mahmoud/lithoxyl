@@ -69,8 +69,6 @@ class Record(object):
     _is_trans = None
     _defer_publish = False
 
-    # itertools.count?
-
     def __init__(self, logger, level, name,
                  data=None, reraise=True, frame=None):
         self.record_id = next(_REC_ID_ITER)
@@ -96,7 +94,6 @@ class Record(object):
 
     def __repr__(self):
         cn = self.__class__.__name__
-        # TODO on the upper() stuff. better repr for level?
         return ('<%s %r %s %r>'
                 % (cn, self.name, self.level.name.upper(), self.status))
 
@@ -194,7 +191,7 @@ class Record(object):
         else:
             if not self.begin_event:
                 self.begin()
-            end_time = self.begin_event.ctime  # TODO: property?
+            end_time = self.begin_event.ctime
 
         self.complete_event = CompleteEvent(self, end_time, message,
                                             fargs, status, exc_info)
