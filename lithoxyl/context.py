@@ -36,7 +36,9 @@ _SYNC_REC_TREE = {}
 _SYNC_ACTIVE_REC_MAP = {}
 
 
-def _sync_get_parent_record(logger, record):
+# consec = consecutive. this approach works in systems without
+# concurrency. threads, gevent, etc. will require separate hooks.
+def _consec_get_parent_record(logger, record):
     # logger should never really be anything other than record.logger
     try:
         rec_tree = _SYNC_REC_TREE[logger]
@@ -50,7 +52,7 @@ def _sync_get_parent_record(logger, record):
     return ret
 
 
-def _sync_set_active_record(logger, record):
+def _consec_set_active_record(logger, record):
     # record can be None to unset the oldest record
     _SYNC_ACTIVE_REC_MAP[logger] = record
     return
@@ -68,9 +70,9 @@ class LithoxylContext(object):
         self.note_handlers = []
 
         self.get_parent_record = kwargs.pop('get_parent_record',
-                                            _sync_get_parent_record)
+                                            _consec_get_parent_record)
         self.set_active_record = kwargs.get('set_active_record',
-                                            _sync_set_active_record)
+                                            _consec_set_active_record)
 
     def note(self, name, message, *a, **kw):
         """Lithoxyl can't use itself internally. This is a hook for recording
