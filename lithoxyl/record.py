@@ -91,7 +91,7 @@ class Record(object):
         self.warn_events = []
         self.exc_events = []
 
-        self.parent_record = self.logger.context.get_parent_record(self)
+        self.parent_record = logger.context.get_parent_record(logger, self)
         return
 
     def __repr__(self):

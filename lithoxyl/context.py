@@ -32,13 +32,12 @@ def note(name, message, *a, **kw):
     return get_context().note(name, message, *a, **kw)
 
 
-_SYNC_REC_TREE = weakref.WeakKeyDictionary()
-_SYNC_ACTIVE_REC_MAP = weakref.WeakKeyDictionary()
+_SYNC_REC_TREE = {}
+_SYNC_ACTIVE_REC_MAP = {}
 
 
-def _sync_get_parent_record(record):
-    logger = record.logger
-
+def _sync_get_parent_record(logger, record):
+    # logger should never really be anything other than record.logger
     try:
         rec_tree = _SYNC_REC_TREE[logger]
     except KeyError:
@@ -51,8 +50,9 @@ def _sync_get_parent_record(record):
     return ret
 
 
-def _sync_set_active_record(logger, value):
-    _SYNC_ACTIVE_REC_MAP[logger] = value
+def _sync_set_active_record(logger, record):
+    # record can be None to unset the oldest record
+    _SYNC_ACTIVE_REC_MAP[logger] = record
     return
 
 
