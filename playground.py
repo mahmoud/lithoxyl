@@ -3,11 +3,13 @@
 # import faulthandler
 # faulthandler.enable()
 
+import lithoxyl
 from lithoxyl import (Logger,
                       SensibleSink,
                       ThresholdFilter,
                       StreamEmitter,
                       Formatter)
+import itertools
 
 stderr_fmt = Formatter(begin='{status_char}{begin_local_iso8601_noms_notz} - {begin_message}',
                        complete='{status_char}{end_local_iso8601_noms_notz} - {duration_msecs}ms - {end_message}')
@@ -37,11 +39,22 @@ from lithoxyl import context
 
 #context.get_context().enable_async()
 
-log = Logger('test', sinks=[stderr_sink])
+log = Logger('test')  # , sinks=[stderr_sink])
 
-with log.critical('first') as lr1:
-    with log.critical('second') as lr2:
-        print 'did some work'
+
+def one_two():
+    with log.critical('first'):
+        with log.critical('second'):
+            print 'did some work'
+    return
+
+
+for i in range(2000):
+    one_two()
+
+
+print 'recs tracked:', len(lithoxyl.context._SYNC_REC_TREE[log])
+
 
 import os
 print os.getpid()

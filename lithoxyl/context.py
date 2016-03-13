@@ -4,6 +4,7 @@ import os
 import sys
 import atexit
 import signal
+import weakref
 
 from lithoxyl.actors import IntervalThreadActor
 
@@ -31,6 +32,30 @@ def note(name, message, *a, **kw):
     return get_context().note(name, message, *a, **kw)
 
 
+_SYNC_REC_TREE = weakref.WeakKeyDictionary()
+_SYNC_ACTIVE_REC_MAP = weakref.WeakKeyDictionary()
+
+
+def _sync_get_parent_record(record):
+    logger = record.logger
+
+    try:
+        rec_tree = _SYNC_REC_TREE[logger]
+    except KeyError:
+        rec_tree = _SYNC_REC_TREE[logger] = weakref.WeakKeyDictionary()
+
+    try:
+        ret = rec_tree[record]
+    except KeyError:
+        ret = rec_tree[record] = _SYNC_ACTIVE_REC_MAP.get(logger)
+    return ret
+
+
+def _sync_set_active_record(logger, value):
+    _SYNC_ACTIVE_REC_MAP[logger] = value
+    return
+
+
 class LithoxylContext(object):
     def __init__(self, **kwargs):
         self.loggers = []
@@ -41,6 +66,11 @@ class LithoxylContext(object):
         self._async_atexit_registered = False
 
         self.note_handlers = []
+
+        self.get_parent_record = kwargs.pop('get_parent_record',
+                                            _sync_get_parent_record)
+        self.set_active_record = kwargs.get('set_active_record',
+                                            _sync_set_active_record)
 
     def note(self, name, message, *a, **kw):
         """Lithoxyl can't use itself internally. This is a hook for recording
@@ -58,37 +88,6 @@ class LithoxylContext(object):
         for nh in self.note_handlers:
             nh(name, message)
         return
-
-    def _sync_parent_getter(self, record):
-        import weakref
-
-        logger = record.logger
-
-        try:
-            rec_tree = self._record_tree[logger]
-        except AttributeError:
-            self._record_tree = {}
-            rec_tree = self._record_tree[logger] = weakref.WeakKeyDictionary()
-            self._last_logged = weakref.WeakKeyDictionary({logger: None})
-        except KeyError:
-            rec_tree = self._record_tree[logger] = weakref.WeakKeyDictionary()
-
-        try:
-            ret = rec_tree[record]
-        except KeyError:
-            # haven't seen this one before
-            if self._last_logged.get(logger):
-                ret = self._last_logged[logger]
-                # TODO: might be belt and braces
-                if ret.record_id < record.record_id:
-                    self._last_logged[logger] = record
-            else:
-                # nothing logged yet
-                ret = None
-                self._last_logged[logger] = record
-
-            rec_tree[record] = ret
-        return ret
 
     def enable_async(self, **kwargs):
         update_loggers = kwargs.pop('update_loggers', True)
