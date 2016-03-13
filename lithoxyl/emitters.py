@@ -49,7 +49,6 @@ class AggregateEmitter(object):
     on_begin = on_warn = on_complete = on_comment = emit_entry
 
 
-# TODO: rename StreamLineEmitter
 class StreamEmitter(object):
     def __init__(self, stream, encoding=None, **kwargs):
         if stream == 'stdout':
@@ -67,7 +66,9 @@ class StreamEmitter(object):
 
         check_encoding_settings(encoding, errors)  # raises on error
 
-        self.newline = kwargs.pop('newline', None) or os.linesep
+        self.sep = kwargs.pop('sep', None)
+        if self.sep is None:
+            self.sep = os.linesep
         self.errors = errors
         self.encoding = encoding
 
@@ -82,8 +83,8 @@ class StreamEmitter(object):
             raise
         try:
             self.stream.write(entry)
-            if self.newline:
-                self.stream.write(self.newline)
+            if self.sep:
+                self.stream.write(self.sep)
             self.flush()
         except Exception as e:
             note('stream_emit', 'got %r on %r.emit_entry()', e, self)
@@ -107,7 +108,7 @@ class FileEmitter(StreamEmitter):
     def __init__(self, filepath, encoding=None, **kwargs):
         self.filepath = os.path.abspath(filepath)
         self.encoding = encoding
-        self.mode = 'a'  # always 'a'?
+        self.mode = 'a'
         stream = open(self.filepath, self.mode)
         super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
 
