@@ -4,10 +4,10 @@ TODO
 * Level remapping
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
-* "auto" mode for escaping (eliminate excessive quoting)
-* default-on fixed header for formatter?
 * Callpoint for transaction-completion call, too (status call)
 * First-class datetime Formatter/FormatField support (type_func)
+* Back-propagation of events like log file rotation, if in fact that
+  should be encapsulated in lower-level objects like Emitters.
 
 Formatting
 ----------
@@ -28,9 +28,8 @@ Sinks/emitters
 Stats TODOs
 -----------
 
-* Moving/decaying average (for rates/load)
 * calculate accumulated machine epsilon on some of the accumulators
-* try out Decimal-based moment accumulator (to see how slow it is
+* try out Decimal-based moment accumulator (to see how slow it is)
 
 helper: get_record_parent(record):
 
