@@ -16,16 +16,16 @@ DEFAULT_QUOTER = json.dumps
 __all__ = ['Formatter']
 
 
-class LazyExtrasDict(dict):
+class GetterDict(dict):
     """An internal-use-only dict to enable the fetching of values from a
     :class:`~lithoxyl.record.Record`. First, attempts to use a
     "getter" as defined in the map of known format fields,
     *getters*. Most of those fields simply access an attribute on the
     Record instance. If no such getter exists, assume that the desired
-    key is expected to be in the *extras* dict of the target Record.
+    key is expected to be in the *data_map* dict of the target Record.
 
-    If the key is neither a known "getter" or "extra", ``None`` is
-    returned. Exceptions raised from getters are not caught.
+    If the key is neither a known "getter" nor in the data_map,
+    ``None`` is returned. Exceptions raised from getters are not caught.
     """
     # TODO: typos in field names will result in None
     def __init__(self, record, getters):
@@ -152,18 +152,16 @@ class RecordFormatter(object):
         return '%s(%r)' % (self.__class__.__name__, self.raw_format_str)
 
     def format_record(self, record, *args, **kwargs):
-        """
-        Render a :class:`~lithoxyl.record.Record` into text, using values from the following sources:
+        """Render a :class:`~lithoxyl.record.Record` into text, using values
+        from the following sources:
 
           * Positional arguments to this method (``*args``)
           * Keyword arguments to this method (``**kwargs``)
           * FormatFields built-in to Lithoxyl
-          * Structured data stored in the Record object's ``extras`` map
-
-        .. TODO: adjust the above list to account for overriding behavior
+          * Structured data stored in the Record object's ``data_map``
         """
         ret = ''
-        kw_vals = LazyExtrasDict(record, self._getter_map)
+        kw_vals = GetterDict(record, self._getter_map)
         kw_vals.update(kwargs)
         for t in self.tokens:
             try:
@@ -179,9 +177,7 @@ class RecordFormatter(object):
                 if self.quoter_map[t]:
                     seg = self.quoter_map[t](seg)
                 ret += seg
-            except Exception as e:
-                if 'end_message' in str(t):
-                    import pdb;pdb.post_mortem()
+            except Exception:
                 ret += self.default_map[t]
         return ret
 
