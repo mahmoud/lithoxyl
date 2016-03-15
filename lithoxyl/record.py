@@ -277,6 +277,11 @@ class Record(object):
     '''
 
 
+# TODO: optimization strategy. if event creation starts to register on
+# profiling, convert events to fixed-length tuples with empty
+# dictionaries for caching lazy values. e.g.,
+# ('begin', record, ctime, event_id, to_unicode(raw_message), fargs, {})
+
 class Event(object):
     _message = None
 
