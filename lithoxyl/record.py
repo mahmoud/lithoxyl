@@ -314,7 +314,7 @@ class BeginEvent(Event):
     def __init__(self, record, ctime, raw_message, fargs):
         self.record = record
         self.ctime = ctime
-        self.record_id = next(_REC_ID_ITER)
+        self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
@@ -325,7 +325,7 @@ class ExceptionEvent(Event):
     def __init__(self, record, ctime, raw_message, fargs, exc_info):
         self.record = record
         self.ctime = ctime
-        self.record_id = next(_REC_ID_ITER)
+        self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.exc_info = exc_info
@@ -336,7 +336,7 @@ class CompleteEvent(Event):
                  exc_info=None):
         self.record = record
         self.ctime = ctime
-        self.record_id = next(_REC_ID_ITER)
+        self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.status = status
@@ -357,7 +357,7 @@ class WarningEvent(Event):
     def __init__(self, record, ctime, raw_message, fargs):
         self.record = record
         self.ctime = ctime
-        self.record_id = next(_REC_ID_ITER)
+        self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
@@ -368,7 +368,7 @@ class CommentEvent(Event):
     def __init__(self, record, ctime, raw_message, fargs):
         self.record = record
         self.ctime = ctime
-        self.record_id = next(_REC_ID_ITER)
+        self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
