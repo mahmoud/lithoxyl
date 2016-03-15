@@ -32,29 +32,25 @@ def note(name, message, *a, **kw):
     return get_context().note(name, message, *a, **kw)
 
 
-_SYNC_REC_TREE = {}
-_SYNC_ACTIVE_REC_MAP = {}
+_CONSEC_ACTIVE_REC_MAP = {}
+# TODO: idea to be implemented elsewhere: a map of parent records to
+# lists of children, to allow children to look up their siblings. will
+# allow properly-ordered, non-overlapping output in many concurrent
+# applications
 
 
 # consec = consecutive. this approach works in systems without
 # concurrency. threads, gevent, etc. will require separate hooks.
-def _consec_get_parent_record(logger, record):
-    # logger should never really be anything other than record.logger
-    try:
-        rec_tree = _SYNC_REC_TREE[logger]
-    except KeyError:
-        rec_tree = _SYNC_REC_TREE[logger] = weakref.WeakKeyDictionary()
-
-    try:
-        ret = rec_tree[record]
-    except KeyError:
-        ret = rec_tree[record] = _SYNC_ACTIVE_REC_MAP.get(logger)
-    return ret
+def _consec_get_active_parent(logger, record):
+    return _CONSEC_ACTIVE_REC_MAP.get(logger)
 
 
-def _consec_set_active_record(logger, record):
+def _consec_set_active_parent(logger, record):
     # record can be None to unset the oldest record
-    _SYNC_ACTIVE_REC_MAP[logger] = record
+    if record:
+        _CONSEC_ACTIVE_REC_MAP[logger] = record
+    else:
+        _CONSEC_ACTIVE_REC_MAP.pop(logger, None)
     return
 
 
@@ -69,10 +65,10 @@ class LithoxylContext(object):
 
         self.note_handlers = []
 
-        self.get_parent_record = kwargs.pop('get_parent_record',
-                                            _consec_get_parent_record)
-        self.set_active_record = kwargs.get('set_active_record',
-                                            _consec_set_active_record)
+        self.get_active_parent = kwargs.pop('get_active_parent',
+                                            _consec_get_active_parent)
+        self.set_active_parent = kwargs.get('set_active_parent',
+                                            _consec_set_active_parent)
 
     def note(self, name, message, *a, **kw):
         """Lithoxyl can't use itself internally. This is a hook for recording

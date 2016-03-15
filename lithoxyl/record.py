@@ -89,7 +89,7 @@ class Record(object):
         self.warn_events = []
         self.exc_events = []
 
-        self.parent_record = logger.context.get_parent_record(logger, self)
+        self.parent_record = logger.context.get_active_parent(logger, self)
         return
 
     def __repr__(self):
@@ -203,7 +203,7 @@ class Record(object):
 
     def __enter__(self):
         self._is_trans = self._defer_publish = True
-        self.logger.context.set_active_record(self.logger, self.parent_record)
+        self.logger.context.set_active_parent(self.logger, self)
         return self.begin()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -223,7 +223,7 @@ class Record(object):
                 # now that _defer_publish=False, this will also publish
                 self.success()
 
-        self.logger.context.set_active_record(self.logger, self.parent_record)
+        self.logger.context.set_active_parent(self.logger, self.parent_record)
 
         if self._reraise is False:
             return True  # ignore exception
