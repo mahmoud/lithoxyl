@@ -8,7 +8,7 @@ import bisect
 from collections import deque
 
 from lithoxyl.common import EVENTS
-from lithoxyl.formatters import Formatter
+from lithoxyl.formatters import SensibleFormatter
 from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL

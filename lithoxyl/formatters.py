@@ -12,36 +12,32 @@ from lithoxyl.fields import BUILTIN_FIELD_MAP
 
 DEFAULT_QUOTER = json.dumps
 
-
-__all__ = ['Formatter']
+__all__ = ['SensibleFormatter', 'SensibleEventFormatter']
 
 
 class GetterDict(dict):
     """An internal-use-only dict to enable the fetching of values from a
-    :class:`~lithoxyl.record.Record`. First, attempts to use a
-    "getter" as defined in the map of known format fields,
-    *getters*. Most of those fields simply access an attribute on the
-    Record instance. If no such getter exists, assume that the desired
-    key is expected to be in the *data_map* dict of the target Record.
-
-    If the key is neither a known "getter" nor in the data_map,
-    ``None`` is returned. Exceptions raised from getters are not caught.
+    :class:`~lithoxyl.record.Record`. Tries to fetch a key on a
+    record, failing that, tries built-in getters, if that fails,
+    returns ``None``. Exceptions raised from getters are not caught
+    here.
     """
-    # TODO: typos in field names will result in None
-    def __init__(self, record, getters):
-        self.record = record
+    def __init__(self, wrapped, getters):
+        self.wrapped = wrapped
         self.getters = getters
 
     def __missing__(self, key):
         try:
-            getter = self.getters[key]
+            return self.wrapped[key]
         except KeyError:
-            return self.record.data_map.get(key)
-        else:
-            return getter(self.record)
+            try:
+                return self.getters[key](self.wrapped)
+            except KeyError:
+                pass
+        return None
 
 
-class Formatter(object):
+class SensibleEventFormatter(object):
     def __init__(self, base=None, **kwargs):
         defaulter = kwargs.pop('defaulter', None)
         quoter = kwargs.pop('quoter', None)
@@ -52,8 +48,8 @@ class Formatter(object):
             cur_fmt = kwargs.pop(event, base)
             if not cur_fmt:
                 cur_fmt = ''
-            rf = RecordFormatter(cur_fmt, extra_fields=extra_fields,
-                                 quoter=quoter, defaulter=defaulter)
+            rf = SensibleFormatter(cur_fmt, extra_fields=extra_fields,
+                                   quoter=quoter, defaulter=defaulter)
             self.event_formatters[event] = rf
         return
 
@@ -74,7 +70,7 @@ class Formatter(object):
         return rf(comment_event)
 
 
-class RecordFormatter(object):
+class SensibleFormatter(object):
     """The basic ``Formatter`` type implements a constrained, but robust,
     microtemplating system rendering Records to strings that are both
     human-readable *and* machine-readable. This system is based on
@@ -94,32 +90,32 @@ class RecordFormatter(object):
     Generally a Formatter is called only with the template string.
 
     >>> from lithoxyl.record import Record
-    >>> fmtr = Formatter('Record status: {status_str}.')
+    >>> fmtr = SensibleFormatter('Record status: {status_str}.')
     >>> fmtr.format_record(Record('test').success())
     'Record status: success.'
 
-    Other types of Formatters do not need to inherit from
-    ``Formatter``, they just need to implement the
-    :meth:`Formatter.format_record` method.
-
-    .. TODO: decide whether Formatters should be callable or implement .format_record
-    .. TODO: links to built-in fields
-
+    Other types of Formatters do not need to inherit from any special
+    class. A Formatter is any callable which accepts a Record/mapping,
+    ``*args``, and ``**kwargs``, and returns text.
     """
-    def __init__(self, format_str,
-                 extra_fields=None, quoter=None, defaulter=None):
-        self.defaulter = defaulter or self._default_defaulter
-        if not callable(self.defaulter):
-            raise TypeError('expected callable for Formatter.defaulter, not %r'
-                            % self.defaulter)
+    def __init__(self, format_str, **kwargs):
+        extra_fields = kwargs.pop('extra_fields', None)
+        quoter = kwargs.pop('quoter', None)
+        defaulter = kwargs.pop('defaulter', None)
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
         if quoter is False:
             # disable quoting
             self.quoter = lambda field: None
         else:
             self.quoter = quoter or self._default_quoter
         if not callable(self.quoter):
-            raise TypeError('expected callable or False for Formatter.quoter,'
+            raise TypeError('expected callable or False for quoter,'
                             ' not %r' % self.quoter)
+        self.defaulter = defaulter or self._default_defaulter
+        if not callable(self.defaulter):
+            raise TypeError('expected callable for defaulter, not %r'
+                            % self.defaulter)
 
         self._field_map = dict(BUILTIN_FIELD_MAP)
         if extra_fields:
@@ -151,18 +147,20 @@ class RecordFormatter(object):
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, self.raw_format_str)
 
-    def format_record(self, record, *args, **kwargs):
-        """Render a :class:`~lithoxyl.record.Record` into text, using values
-        from the following sources:
+    def format(self, record, *args, **kwargs):
+        """Render text, based on the format-string template used to construct
+        the object, plus values from the following sources:
 
           * Positional arguments to this method (``*args``)
           * Keyword arguments to this method (``**kwargs``)
-          * FormatFields built-in to Lithoxyl
+          * Default FormatFields built-in to Lithoxyl
           * Structured data stored in the Record object's ``data_map``
+
         """
         ret = ''
         kw_vals = GetterDict(record, self._getter_map)
         kw_vals.update(kwargs)
+        q_map, d_map = self.quoter_map, self.default_map
         for t in self.tokens:
             try:
                 name = t.base_name
@@ -174,11 +172,11 @@ class RecordFormatter(object):
                     seg = t.fstr.format(*args)
                 else:
                     seg = t.fstr.format(**{name: kw_vals[name]})
-                if self.quoter_map[t]:
-                    seg = self.quoter_map[t](seg)
+                if q_map[t]:
+                    seg = q_map[t](seg)
                 ret += seg
             except Exception:
-                ret += self.default_map[t]
+                ret += d_map[t]
         return ret
 
     def _default_defaulter(self, token):
@@ -192,7 +190,7 @@ class RecordFormatter(object):
         else:
             return None
 
-    __call__ = format_record
+    __call__ = format
 
 
 """

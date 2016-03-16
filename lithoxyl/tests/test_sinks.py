@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from lithoxyl.sinks import SensibleSink
-from lithoxyl.formatters import Formatter
+from lithoxyl.formatters import SensibleFormatter as SF
+from lithoxyl.formatters import SensibleEventFormatter as SEF
 from lithoxyl.emitters import StreamEmitter, AggregateEmitter
 from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import Logger
 
 
-fmtr = Formatter('{status_char}{begin_timestamp}')
+fmtr = SEF('{status_char}{begin_timestamp}')
 strm_emtr = StreamEmitter('stderr')
 aggr_emtr = AggregateEmitter()
 strm_sink = SensibleSink(formatter=fmtr, emitter=strm_emtr)
@@ -62,7 +63,7 @@ def test_bad_encoding_error_fallback():
 def _test_exception():
     _tmpl = ('{end_iso8601} - {exc_type}: {exc_message}'
              ' - {func_name}:{line_number} - {exc_tb_list}')
-    sink = SensibleSink(Formatter(_tmpl),
+    sink = SensibleSink(SF(_tmpl),
                         StreamEmitter('stderr'),
                         filters=[ThresholdFilter(exception=0)])
     logger = Logger('excelsilog', [sink])

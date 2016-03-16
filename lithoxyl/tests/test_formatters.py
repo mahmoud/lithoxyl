@@ -2,7 +2,7 @@
 
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Record, DEBUG
-from lithoxyl.formatters import Formatter
+from lithoxyl.formatters import SensibleEventFormatter as SEF
 
 
 
@@ -26,14 +26,14 @@ TCS = [[('{logger_name}', '"1off"'),
 
 
 def test_formatter_basic():
-    forming = Formatter(template)
+    forming = SEF(template)
     output = forming.on_complete(t_riker.complete_event)
     expected = '"1off" - success - "Riker"'
     print output
     assert output[-len(expected):] == expected
 
     rec = Record(t_log, 'DEBUG', 'Wharf')
-    robf = Formatter(template)
+    robf = SEF(template)
     rec.success('Mr. Wolf')
     ret = robf.on_complete(rec.complete_event)
     print ret
@@ -43,7 +43,7 @@ def test_formatter_basic():
 def test_individual_fields():
     for record, field_pairs in zip(RECS, TCS):
         for field_tmpl, result in field_pairs:
-            forming = Formatter(field_tmpl)
+            forming = SEF(field_tmpl)
             output = forming.on_complete(record.complete_event)
             assert output == result
     return
@@ -54,7 +54,7 @@ def test_deferred():
     expensive_ops = [(lambda: 5, '"oh, 5"'),
                      (lambda: 'hi', '"oh, hi"'),
                      (lambda: 2.0, '"oh, 2.0"')]
-    formatter = Formatter('{end_message}')
+    formatter = SEF('{end_message}')
 
     for eo, expected in expensive_ops:
         rec = Record(t_log, 'DEBUG', 'spendy').success('oh, {dv}', dv=DV(eo))

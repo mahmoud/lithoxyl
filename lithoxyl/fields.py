@@ -2,7 +2,7 @@
 """Lithoxyl comes with many built-in format *fields* meant to be used
 with the standard :class:`~lithoxyl.logger.Logger` and
 :class:`~lithoxyl.record.Record`. Sinks can take advantage of these
-with the :class:`~lithoxyl.formatters.Formatter` type or subtypes.
+with the :class:`~lithoxyl.formatters.SensibleFormatter` type or subtypes.
 
 
 """
