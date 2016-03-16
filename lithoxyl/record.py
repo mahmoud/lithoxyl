@@ -57,6 +57,7 @@ class Record(object):
     extra values should be provided.
 
     Records are :class:`dict`-like, and can be accessed as mappings
+
     and used to store additional structured data:
 
     >>> record['my_data'] = 20.0
@@ -281,6 +282,10 @@ class Record(object):
 # profiling, convert events to fixed-length tuples with empty
 # dictionaries for caching lazy values. e.g.,
 # ('begin', record, ctime, event_id, to_unicode(raw_message), fargs, {})
+#
+# could also shove those as internal attrs on the record and put
+# caching properties in place for the actual event objects. simplifies
+# adding new fields.
 
 class Event(object):
     _message = None

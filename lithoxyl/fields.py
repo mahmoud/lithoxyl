@@ -67,17 +67,18 @@ def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
 
 
 class FormatField(BaseFormatField):
-    """FormatFields specify whether or not they are *quoted* (i.e., whether
-    or not values will contain whitespace), but not the exact method
-    for their quoting. That aspect is reserved for the Formatter.
+    """FormatFields specify whether or not they should be *quoted* (i.e.,
+    whether or not values will contain whitespace or other
+    delimiters), but not the exact method for their quoting. That
+    aspect is reserved for the Formatter.
+
     """
 
-    def __init__(self, fname, fspec='s',
-                 getter=None, default=None, quote=None):
-        # TODO: is default necessary here? Formatters should control
-        # defaults, like quotes
+    def __init__(self, fname, fspec='s', getter=None, **kwargs):
+        quote = kwargs.pop('quote', None)
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
         super(FormatField, self).__init__(fname, fspec)
-        self.default = default
         self.getter = getter
         if quote is None:
             # numeric fields should appear without quotes
