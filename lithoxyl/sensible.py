@@ -35,8 +35,8 @@ class SensibleSink(object):
             self.on_begin = self._on_begin
         if 'warn' in self._events:
             self.on_warn = self._on_warn
-        if 'complete' in self._events:
-            self.on_complete = self._on_complete
+        if 'end' in self._events:
+            self.on_end = self._on_end
         if 'comment' in self._events:
             self.on_comment = self._on_comment
 
@@ -52,11 +52,11 @@ class SensibleSink(object):
         entry = self.formatter.on_warn(event)
         return self.emitter.on_warn(event, entry)
 
-    def _on_complete(self, event):
+    def _on_end(self, event):
         if self.filters and not all([f(event) for f in self.filters]):
             return
-        entry = self.formatter.on_complete(event)
-        return self.emitter.on_complete(event, entry)
+        entry = self.formatter.on_end(event)
+        return self.emitter.on_end(event, entry)
 
     def _on_comment(self, event):
         if self.filters and not all([f(event) for f in self.filters]):
@@ -116,9 +116,9 @@ class SensibleEventFormatter(object):
         rf = self.event_formatters['warn']
         return rf(warn_event)
 
-    def on_complete(self, complete_event):
-        rf = self.event_formatters['complete']
-        return rf(complete_event)
+    def on_end(self, end_event):
+        rf = self.event_formatters['end']
+        return rf(end_event)
 
     def on_comment(self, comment_event):
         rf = self.event_formatters['comment']

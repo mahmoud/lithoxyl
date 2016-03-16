@@ -50,6 +50,6 @@ class SyslogEmitter(object):
         priority = self._get_syslog_priority('warn', warn_event)
         syslog.syslog(priority, entry)
 
-    def on_complete(self, complete_event, entry):
-        priority = self._get_syslog_priority('complete', complete_event)
+    def on_end(self, end_event, entry):
+        priority = self._get_syslog_priority('end', end_event)
         syslog.syslog(priority, entry)

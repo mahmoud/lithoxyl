@@ -3,7 +3,7 @@
 import time
 from functools import total_ordering
 
-EVENTS = ('begin', 'warn', 'complete', 'exception', 'comment')
+EVENTS = ('begin', 'warn', 'end', 'exception', 'comment')
 IMPORT_TIME = time.time()
 
 

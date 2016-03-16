@@ -46,7 +46,7 @@ class AggregateEmitter(object):
     def emit_entry(self, record, entry):
         self.entries.append((record, entry))
 
-    on_begin = on_warn = on_complete = on_comment = emit_entry
+    on_begin = on_warn = on_end = on_comment = emit_entry
 
 
 class StreamEmitter(object):
@@ -89,7 +89,7 @@ class StreamEmitter(object):
         except Exception as e:
             note('stream_emit', 'got %r on %r.emit_entry()', e, self)
 
-    on_begin = on_warn = on_complete = on_comment = emit_entry
+    on_begin = on_warn = on_end = on_comment = emit_entry
 
     def flush(self):
         stream_flush = getattr(self.stream, 'flush', None)

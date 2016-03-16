@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import pdb
-import sys
-import json
 import time
 import bisect
 from collections import deque
@@ -17,7 +15,7 @@ class AggregateSink(object):
     def __init__(self, max_length=None):
         self.begin_events = deque(maxlen=max_length)
         self.warn_events = deque(maxlen=max_length)
-        self.complete_events = deque(maxlen=max_length)
+        self.end_events = deque(maxlen=max_length)
         self.comment_events = deque(maxlen=max_length)
 
     def on_begin(self, begin_event):
@@ -26,8 +24,8 @@ class AggregateSink(object):
     def on_warn(self, warn_event):
         self.warn_events.append(warn_event)
 
-    def on_complete(self, complete_event):
-        self.complete_events.append(complete_event)
+    def on_end(self, end_event):
+        self.end_events.append(end_event)
 
     def on_comment(self, comment_event):
         self.comment_events.append(comment_event)
@@ -116,14 +114,14 @@ class RateSink(object):
     """
     def __init__(self, sample_size=128, getter=None):
         if getter is None:
-            getter = lambda complete_event: complete_event.etime
+            getter = lambda end_event: end_event.etime
         self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size
         self.creation_time = time.time()
 
-    def on_complete(self, complete_event):
-        ev = complete_event
+    def on_end(self, end_event):
+        ev = end_event
         name_time_map = self.acc_map.setdefault(ev.logger, {})
         status_time_map = name_time_map.setdefault(ev.name, {})
         try:
@@ -216,7 +214,7 @@ class EWMASink(object):
         self.getter = getter
         self.acc_map = {}
 
-    def on_complete(self, record):
+    def on_end(self, record):
         name_time_map = self.acc_map.setdefault(record.logger.name, {})
         status_time_map = name_time_map.setdefault(record.name, {})
         try:
@@ -279,7 +277,7 @@ class QuantileSink(object):
         Depending on application/sink usage, a MultiQuantileSink may
         be appropriate to avoid collisions among statistics with the
         same record names. (only if you use the same sink with
-        multiple loggers, just look at on_complete and it'll be
+        multiple loggers, just look at on_end and it'll be
         clear.)
         """
         self._qa_type = QuantileAccumulator
@@ -287,7 +285,7 @@ class QuantileSink(object):
             self._qa_type = P2QuantileAccumulator
         self.qas = {}
 
-    def on_complete(self, event):
+    def on_end(self, event):
         try:
             acc = self.qas[event.name]
         except KeyError:
@@ -311,7 +309,7 @@ class QuantileSink(object):
 
 
 class MultiQuantileSink(QuantileSink):
-    def on_complete(self, event):
+    def on_end(self, event):
         try:
             logger_accs = self.qas[event.logger.name]
         except KeyError:

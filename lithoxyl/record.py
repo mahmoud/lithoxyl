@@ -85,7 +85,7 @@ class Record(object):
         self.callpoint = Callpoint.from_frame(frame)
 
         self.begin_event = None
-        self.complete_event = None
+        self.end_event = None
         # these can go internal and be lazily created through properties
         self.warn_events = []
         self.exc_events = []
@@ -105,14 +105,14 @@ class Record(object):
     @property
     def status(self):
         try:
-            return self.complete_event.status
+            return self.end_event.status
         except AttributeError:
             return 'begin'
 
     @property
     def duration(self):
         try:
-            return self.complete_event.etime - self.begin_event.etime
+            return self.end_event.etime - self.begin_event.etime
         except Exception:
             return 0.0
 
@@ -134,27 +134,27 @@ class Record(object):
         return self
 
     def success(self, message=None, *a, **kw):
-        """Mark this Record as complete and successful. Also set the Record's
+        """Mark this Record successful. Also set the Record's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
         also be added to the Record's ``data_map`` attribute.
         """
         if not message:
             message = self.name + ' succeeded'
-        return self._complete('success', message, a, kw)
+        return self._end('success', message, a, kw)
 
     def failure(self, message=None, *a, **kw):
-        """Mark this Record as complete and failed. Also set the Record's
+        """Mark this Record failed. Also set the Record's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
         also be added to the Record's ``data_map`` attribute.
         """
         if not message:
             message = self.name + ' failed'
-        return self._complete('failure', message, a, kw)
+        return self._end('failure', message, a, kw)
 
     def exception(self, message=None, *a, **kw):
-        """Mark this Record as complete and having had an exception. Also
+        """Mark this Record as having had an exception. Also
         sets the Record's *message* template similar to
         :meth:`Record.success` and :meth:`Record.failure`.
 
@@ -180,11 +180,10 @@ class Record(object):
         self.exc_event = ExceptionEvent(self, etime, message, fargs, exc_info)
         self.logger.on_exception(self.exc_event, exc_type, exc_val, exc_tb)
 
-        return self._complete('exception', message, fargs, data,
-                              etime, exc_info)
+        return self._end('exception', message, fargs, data,
+                         etime, exc_info)
 
-    def _complete(self, status, message, fargs, data,
-                  end_time=None, exc_info=None):
+    def _end(self, status, message, fargs, data, end_time=None, exc_info=None):
         self.data_map.update(data)
 
         if self._is_trans:
@@ -194,11 +193,11 @@ class Record(object):
                 self.begin()
             end_time = self.begin_event.etime
 
-        self.complete_event = CompleteEvent(self, end_time, message,
-                                            fargs, status, exc_info)
+        self.end_event = EndEvent(self, end_time, message,
+                                  fargs, status, exc_info)
 
         if not self._defer_publish and self.logger:
-            self.logger.on_complete(self.complete_event)
+            self.logger.on_end(self.end_event)
 
         return self
 
@@ -216,10 +215,10 @@ class Record(object):
             except Exception as e:
                 note('record_exit',
                      'got %r while already handling exception %r', e, exc_val)
-                pass  # TODO: still have to create complete_event
+                pass  # TODO: still have to create end_event
         else:
-            if self.complete_event:
-                self.logger.on_complete(self.complete_event)
+            if self.end_event:
+                self.logger.on_end(self.end_event)
             else:
                 # now that _defer_publish=False, this will also publish
                 self.success()
@@ -340,7 +339,7 @@ class ExceptionEvent(Event):
         self.exc_info = exc_info
 
 
-class CompleteEvent(Event):
+class EndEvent(Event):
     def __init__(self, record, etime, raw_message, fargs, status,
                  exc_info=None):
         self.record = record
@@ -382,7 +381,7 @@ class CommentEvent(Event):
         self.fargs = fargs
 
 
-"""What to do on multiple begins and multiple completes?
+"""What to do on multiple begins and multiple ends?
 
 If a record is atomic (i.e., never entered/begun), then should it fire
 a logger on_begin? Leaning no.

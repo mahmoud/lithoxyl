@@ -27,7 +27,7 @@ TCS = [[('{logger_name}', '"1off"'),
 
 def test_formatter_basic():
     forming = SEF(template)
-    output = forming.on_complete(t_riker.complete_event)
+    output = forming.on_end(t_riker.end_event)
     expected = '"1off" - success - "Riker"'
     print output
     assert output[-len(expected):] == expected
@@ -35,7 +35,7 @@ def test_formatter_basic():
     rec = Record(t_log, 'DEBUG', 'Wharf')
     robf = SEF(template)
     rec.success('Mr. Wolf')
-    ret = robf.on_complete(rec.complete_event)
+    ret = robf.on_end(rec.end_event)
     print ret
     return ret
 
@@ -44,7 +44,7 @@ def test_individual_fields():
     for record, field_pairs in zip(RECS, TCS):
         for field_tmpl, result in field_pairs:
             forming = SEF(field_tmpl)
-            output = forming.on_complete(record.complete_event)
+            output = forming.on_end(record.end_event)
             assert output == result
     return
 
@@ -58,7 +58,7 @@ def test_deferred():
 
     for eo, expected in expensive_ops:
         rec = Record(t_log, 'DEBUG', 'spendy').success('oh, {dv}', dv=DV(eo))
-        output = formatter.on_complete(rec.complete_event)
+        output = formatter.on_end(rec.end_event)
         assert output == expected
     return
 

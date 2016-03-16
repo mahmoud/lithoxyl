@@ -12,11 +12,11 @@ from lithoxyl import (Logger,
 import itertools
 
 stderr_fmt = Formatter(begin='{status_char}{iso_begin_local_noms_notz} - {begin_message}',
-                       complete='{status_char}{iso_end_local_noms_notz} - {duration_msecs}ms - {end_message}')
+                       end='{status_char}{iso_end_local_noms_notz} - {duration_msecs}ms - {end_message}')
 
 
 stderr_fmt = Formatter(begin='{status_char}+{import_delta_ms}ms - {begin_message}',
-                       complete='{status_char}+{import_delta_ms}ms - {duration_msecs}ms - {end_message}')
+                       end='{status_char}+{import_delta_ms}ms - {duration_msecs}ms - {end_message}')
 
 
 stderr_emt = StreamEmitter('stderr')

@@ -14,7 +14,7 @@ from threading import RLock
 from lithoxyl.utils import wraps
 from lithoxyl.context import get_context
 from lithoxyl.common import DEBUG, INFO, CRITICAL
-from lithoxyl.record import Record, BeginEvent, CompleteEvent, CommentEvent
+from lithoxyl.record import Record, BeginEvent, EndEvent, CommentEvent
 
 
 QUEUE_LIMIT = 10000
@@ -129,9 +129,9 @@ class Logger(object):
                 if ev_type == 'begin':
                     for begin_hook in self._begin_hooks:
                         begin_hook(ev)
-                elif ev_type == 'complete':
-                    for complete_hook in self._complete_hooks:
-                        complete_hook(ev)
+                elif ev_type == 'end':
+                    for end_hook in self._end_hooks:
+                        end_hook(ev)
                 elif ev_type == 'warn':
                     for warn_hook in self._warn_hooks:
                         warn_hook(ev)
@@ -157,7 +157,7 @@ class Logger(object):
         self._all_sinks = []
         self._begin_hooks = []
         self._warn_hooks = []
-        self._complete_hooks = []
+        self._end_hooks = []
         self._exc_hooks = []
         self._comment_hooks = []
         for s in sinks:
@@ -180,9 +180,9 @@ class Logger(object):
         warn_hook = getattr(sink, 'on_warn', None)
         if callable(warn_hook):
             self._warn_hooks.append(warn_hook)
-        complete_hook = getattr(sink, 'on_complete', None)
-        if callable(complete_hook):
-            self._complete_hooks.append(complete_hook)
+        end_hook = getattr(sink, 'on_end', None)
+        if callable(end_hook):
+            self._end_hooks.append(end_hook)
         exc_hook = getattr(sink, 'on_exception', None)
         if callable(exc_hook):
             self._exc_hooks.append(exc_hook)
@@ -192,13 +192,13 @@ class Logger(object):
         # TODO: also pull flush methods?
         self._all_sinks.append(sink)
 
-    def on_complete(self, complete_event):
-        "Publish *complete_event* to all sinks with ``on_complete()`` hooks."
+    def on_end(self, end_event):
+        "Publish *end_event* to all sinks with ``on_end()`` hooks."
         if self.async_mode:
-            self.event_queue.append(('complete', complete_event))
+            self.event_queue.append(('end', end_event))
         else:
-            for complete_hook in self._complete_hooks:
-                complete_hook(complete_event)
+            for end_hook in self._end_hooks:
+                end_hook(end_event)
         return
 
     def on_begin(self, begin_event):
@@ -231,8 +231,8 @@ class Logger(object):
         rec = rec_type(logger=self, level=CRITICAL, name='comment', data=kw)
         cur_time = time.time()
         rec.begin_event = BeginEvent(rec, cur_time, 'comment', ())
-        rec.complete_event = CompleteEvent(rec, cur_time,
-                                           'comment', (), 'success')
+        rec.end_event = EndEvent(rec, cur_time,
+                                 'comment', (), 'success')
         event = CommentEvent(rec, cur_time, message, a)
         if self.async_mode:
             self.event_queue.append(('comment', event))
