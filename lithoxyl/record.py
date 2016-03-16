@@ -112,7 +112,7 @@ class Record(object):
     @property
     def duration(self):
         try:
-            return self.complete_event.ctime - self.begin_event.ctime
+            return self.complete_event.etime - self.begin_event.etime
         except Exception:
             return 0.0
 
@@ -172,16 +172,16 @@ class Record(object):
 
         # have to capture the time now in case the on_exception sinks
         # take their sweet time
-        ctime = time.time()
+        etime = time.time()
         exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             message = '%s raised exception: %r' % (self.name, exc_val)
 
-        self.exc_event = ExceptionEvent(self, ctime, message, fargs, exc_info)
+        self.exc_event = ExceptionEvent(self, etime, message, fargs, exc_info)
         self.logger.on_exception(self.exc_event, exc_type, exc_val, exc_tb)
 
         return self._complete('exception', message, fargs, data,
-                              ctime, exc_info)
+                              etime, exc_info)
 
     def _complete(self, status, message, fargs, data,
                   end_time=None, exc_info=None):
@@ -192,7 +192,7 @@ class Record(object):
         else:
             if not self.begin_event:
                 self.begin()
-            end_time = self.begin_event.ctime
+            end_time = self.begin_event.etime
 
         self.complete_event = CompleteEvent(self, end_time, message,
                                             fargs, status, exc_info)
@@ -247,7 +247,7 @@ class Record(object):
         created or begun. This method has no side effects.
         """
         if self.begin_event:
-            return time.time() - self.begin_event.ctime
+            return time.time() - self.begin_event.etime
         return 0.0
 
     '''
@@ -281,7 +281,7 @@ class Record(object):
 # TODO: optimization strategy. if event creation starts to register on
 # profiling, convert events to fixed-length tuples with empty
 # dictionaries for caching lazy values. e.g.,
-# ('begin', record, ctime, event_id, to_unicode(raw_message), fargs, {})
+# ('begin', record, etime, event_id, to_unicode(raw_message), fargs, {})
 #
 # could also shove those as internal attrs on the record and put
 # caching properties in place for the actual event objects. simplifies
@@ -320,9 +320,9 @@ class Event(object):
 class BeginEvent(Event):
     status_char = 'b'
 
-    def __init__(self, record, ctime, raw_message, fargs):
+    def __init__(self, record, etime, raw_message, fargs):
         self.record = record
-        self.ctime = ctime
+        self.etime = etime
         self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -331,9 +331,9 @@ class BeginEvent(Event):
 class ExceptionEvent(Event):
     status_char = '!'
 
-    def __init__(self, record, ctime, raw_message, fargs, exc_info):
+    def __init__(self, record, etime, raw_message, fargs, exc_info):
         self.record = record
-        self.ctime = ctime
+        self.etime = etime
         self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -341,10 +341,10 @@ class ExceptionEvent(Event):
 
 
 class CompleteEvent(Event):
-    def __init__(self, record, ctime, raw_message, fargs, status,
+    def __init__(self, record, etime, raw_message, fargs, status,
                  exc_info=None):
         self.record = record
-        self.ctime = ctime
+        self.etime = etime
         self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -363,9 +363,9 @@ class CompleteEvent(Event):
 class WarningEvent(Event):
     status_char = 'W'
 
-    def __init__(self, record, ctime, raw_message, fargs):
+    def __init__(self, record, etime, raw_message, fargs):
         self.record = record
-        self.ctime = ctime
+        self.etime = etime
         self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
@@ -374,9 +374,9 @@ class WarningEvent(Event):
 class CommentEvent(Event):
     status_char = '#'
 
-    def __init__(self, record, ctime, raw_message, fargs):
+    def __init__(self, record, etime, raw_message, fargs):
         self.record = record
-        self.ctime = ctime
+        self.etime = etime
         self.event_id = next(_REC_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs

@@ -133,7 +133,7 @@ class RateSink(object):
     """
     def __init__(self, sample_size=128, getter=None):
         if getter is None:
-            getter = lambda complete_event: complete_event.ctime
+            getter = lambda complete_event: complete_event.etime
         self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size

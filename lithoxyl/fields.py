@@ -123,38 +123,38 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.logger.name),
 #   * with/without timezone (_noms variants have textual timezone)
 ISO8601_FIELDS = [
     _SF('iso_begin', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.ctime)),
+        lambda e: timestamp2iso8601(e.record.begin_event.etime)),
     _SF('iso_end', 's',
-        lambda e: timestamp2iso8601(e.record.complete_event.ctime)),
+        lambda e: timestamp2iso8601(e.record.complete_event.etime)),
     _SF('iso_begin_notz', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.ctime,
+        lambda e: timestamp2iso8601(e.record.begin_event.etime,
                                     with_tz=False)),
     _SF('iso_end_notz', 's',
-        lambda e: timestamp2iso8601(e.record.complete_event.ctime,
+        lambda e: timestamp2iso8601(e.record.complete_event.etime,
                                     with_tz=False)),
     _SF('iso_begin_local', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.ctime,
+        lambda e: timestamp2iso8601(e.record.begin_event.etime,
                                     local=True)),
     _SF('iso_end_local', 's',
-        lambda e: timestamp2iso8601(e.record.complete_event.ctime,
+        lambda e: timestamp2iso8601(e.record.complete_event.etime,
                                     local=True)),
     _SF('iso_begin_local_notz', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.ctime,
+        lambda e: timestamp2iso8601(e.record.begin_event.etime,
                                     local=True, with_tz=False)),
     _SF('iso_end_local_notz', 's',
-        lambda e: timestamp2iso8601(e.record.complete_event.ctime,
+        lambda e: timestamp2iso8601(e.record.complete_event.etime,
                                     local=True, with_tz=False)),
     _SF('iso_begin_local_noms', 's',
-        lambda e: timestamp2iso8601_noms(e.record.begin_event.ctime,
+        lambda e: timestamp2iso8601_noms(e.record.begin_event.etime,
                                          local=True)),
     _SF('iso_end_local_noms', 's',
-        lambda e: timestamp2iso8601_noms(e.record.complete_event.ctime,
+        lambda e: timestamp2iso8601_noms(e.record.complete_event.etime,
                                          local=True)),
     _SF('iso_begin_local_noms_notz', 's',
-        lambda e: timestamp2iso8601_noms(e.record.begin_event.ctime,
+        lambda e: timestamp2iso8601_noms(e.record.begin_event.etime,
                                          local=True, with_tz=False)),
     _SF('iso_end_local_noms_notz', 's',
-        lambda e: timestamp2iso8601_noms(e.record.complete_event.ctime,
+        lambda e: timestamp2iso8601_noms(e.record.complete_event.etime,
                                          local=True, with_tz=False))]
 
 # using the T separator means no whitespace and thus no quoting
@@ -163,8 +163,8 @@ for f in ISO8601_FIELDS:
 
 
 DELTA_FIELDS = [
-    _SF('import_delta', '0.6f', lambda e: e.ctime - IMPORT_TIME),
-    _SF('import_delta_ms', '0.4f', lambda e: (e.ctime - IMPORT_TIME) * 1000)]
+    _SF('import_delta', '0.6f', lambda e: e.etime - IMPORT_TIME),
+    _SF('import_delta_ms', '0.4f', lambda e: (e.etime - IMPORT_TIME) * 1000)]
 
 
 for f in BASIC_FIELDS:

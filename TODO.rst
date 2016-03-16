@@ -29,7 +29,7 @@ Stats TODOs
 -----------
 
 * calculate accumulated machine epsilon on some of the accumulators
-* try out Decimal-based moment accumulator (to see how slow it is)
+* try out Decimal-based moment accumulator (to see how slow it i)s
 
 helper: get_record_parent(record):
 
