@@ -11,8 +11,8 @@ from lithoxyl import (Logger,
                       Formatter)
 import itertools
 
-stderr_fmt = Formatter(begin='{status_char}{begin_local_iso8601_noms_notz} - {begin_message}',
-                       complete='{status_char}{end_local_iso8601_noms_notz} - {duration_msecs}ms - {end_message}')
+stderr_fmt = Formatter(begin='{status_char}{iso_begin_local_noms_notz} - {begin_message}',
+                       complete='{status_char}{iso_end_local_noms_notz} - {duration_msecs}ms - {end_message}')
 
 
 stderr_fmt = Formatter(begin='{status_char}+{import_delta_ms}ms - {begin_message}',

@@ -66,13 +66,11 @@ def timestamp2iso8601(timestamp, local=False, with_tz=True, tformat=None):
 
 
 class SensibleField(BaseFormatField):
-    """FormatFields specify whether or not they should be *quoted* (i.e.,
+    """Fields specify whether or not they should be *quoted* (i.e.,
     whether or not values will contain whitespace or other
     delimiters), but not the exact method for their quoting. That
     aspect is reserved for the Formatter.
-
     """
-
     def __init__(self, fname, fspec='s', getter=None, **kwargs):
         quote = kwargs.pop('quote', None)
         if kwargs:
@@ -123,40 +121,39 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.logger.name),
 #   * UTC/Local
 #   * with/without milliseconds
 #   * with/without timezone (_noms variants have textual timezone)
-# TODO: rename to just ISO
 ISO8601_FIELDS = [
-    _SF('begin_iso8601', 's',
+    _SF('iso_begin', 's',
         lambda e: timestamp2iso8601(e.record.begin_event.ctime)),
-    _SF('end_iso8601', 's',
+    _SF('iso_end', 's',
         lambda e: timestamp2iso8601(e.record.complete_event.ctime)),
-    _SF('begin_iso8601_notz', 's',
+    _SF('iso_begin_notz', 's',
         lambda e: timestamp2iso8601(e.record.begin_event.ctime,
                                     with_tz=False)),
-    _SF('end_iso8601_notz', 's',
+    _SF('iso_end_notz', 's',
         lambda e: timestamp2iso8601(e.record.complete_event.ctime,
                                     with_tz=False)),
-    _SF('begin_local_iso8601', 's',
+    _SF('iso_begin_local', 's',
         lambda e: timestamp2iso8601(e.record.begin_event.ctime,
                                     local=True)),
-    _SF('end_local_iso8601', 's',
+    _SF('iso_end_local', 's',
         lambda e: timestamp2iso8601(e.record.complete_event.ctime,
                                     local=True)),
-    _SF('begin_local_iso8601_notz', 's',
+    _SF('iso_begin_local_notz', 's',
         lambda e: timestamp2iso8601(e.record.begin_event.ctime,
                                     local=True, with_tz=False)),
-    _SF('end_local_iso8601_notz', 's',
+    _SF('iso_end_local_notz', 's',
         lambda e: timestamp2iso8601(e.record.complete_event.ctime,
                                     local=True, with_tz=False)),
-    _SF('begin_local_iso8601_noms', 's',
+    _SF('iso_begin_local_noms', 's',
         lambda e: timestamp2iso8601_noms(e.record.begin_event.ctime,
                                          local=True)),
-    _SF('end_local_iso8601_noms', 's',
+    _SF('iso_end_local_noms', 's',
         lambda e: timestamp2iso8601_noms(e.record.complete_event.ctime,
                                          local=True)),
-    _SF('begin_local_iso8601_noms_notz', 's',
+    _SF('iso_begin_local_noms_notz', 's',
         lambda e: timestamp2iso8601_noms(e.record.begin_event.ctime,
                                          local=True, with_tz=False)),
-    _SF('end_local_iso8601_noms_notz', 's',
+    _SF('iso_end_local_noms_notz', 's',
         lambda e: timestamp2iso8601_noms(e.record.complete_event.ctime,
                                          local=True, with_tz=False))]
 

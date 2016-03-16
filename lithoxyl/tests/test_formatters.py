@@ -7,7 +7,7 @@ from lithoxyl.sensible import SensibleEventFormatter as SEF
 
 
 template = ('{status_char}{record_warn_char}{begin_timestamp}'
-            ' - {begin_local_iso8601} - {begin_iso8601}'
+            ' - {iso_begin_local} - {iso_begin}'
             ' - {logger_name} - {status_str} - {record_name}')
 
 
