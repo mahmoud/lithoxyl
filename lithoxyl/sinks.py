@@ -33,23 +33,6 @@ class AggregateSink(object):
         self.comment_events.append(comment_event)
 
 
-_MSG_ATTRS = ('name', 'level_name', 'status', 'message',
-              'begin_time', 'end_time', 'duration')
-
-
-class SimpleStructuredFileSink(object):
-    def __init__(self, fileobj=None):
-        self.fileobj = fileobj or sys.stdout
-
-    def on_complete(self, event):
-        msg_data = dict(event.data_map)
-        for attr in _MSG_ATTRS:
-            msg_data[attr] = getattr(event, attr, None)
-        json_str = json.dumps(msg_data, sort_keys=True)
-        self.fileobj.write(json_str)
-        self.fileobj.write('\n')
-
-
 class RateAccumulator(object):
     """\
     The RateAccumulator provides basic accounting and rate estimation

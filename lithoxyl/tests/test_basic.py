@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
+import json
 
-from lithoxyl.sinks import AggregateSink, SimpleStructuredFileSink
+from lithoxyl.sinks import AggregateSink
 from lithoxyl.logger import Logger
 
 
@@ -23,13 +25,6 @@ def test_logger_success(trans_count=2):
     for i in range(trans_count):
         do_debug_trans(logger)
     assert len(logger.sinks[0].complete_events) == trans_count
-
-
-def test_structured(trans_count=5):
-    acc = SimpleStructuredFileSink()
-    log = Logger('test_logger', [acc])
-    for i in range(trans_count):
-        do_debug_trans(log)
 
 
 def test_callpoint_info():
@@ -59,3 +54,27 @@ def test_reraise_true():
         assert True
     else:
         assert False, 'should have reraised NameError'
+
+
+_MSG_ATTRS = ('name', 'level_name', 'status', 'message',
+              'begin_time', 'end_time', 'duration')
+
+
+class SimpleStructuredFileSink(object):
+    def __init__(self, fileobj=None):
+        self.fileobj = fileobj or sys.stdout
+
+    def on_complete(self, event):
+        msg_data = dict(event.data_map)
+        for attr in _MSG_ATTRS:
+            msg_data[attr] = getattr(event, attr, None)
+        json_str = json.dumps(msg_data, sort_keys=True)
+        self.fileobj.write(json_str)
+        self.fileobj.write('\n')
+
+
+def test_structured(trans_count=5):
+    acc = SimpleStructuredFileSink()
+    log = Logger('test_logger', [acc])
+    for i in range(trans_count):
+        do_debug_trans(log)
