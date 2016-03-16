@@ -36,7 +36,7 @@ def test_rate_acc():
         cur_time = start_time + (incr * i)
 
     rate = acc.get_rate(start_time=start_time, end_time=cur_time)
-    assert target_rate - 2 <= rate <= target_rate + 2
+    assert target_rate - 2.5 <= rate <= target_rate + 2.5
 
     new_rate = acc.get_rate(start_time=start_time + 0.5, end_time=cur_time)
     assert round(new_rate - rate, -2) == 0
