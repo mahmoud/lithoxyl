@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from lithoxyl.sinks import SensibleSink
-from lithoxyl.formatters import SensibleFormatter as SF
-from lithoxyl.formatters import SensibleEventFormatter as SEF
+from lithoxyl.sensible import (SensibleSink,
+                               SensibleFormatter as SF,
+                               SensibleEventFormatter as SEF)
 from lithoxyl.emitters import StreamEmitter, AggregateEmitter
 from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import Logger

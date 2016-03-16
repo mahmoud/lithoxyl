@@ -2,7 +2,7 @@
 
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Record, DEBUG
-from lithoxyl.formatters import SensibleEventFormatter as SEF
+from lithoxyl.sensible import SensibleEventFormatter as SEF
 
 
 

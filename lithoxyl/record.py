@@ -7,7 +7,7 @@ import itertools
 from boltons.tbutils import ExceptionInfo, Callpoint
 
 from lithoxyl.context import note
-from lithoxyl.formatters import SensibleFormatter
+from lithoxyl.sensible import SensibleFormatter
 from lithoxyl.common import to_unicode, get_level
 
 

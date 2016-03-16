@@ -10,9 +10,64 @@ from lithoxyl.common import EVENTS
 from lithoxyl.fields import BUILTIN_FIELD_MAP
 
 
+__all__ = ['SensibleFormatter', 'SensibleSink']
+
+
 DEFAULT_QUOTER = json.dumps
 
-__all__ = ['SensibleFormatter', 'SensibleEventFormatter']
+
+class SensibleSink(object):
+    def __init__(self, formatter=None, emitter=None, filters=None, on=EVENTS):
+        events = on
+        if isinstance(events, basestring):
+            events = [events]
+        unknown_events = [e for e in events if e not in EVENTS]
+        if unknown_events:
+            raise ValueError('unrecognized events: %r (must be one of %r)'
+                             % (unknown_events, EVENTS))
+
+        self._events = [e.lower() for e in events]
+        self.filters = list(filters or [])
+        self.formatter = formatter
+        self.emitter = emitter
+
+        if 'begin' in self._events:
+            self.on_begin = self._on_begin
+        if 'warn' in self._events:
+            self.on_warn = self._on_warn
+        if 'complete' in self._events:
+            self.on_complete = self._on_complete
+        if 'comment' in self._events:
+            self.on_comment = self._on_comment
+
+    def _on_begin(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
+            return
+        entry = self.formatter.on_begin(event)
+        return self.emitter.on_begin(event, entry)
+
+    def _on_warn(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
+            return
+        entry = self.formatter.on_warn(event)
+        return self.emitter.on_warn(event, entry)
+
+    def _on_complete(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
+            return
+        entry = self.formatter.on_complete(event)
+        return self.emitter.on_complete(event, entry)
+
+    def _on_comment(self, event):
+        if self.filters and not all([f(event) for f in self.filters]):
+            return
+        entry = self.formatter.on_comment(event)
+        return self.emitter.on_comment(event, entry)
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        return ('<%s filters=%r formatter=%r emitter=%r>'
+                % (cn, self.filters, self.formatter, self.emitter))
 
 
 class GetterDict(dict):
