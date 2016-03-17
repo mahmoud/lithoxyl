@@ -84,11 +84,17 @@ class SensibleField(BaseFormatField):
         self.quote = quote
 
 
+def _end_msg(e):
+    try:
+        return e.record.end_event.message
+    except Exception as e:
+        import pdb;pdb.post_mortem()
+
 # default, fmt_specs
 _SF = SensibleField
-BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.logger.name),
-                _SF('logger_id', 'd', lambda e: e.logger.logger_id),
-                _SF('record_name', 's', lambda e: e.name),
+BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
+                _SF('logger_id', 'd', lambda e: e.record.logger.logger_id),
+                _SF('record_name', 's', lambda e: e.record.name),
                 _SF('record_id', 'd', lambda e: e.record_id),
                 _SF('status_str', 's', lambda e: e.status, quote=False),
                 _SF('status_char', 's', lambda e: e.status_char, quote=False),
@@ -100,12 +106,12 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.logger.name),
                 _SF('level_number', 'd', lambda e: e.level._value),
                 _SF('begin_message', 's', lambda e: e.begin_event.message),
                 _SF('begin_raw_message', 's', lambda e: e.begin_event.raw_message),
-                _SF('end_message', 's', lambda e: e.end_event.message),
-                _SF('end_raw_message', 's', lambda e: e.end_event.raw_message),
-                _SF('begin_timestamp', '.14g', lambda e: e.begin_time),
-                _SF('end_timestamp', '.14g', lambda e: e.end_time),
-                _SF('duration_secs', '.3f', lambda e: e.duration),
-                _SF('duration_msecs', '.3f', lambda e: e.duration * 1000.0),
+                _SF('end_message', 's', _end_msg),
+                _SF('end_raw_message', 's', lambda e: e.record.end_event.raw_message),
+                _SF('begin_timestamp', '.14g', lambda e: e.record.begin_time),
+                _SF('end_timestamp', '.14g', lambda e: e.record.end_time),
+                _SF('duration_secs', '.3f', lambda e: e.record.duration),
+                _SF('duration_msecs', '.3f', lambda e: e.record.duration * 1000.0),
                 _SF('module_name', 's', lambda e: e.callpoint.module_name),
                 _SF('module_path', 's', lambda e: e.callpoint.module_path),
                 _SF('func_name', 's', lambda e: e.callpoint.func_name, quote=False),
@@ -167,7 +173,27 @@ DELTA_FIELDS = [
     _SF('import_delta_ms', '0.4f', lambda e: (e.etime - IMPORT_TIME) * 1000)]
 
 
+def get_parent_depth(record, max_depth=200):
+    i = -1
+    while record and i < max_depth:
+        i += 1
+        record = record.parent_record
+    return i
+
+
+PARENT_DEPTH_INDENT = '   '
+
+
+PARENT_FIELDS = [
+    _SF('parent_depth', 'd', lambda e: get_parent_depth(e.record)),
+    _SF('parent_depth_indent', 's',
+        lambda e: get_parent_depth(e.record) * PARENT_DEPTH_INDENT,
+        quote=False)]
+
+
 for f in BASIC_FIELDS:
+    register_builtin_field(f)
+for f in PARENT_FIELDS:
     register_builtin_field(f)
 for f in ISO8601_FIELDS:
     register_builtin_field(f)
