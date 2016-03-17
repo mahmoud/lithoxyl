@@ -8,6 +8,8 @@ TODO
 * First-class datetime Formatter/FormatField support (type_func)
 * Back-propagation of events like log file rotation, if in fact that
   should be encapsulated in lower-level objects like Emitters.
+* Should .comment() have an "immediate" mode where they acquire the
+  flush lock and do not go into the async queue?
 
 Formatting
 ----------
@@ -29,11 +31,11 @@ Stats TODOs
 -----------
 
 * calculate accumulated machine epsilon on some of the accumulators
-* try out Decimal-based moment accumulator (to see how slow it i)s
+* try out Decimal-based moment accumulator (to see how slow it is)
 
-helper: get_record_parent(record):
+Concurrency
+-----------
 
-* Nonconcurrent: logger's last started transaction
 * Greenlet: Greenlet local dict with stacks
 * Threads: thread local dict with stacks
 * Callbacks: Up 2 u
@@ -42,6 +44,10 @@ helper: get_record_parent(record):
 Ideal behavior: Only tell me about completing things unless there is
 an inner task or the task is taking a long time (heartbeat-based
 flush).
+
+General formatter advice: Put shorter, fixed-width items closer to the
+start of the line, put longer, more dynamic items toward the end of
+the line.
 
 
 Linty things
