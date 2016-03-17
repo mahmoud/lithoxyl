@@ -173,21 +173,13 @@ DELTA_FIELDS = [
     _SF('import_delta_ms', '0.4f', lambda e: (e.etime - IMPORT_TIME) * 1000)]
 
 
-def get_parent_depth(record, max_depth=200):
-    i = -1
-    while record and i < max_depth:
-        i += 1
-        record = record.parent_record
-    return i
-
-
 PARENT_DEPTH_INDENT = '   '
 
 
 PARENT_FIELDS = [
-    _SF('parent_depth', 'd', lambda e: get_parent_depth(e.record)),
+    _SF('parent_depth', 'd', lambda e: e.record.parent_depth),
     _SF('parent_depth_indent', 's',
-        lambda e: get_parent_depth(e.record) * PARENT_DEPTH_INDENT,
+        lambda e: e.record.parent_depth * PARENT_DEPTH_INDENT,
         quote=False)]
 
 

@@ -116,6 +116,14 @@ class Record(object):
         except Exception:
             return 0.0
 
+    @property
+    def parent_depth(self):
+        i = 0
+        while self.parent_record and i < 500:
+            i += 1
+            self = self.parent_record  # reuse var
+        return i
+
     def begin(self, message=None, *a, **kw):
         self.data_map.update(kw)
         if not self.begin_event:
