@@ -7,7 +7,7 @@ import itertools
 from boltons.tbutils import ExceptionInfo, Callpoint
 
 from lithoxyl.context import note
-from lithoxyl.sensible import SensibleFormatter
+from lithoxyl.sensible import SensibleMessageFormatter
 from lithoxyl.common import to_unicode, get_level
 
 
@@ -307,7 +307,7 @@ class Event(object):
             self._message = raw_message
         else:
             # TODO: Formatter cache
-            fmtr = SensibleFormatter(raw_message, quoter=False)
+            fmtr = SensibleMessageFormatter(raw_message, quoter=False)
             self._message = fmtr.format(self, *self.fargs)
         return self._message
 

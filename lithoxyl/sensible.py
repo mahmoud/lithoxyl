@@ -92,7 +92,7 @@ class GetterDict(dict):
         return None
 
 
-class SensibleEventFormatter(object):
+class SensibleFormatter(object):
     def __init__(self, base=None, **kwargs):
         defaulter = kwargs.pop('defaulter', None)
         quoter = kwargs.pop('quoter', None)
@@ -103,8 +103,8 @@ class SensibleEventFormatter(object):
             cur_fmt = kwargs.pop(event, base)
             if not cur_fmt:
                 cur_fmt = ''
-            rf = SensibleFormatter(cur_fmt, extra_fields=extra_fields,
-                                   quoter=quoter, defaulter=defaulter)
+            rf = SensibleMessageFormatter(cur_fmt, extra_fields=extra_fields,
+                                          quoter=quoter, defaulter=defaulter)
             self.event_formatters[event] = rf
         return
 
@@ -125,7 +125,7 @@ class SensibleEventFormatter(object):
         return rf(comment_event)
 
 
-class SensibleFormatter(object):
+class SensibleMessageFormatter(object):
     """The basic ``Formatter`` type implements a constrained, but robust,
     microtemplating system rendering Records to strings that are both
     human-readable *and* machine-readable. This system is based on
