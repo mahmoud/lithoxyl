@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from lithoxyl.sensible import (SensibleSink,
-                               SensibleFormatter as SF,
-                               SensibleEventFormatter as SEF)
+from lithoxyl import (SensibleSink,
+                      SensibleFilter,
+                      SensibleFormatter as SF,
+                      SensibleMessageFormatter as SMF)
 from lithoxyl.emitters import StreamEmitter, AggregateEmitter
-from lithoxyl.filters import ThresholdFilter
 from lithoxyl.logger import Logger
 
 
-fmtr = SEF('{status_char}{begin_timestamp}')
+fmtr = SF('{status_char}{begin_timestamp}')
 strm_emtr = StreamEmitter('stderr')
 aggr_emtr = AggregateEmitter()
 strm_sink = SensibleSink(formatter=fmtr, emitter=strm_emtr)
@@ -65,7 +65,7 @@ def _test_exception():
              ' - {func_name}:{line_number} - {exc_tb_list}')
     sink = SensibleSink(SF(_tmpl),
                         StreamEmitter('stderr'),
-                        filters=[ThresholdFilter(exception=0)])
+                        filters=[SensibleFilter(exception=0)])
     logger = Logger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
         print tr
