@@ -90,6 +90,18 @@ def _end_msg(e):
     except Exception as e:
         import pdb;pdb.post_mortem()
 
+
+def duration_auto(e):
+    try:
+        duration = e.record.duration
+        if duration < 0.001:
+            return '%.3fus' % (duration * 1e6)
+        if duration < 1.0:
+            return '%.3fms' % (duration * 1e3)
+        return '%.4fs' % duration
+    except Exception:
+        import pdb;pdb.post_mortem()
+
 # default, fmt_specs
 _SF = SensibleField
 BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
@@ -110,8 +122,10 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
                 _SF('end_raw_message', 's', lambda e: e.record.end_event.raw_message),
                 _SF('begin_timestamp', '.14g', lambda e: e.record.begin_time),
                 _SF('end_timestamp', '.14g', lambda e: e.record.end_time),
-                _SF('duration_secs', '.3f', lambda e: e.record.duration),
-                _SF('duration_msecs', '.3f', lambda e: e.record.duration * 1000.0),
+                _SF('duration_s', '.3f', lambda e: e.record.duration),
+                _SF('duration_ms', '.3f', lambda e: e.record.duration * 1e3),
+                _SF('duration_us', '.3f', lambda e: e.record.duration * 1e6),
+                _SF('duration_auto', '>9s', duration_auto, quote=False),
                 _SF('module_name', 's', lambda e: e.callpoint.module_name),
                 _SF('module_path', 's', lambda e: e.callpoint.module_path),
                 _SF('func_name', 's', lambda e: e.callpoint.func_name, quote=False),
@@ -169,7 +183,7 @@ for f in ISO8601_FIELDS:
 
 
 DELTA_FIELDS = [
-    _SF('import_delta', '0.6f', lambda e: e.etime - IMPORT_TIME),
+    _SF('import_delta_s', '0.6f', lambda e: e.etime - IMPORT_TIME),
     _SF('import_delta_ms', '0.4f', lambda e: (e.etime - IMPORT_TIME) * 1000)]
 
 
