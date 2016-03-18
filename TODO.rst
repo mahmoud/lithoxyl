@@ -54,7 +54,8 @@ Linty things
 ------------
 
 * Find all sinks that aren't installed in loggers
-
+* Higher-importance records nested within lower importance records
+  (e.g., critical coming from within debug)
 
 Header things
 -------------
