@@ -227,8 +227,10 @@ class Logger(object):
         return
 
     def comment(self, message, *a, **kw):
+        # comments are not enterable, they're not returned
         rec_type = self.record_type
-        rec = rec_type(logger=self, level=CRITICAL, name='comment', data=kw)
+        rec = rec_type(logger=self, level=CRITICAL, name='comment', data=kw,
+                       parent=kw.pop('parent_record', None))
         cur_time = time.time()
         rec.begin_event = BeginEvent(rec, cur_time, 'comment', ())
         rec.end_event = EndEvent(rec, cur_time,
@@ -239,29 +241,34 @@ class Logger(object):
         else:
             for comment_hook in self._comment_hooks:
                 comment_hook(event)
+        return
 
     def debug(self, name, **kw):
         "Returns a new :data:`DEBUG`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=DEBUG, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
+                                parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
     def info(self, name, **kw):
         "Returns a new :data:`INFO`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=INFO, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
+                                parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
     def critical(self, name, **kw):
         "Returns a new :data:`CRITICAL`-level :class:`Record` named *name*."
         return self.record_type(logger=self, level=CRITICAL, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
+                                parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
     def record(self, level, name, **kw):
         "Return a new :class:`Record` named *name* classified as *level*."
         return self.record_type(logger=self, level=level, name=name,
                                 data=kw, reraise=kw.pop('reraise', None),
+                                parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
     def wrap(self, level, name=None, inject_as=None, **kw):

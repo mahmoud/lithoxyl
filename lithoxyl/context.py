@@ -4,7 +4,6 @@ import os
 import sys
 import atexit
 import signal
-import weakref
 
 from lithoxyl.actors import IntervalThreadActor
 
@@ -160,23 +159,6 @@ class LithoxylContext(object):
             self.loggers.remove(logger)
         except ValueError:
             pass
-
-
-class SyncTreeTracker(object):
-    def __init__(self):
-        self.tree = {}
-
-    def get_parent(self, logger, record):
-        try:
-            stack = self.tree[logger]
-        except KeyError:
-            self.tree[logger] = []
-        try:
-            ret = stack[-1]
-        except IndexError:
-            ret = None
-        stack.append(self)
-        return ret
 
 
 def signal_sysexit(signum, frame):

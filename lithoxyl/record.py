@@ -71,7 +71,7 @@ class Record(object):
     _defer_publish = False
 
     def __init__(self, logger, level, name,
-                 data=None, reraise=True, frame=None):
+                 data=None, reraise=True, parent=None, frame=None):
         self.record_id = next(_REC_ID_ITER)
         self.logger = logger
         self.level = get_level(level)
@@ -90,7 +90,10 @@ class Record(object):
         self.warn_events = []
         self.exc_events = []
 
-        self.parent_record = logger.context.get_active_parent(logger, self)
+        if parent:
+            self.parent_record = parent
+        else:
+            self.parent_record = logger.context.get_active_parent(logger, self)
         return
 
     def __repr__(self):
