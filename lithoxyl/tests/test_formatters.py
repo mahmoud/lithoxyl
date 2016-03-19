@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from lithoxyl import DeferredValue
-from lithoxyl.logger import Logger, Record, DEBUG
+from lithoxyl.logger import Logger, Record
 from lithoxyl.sensible import SensibleFormatter as SF
 
 
