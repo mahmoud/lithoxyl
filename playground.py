@@ -5,25 +5,21 @@
 
 import lithoxyl
 from lithoxyl import (Logger,
-                      SensibleSink,
-                      ThresholdFilter,
                       StreamEmitter,
-                      Formatter)
-import itertools
-
-stderr_fmt = Formatter(begin='{status_char}{iso_begin_local_noms_notz} - {begin_message}',
-                       end='{status_char}{iso_end_local_noms_notz} - {duration_msecs}ms - {end_message}')
+                      SensibleSink,
+                      SensibleFilter,
+                      SensibleFormatter as SF)
 
 
-stderr_fmt = Formatter(begin='{status_char}+{import_delta_ms}ms - {begin_message}',
-                       end='{status_char}+{import_delta_ms}ms - {duration_msecs}ms - {end_message}')
+stderr_fmt = SF(begin='{status_char}+{import_delta_ms}ms - {begin_message}',
+                end='{status_char}+{import_delta_ms}ms - {duration_ms}ms - {end_message}')
 
 
 stderr_emt = StreamEmitter('stderr')
-stderr_filter = ThresholdFilter(success='info',
-                                failure='debug',
-                                exception='debug',
-                                begin='debug')
+stderr_filter = SensibleFilter(success='info',
+                               failure='debug',
+                               exception='debug',
+                               begin='debug')
 stderr_sink = SensibleSink(formatter=stderr_fmt,
                            emitter=stderr_emt,
                            filters=[stderr_filter])
@@ -37,7 +33,7 @@ stderr_sink = SensibleSink(formatter=stderr_fmt,
 
 from lithoxyl import context
 
-#context.get_context().enable_async()
+# context.get_context().enable_async()
 
 log = Logger('test')  # , sinks=[stderr_sink])
 
@@ -49,11 +45,8 @@ def one_two():
     return
 
 
-for i in range(2000):
+for i in range(20):
     one_two()
-
-
-print 'recs tracked:', len(lithoxyl.context._SYNC_REC_TREE[log])
 
 
 import os
