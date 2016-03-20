@@ -35,6 +35,7 @@ def register_field(field):
 
 class SensibleSink(object):
     def __init__(self, formatter=None, emitter=None, filters=None, on=EVENTS):
+        # TODO: get_level for this
         events = on
         if isinstance(events, basestring):
             events = [events]
@@ -58,25 +59,26 @@ class SensibleSink(object):
             self.on_comment = self._on_comment
 
     def _on_begin(self, event):
-        if self.filters and not all([f(event) for f in self.filters]):
+        if self.filters and not all([f.on_begin(event) for f in self.filters]):
             return
         entry = self.formatter.on_begin(event)
         return self.emitter.on_begin(event, entry)
 
     def _on_warn(self, event):
-        if self.filters and not all([f(event) for f in self.filters]):
+        if self.filters and not all([f.on_warn(event) for f in self.filters]):
             return
         entry = self.formatter.on_warn(event)
         return self.emitter.on_warn(event, entry)
 
     def _on_end(self, event):
-        if self.filters and not all([f(event) for f in self.filters]):
+        if self.filters and not all([f.on_end(event) for f in self.filters]):
             return
         entry = self.formatter.on_end(event)
         return self.emitter.on_end(event, entry)
 
     def _on_comment(self, event):
-        if self.filters and not all([f(event) for f in self.filters]):
+        if self.filters and not all([f.on_comment(event)
+                                     for f in self.filters]):
             return
         entry = self.formatter.on_comment(event)
         return self.emitter.on_comment(event, entry)
@@ -88,28 +90,53 @@ class SensibleSink(object):
 
 
 class SensibleFilter(object):
-    def __init__(self, base=None, **kwargs):
+    def __init__(self, base=None, **kw):
         # TODO: filter for warnings
         # TODO: on-bind lookup behaviors?
+
         base = get_level(base or MAX_LEVEL)
 
-        self.event_kw_vals = {}
-        for event in ('begin', 'success', 'failure', 'exception'):
-            level = kwargs.pop(event, base)
-            if not level:  # False or explicit None
-                level = MAX_LEVEL  # MAX_LEVEL filters all
-            level = get_level(level)
-            self.event_kw_vals[event] = level
+        self.begin_level = get_level(kw.pop('begin', base) or MAX_LEVEL)
+        self.success_level = get_level(kw.pop('success', base) or MAX_LEVEL)
+        self.failure_level = get_level(kw.pop('failure', base) or MAX_LEVEL)
+        self.exception_level = get_level(kw.pop('exception', base)
+                                         or MAX_LEVEL)
+        self.warn_level = get_level(kw.pop('warn', base) or MAX_LEVEL)
+        self.block_comments = kw.pop('block_comments', False)
+        self.verbose_check = lambda ev: False  # TODO
 
-        self.event_thresh_map = dict(self.event_kw_vals)  # TODO
-        if kwargs:
-            raise TypeError('got unexpected keyword arguments: %r' % kwargs)
+        if kw:
+            raise TypeError('got unexpected keyword arguments: %r' % kw)
 
-    def __call__(self, record):
-        try:
-            return record.level >= self.event_thresh_map[record.status]
-        except KeyError:
-            return False
+    def on_begin(self, ev):
+        if ev.record.level >= self.begin_level:
+            return True
+        elif self.verbose_check and self.verbose_check(ev):
+            return True
+        return False
+
+    def on_end(self, ev):
+        ret, rec, status = False, ev.record, ev.status
+        if status == 'success':
+            ret = rec.level >= self.success_level
+        elif status == 'failure':
+            ret = rec.level >= self.failure_level
+        elif status == 'exception':
+            ret = rec.level >= self.exception_level
+        if not ret:
+            if self.verbose_check and self.verbose_check(ev):
+                ret = True
+        return ret
+
+    def on_warn(self, ev):
+        if ev.record.level >= self.warn_level:
+            return True
+        elif self.verbose_check and self.verbose_check(ev):
+            return True
+        return False
+
+    def on_comment(self, ev):
+        return not self.block_comments
 
 
 class GetterDict(dict):
