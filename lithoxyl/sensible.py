@@ -91,7 +91,6 @@ class SensibleSink(object):
 
 class SensibleFilter(object):
     def __init__(self, base=None, **kw):
-        # TODO: filter for warnings
         # TODO: on-bind lookup behaviors?
 
         base = get_level(base or MAX_LEVEL)
@@ -103,7 +102,10 @@ class SensibleFilter(object):
                                          or MAX_LEVEL)
         self.warn_level = get_level(kw.pop('warn', base) or MAX_LEVEL)
         self.block_comments = kw.pop('block_comments', False)
-        self.verbose_check = lambda ev: False  # TODO
+        self.verbose_check = kw.pop('verbose_check', None)
+        if not self.verbose_check:
+            verbose_flag = kw.pop('verbose_flag', 'verbose')
+            self.verbose_check = lambda e: e.record.data_map.get(verbose_flag)
 
         if kw:
             raise TypeError('got unexpected keyword arguments: %r' % kw)
