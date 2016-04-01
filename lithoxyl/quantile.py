@@ -133,6 +133,8 @@ class QuantileAccumulator(BaseQuantileAccumulator):
             self._is_sorted = False
             super(QuantileAccumulator, self).add(val)
         else:
+            # TODO: randint has a lot of pure-python arg checking
+            # machinery we don't need
             idx = random.randint(0, self._count)
             if idx < self._cap:
                 self._data[idx] = val
