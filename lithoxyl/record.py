@@ -328,6 +328,7 @@ class Event(object):
 
 
 class BeginEvent(Event):
+    status = 'begin'
     status_char = 'b'
 
     def __init__(self, record, etime, raw_message, fargs):
@@ -339,6 +340,7 @@ class BeginEvent(Event):
 
 
 class ExceptionEvent(Event):
+    status = 'exception'
     status_char = '!'
 
     def __init__(self, record, etime, raw_message, fargs, exc_info):
@@ -371,6 +373,7 @@ class EndEvent(Event):
 
 
 class WarningEvent(Event):
+    status = 'warning'
     status_char = 'W'
 
     def __init__(self, record, etime, raw_message, fargs):
@@ -382,6 +385,7 @@ class WarningEvent(Event):
 
 
 class CommentEvent(Event):
+    status = 'comment'
     status_char = '#'
 
     def __init__(self, record, etime, raw_message, fargs):
