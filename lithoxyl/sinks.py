@@ -287,20 +287,6 @@ class QuantileSink(object):
             self._qa_type = P2QuantileAccumulator
         self.qas = {}
 
-    def on_end(self, event):
-        try:
-            acc = self.qas[event.name]
-        except KeyError:
-            acc = self.qas[event.name] = self._qa_type()
-        acc.add(event.duration)
-
-    def __repr__(self):
-        cn = self.__class__.__name__
-        acc_dict_repr = dict([(rec_name, (acc.count, round(acc.median, 4)))
-                              for rec_name, acc in self.qas.items()])
-        ret = '<%s %r>' % (cn, acc_dict_repr)
-        return ret
-
     def to_dict(self):
         ret = {}
         for r_name, acc in self.qas.iteritems():
@@ -309,8 +295,6 @@ class QuantileSink(object):
                            'quantiles': dict(acc.get_quantiles())}
         return ret
 
-
-class MultiQuantileSink(QuantileSink):
     def on_end(self, event):
         try:
             logger_accs = self.qas[event.logger.name]
