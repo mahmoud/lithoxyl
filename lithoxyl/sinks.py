@@ -265,7 +265,7 @@ class EWMASink(object):
 
 
 class QuantileSink(object):
-    def __init__(self, use_p2=False):
+    def __init__(self, getter=None, use_p2=False):
         """There are two approaches for quantile-based stats
         accumulation. A standard, reservoir/replacement strategy
         (QuantileAccumulator) and the P2 approach
@@ -276,6 +276,10 @@ class QuantileSink(object):
         stats reading. P2 is also more space-efficient and tends to be
         more accurate for common performance curves.
         """
+        if getter is None:
+            getter = lambda event: event.duration
+        self.getter = getter
+
         self._qa_type = QuantileAccumulator
         if use_p2:
             self._qa_type = P2QuantileAccumulator
@@ -299,7 +303,7 @@ class QuantileSink(object):
         except KeyError:
             acc = logger_accs[event.name] = self._qa_type()
 
-        acc.add(event.duration)
+        acc.add(self.getter(event))
 
     def __repr__(self):
         cn = self.__class__.__name__
