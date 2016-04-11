@@ -265,7 +265,7 @@ class EWMASink(object):
 
 
 class QuantileSink(object):
-    def __init__(self, getter=None, use_p2=False):
+    def __init__(self, getter=None, **kwargs):
         """There are two approaches for quantile-based stats
         accumulation. A standard, reservoir/replacement strategy
         (QuantileAccumulator) and the P2 approach
@@ -280,9 +280,15 @@ class QuantileSink(object):
             getter = lambda event: event.duration
         self.getter = getter
 
-        self._qa_type = QuantileAccumulator
+        default_acc = QuantileAccumulator
+        use_p2 = kwargs.pop('use_p2', False)
         if use_p2:
-            self._qa_type = P2QuantileAccumulator
+            default_acc = P2QuantileAccumulator
+
+        acc_type = kwargs.pop('acc_type', default_acc)
+
+        self._acc_type = acc_type
+
         self.qas = {}
 
     def to_dict(self):
@@ -301,7 +307,7 @@ class QuantileSink(object):
         try:
             acc = logger_accs[event.name]
         except KeyError:
-            acc = logger_accs[event.name] = self._qa_type()
+            acc = logger_accs[event.name] = self._acc_type()
 
         acc.add(self.getter(event))
 
