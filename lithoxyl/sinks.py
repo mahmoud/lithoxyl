@@ -266,21 +266,15 @@ class EWMASink(object):
 
 class QuantileSink(object):
     def __init__(self, use_p2=False):
-        """
-        There are two approaches for quantile-based stats
+        """There are two approaches for quantile-based stats
         accumulation. A standard, reservoir/replacement strategy
         (QuantileAccumulator) and the P2 approach
         (P2QuantileAccumulator).
 
-        P2 is slower to update, but faster to read, so consider
+        P2 is slower to update, but faster to read. so consider
         setting use_p2 to True if your use case entails more frequent
-        stats reading.
-
-        Depending on application/sink usage, a MultiQuantileSink may
-        be appropriate to avoid collisions among statistics with the
-        same record names. (only if you use the same sink with
-        multiple loggers, just look at on_end and it'll be
-        clear.)
+        stats reading. P2 is also more space-efficient and tends to be
+        more accurate for common performance curves.
         """
         self._qa_type = QuantileAccumulator
         if use_p2:
