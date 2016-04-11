@@ -5,6 +5,8 @@ import time
 import bisect
 from collections import deque
 
+from boltons.cacheutils import ThresholdCounter as TCounter
+
 from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
@@ -344,3 +346,36 @@ class DevDebugSink(object):
             pdb.post_mortem()
         if self.reraise:
             raise exc_type, exc_obj, exc_tb
+
+
+class CounterSink(object):
+    def __init__(self, getter=None, threshold=0.001):
+        if getter is None:
+            getter = lambda end_event: end_event.record.name
+
+        if not callable(getter):
+            raise TypeError('expected callable for getter, not %r' % (getter,))
+        self.getter = getter
+        self.threshold = threshold
+        self.counter_map = {}
+
+    def on_end(self, end_event):
+        ev, ctr_map = end_event, self.counter_map
+        try:
+            counter = ctr_map[ev.record.logger]
+        except KeyError:
+            counter = ctr_map[ev.record.logger] = TCounter(self.threshold)
+
+        key = self.getter(end_event)
+        counter.add(key)
+        return
+
+    def to_dict(self):
+        ret = {}
+        for logger, counter in self.counter_map.items():
+            ret[logger.name] = cur = dict(counter)
+            uncommon_count = counter.get_uncommon_count()
+            if uncommon_count:
+                ret[logger.name]['__missing__'] = uncommon_count
+            cur['__all__'] = sum(cur.values())
+        return ret
