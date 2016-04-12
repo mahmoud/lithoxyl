@@ -4,7 +4,7 @@ import os
 import random
 
 from lithoxyl.moment import MomentAccumulator
-from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
+from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
 import _statsutils
 
 
@@ -50,7 +50,7 @@ def test_momentacc_norm():
 
 def test_quantacc_basic(data=None):
     data = data or range(31)
-    qa = QuantileAccumulator()
+    qa = ReservoirAccumulator()
     for v in data:
         qa.add(v)
     assert qa.median == _statsutils.median(data)
@@ -61,7 +61,7 @@ def test_quantacc_basic(data=None):
 
 def test_quantacc():
     for name, data in test_sets.items():
-        qa = QuantileAccumulator()
+        qa = ReservoirAccumulator()
         for v in data:
             qa.add(v)
         _assert_round_cmp(qa.median, _statsutils.median(data), mag=6)
@@ -75,8 +75,8 @@ def test_quantacc():
 
 def test_p2quantacc():
     for name, data in test_sets.items():
-        qa = QuantileAccumulator()
-        p2qa = P2QuantileAccumulator()
+        qa = ReservoirAccumulator()
+        p2qa = P2Accumulator()
         for i, v in enumerate(data):
             p2qa.add(v)
             qa.add(v)
@@ -96,9 +96,9 @@ def test_p2quantacc():
 def test_acc_random():
     data = test_sets['random.random 0.0-1.0']
 
-    qa = QuantileAccumulator(data)
-    capqa = QuantileAccumulator(data, cap=True)
-    p2qa = P2QuantileAccumulator(data)
+    qa = ReservoirAccumulator(data)
+    capqa = ReservoirAccumulator(data, cap=True)
+    p2qa = P2Accumulator(data)
     for acc in (qa, capqa, p2qa):
         for qp, v in acc.get_quantiles():
             if qp > 0:

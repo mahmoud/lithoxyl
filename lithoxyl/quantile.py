@@ -18,7 +18,7 @@ P2_PRO = (0.1, 1, 2, 5, 10, 25, 50, 75, 80, 85, 90, 95,
           98, 99, 99.5, 99.8, 99.9, 99.99)
 
 
-class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
+class BaseQuantileAccumulator(object):
     def __init__(self):
         self._count = 0
         self._min = float('inf')
@@ -102,9 +102,9 @@ class BaseQuantileAccumulator(object):  # TODO: ABC makin a comeback?
         return (qs[0] + (2 * qs[1]) + qs[2]) / 4.0
 
 
-class QuantileAccumulator(BaseQuantileAccumulator):
+class ReservoirAccumulator(BaseQuantileAccumulator):
     def __init__(self, data=None, cap=None):
-        super(QuantileAccumulator, self).__init__()
+        super(ReservoirAccumulator, self).__init__()
         self._typecode = 'f'  # TODO
         self._data = array.array(self._typecode)
         self._is_sorted = True
@@ -119,6 +119,7 @@ class QuantileAccumulator(BaseQuantileAccumulator):
             self.add(v)
 
     def _sort(self):
+
         if self._is_sorted:
             return
         if callable(getattr(self._data, 'sort', None)):
@@ -131,7 +132,7 @@ class QuantileAccumulator(BaseQuantileAccumulator):
         if self._count < self._cap:
             self._data.append(val)
             self._is_sorted = False
-            super(QuantileAccumulator, self).add(val)
+            super(ReservoirAccumulator, self).add(val)
         else:
             # TODO: randint has a lot of pure-python arg checking
             # machinery we don't need
@@ -139,7 +140,7 @@ class QuantileAccumulator(BaseQuantileAccumulator):
             if idx < self._cap:
                 self._data[idx] = val
                 self._is_sorted = False
-                super(QuantileAccumulator, self).add(val)
+                super(ReservoirAccumulator, self).add(val)
 
     def _get_quantile(self, q=50):
         if not (0 < q < 100):
@@ -153,12 +154,12 @@ class QuantileAccumulator(BaseQuantileAccumulator):
         return (data[idx_f] * (idx_c - idx)) + (data[idx_c] * (idx - idx_f))
 
 
-class P2QuantileAccumulator(BaseQuantileAccumulator):
+class P2Accumulator(BaseQuantileAccumulator):
     def __init__(self, data=None, q_points=P2_PRAG):
-        super(P2QuantileAccumulator, self).__init__()
+        super(P2Accumulator, self).__init__()
         data = data or []
         self._q_points = P2Estimator._process_q_points(q_points)
-        self._tmp_acc = QuantileAccumulator(cap=None)
+        self._tmp_acc = ReservoirAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None
 
@@ -175,11 +176,11 @@ class P2QuantileAccumulator(BaseQuantileAccumulator):
             return
         else:
             self._est.add(val)
-        super(P2QuantileAccumulator, self).add(val)
+        super(P2Accumulator, self).add(val)
 
     def get_quantiles(self, q_points=None):
         q_points = q_points or self._q_points
-        return super(P2QuantileAccumulator, self).get_quantiles(q_points)
+        return super(P2Accumulator, self).get_quantiles(q_points)
 
     def _get_quantile(self, q):
         try:

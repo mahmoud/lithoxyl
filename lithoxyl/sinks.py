@@ -8,7 +8,7 @@ from collections import deque
 from boltons.cacheutils import ThresholdCounter as TCounter
 
 from lithoxyl.emitters import StreamEmitter
-from lithoxyl.quantile import QuantileAccumulator, P2QuantileAccumulator
+from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
@@ -280,10 +280,10 @@ class QuantileSink(object):
             getter = lambda event: event.duration
         self.getter = getter
 
-        default_acc = QuantileAccumulator
+        default_acc = ReservoirAccumulator
         use_p2 = kwargs.pop('use_p2', False)
         if use_p2:
-            default_acc = P2QuantileAccumulator
+            default_acc = P2Accumulator
 
         acc_type = kwargs.pop('acc_type', default_acc)
 
