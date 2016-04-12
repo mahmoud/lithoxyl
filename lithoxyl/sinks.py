@@ -33,6 +33,18 @@ class AggregateSink(object):
         self.comment_events.append(comment_event)
 
 
+class DevDebugSink(object):
+    def __init__(self, reraise=False, post_mortem=False):
+        self.reraise = reraise
+        self.post_mortem = post_mortem
+
+    def on_exception(self, event, exc_type, exc_obj, exc_tb):
+        if self.post_mortem:
+            pdb.post_mortem()
+        if self.reraise:
+            raise exc_type, exc_obj, exc_tb
+
+
 class RateAccumulator(object):
     """\
     The RateAccumulator provides basic accounting and rate estimation
@@ -114,9 +126,11 @@ class RateSink(object):
 
     A RateSink can be shared across multiple loggers.
     """
-    def __init__(self, sample_size=128, getter=None):
+    def __init__(self, getter=None, sample_size=128):
         if getter is None:
             getter = lambda end_event: end_event.etime
+        if not callable(getter):
+            raise TypeError('expected callable getter, not %r' % getter)
         self.getter = getter
         self.acc_map = {}
         self.sample_size = sample_size
@@ -197,23 +211,24 @@ class RateSink(object):
         cn = self.__class__.__name__
         total_rate_all = self.get_rates()['__all__']
         total_count_all = self.get_total_counts()['__all__']
-        return '<%s total_rate=%.4f total_count=%r>' % (cn,
-                                                        total_rate_all,
-                                                        total_count_all)
+        args = (cn, total_rate_all, total_count_all)
+        return '<%s total_rate=%.4f total_count=%r>' % args
 
 
 class EWMASink(object):
     accumulator_type = EWMAAccumulator
 
     def __init__(self,
+                 getter=None,
                  periods=DEFAULT_PERIODS,
-                 interval=DEFAULT_INTERVAL,
-                 getter=None):
+                 interval=DEFAULT_INTERVAL):
         if getter is None:
             getter = lambda record: record.duration
+        if not callable(getter):
+            raise TypeError('expected callable getter, not %r' % getter)
+        self.getter = getter
         self.periods = periods
         self.interval = interval
-        self.getter = getter
         self.acc_map = {}
 
     def on_end(self, record):
@@ -278,6 +293,8 @@ class QuantileSink(object):
         """
         if getter is None:
             getter = lambda event: event.duration
+        if not callable(getter):
+            raise TypeError('expected callable getter, not %r' % getter)
         self.getter = getter
 
         default_acc = ReservoirAccumulator
@@ -321,28 +338,13 @@ class QuantileSink(object):
         return ret
 
 
-class DevDebugSink(object):
-    # TODO: configurable max number of traceback signatures, after
-    #       which exit/ignore?
-
-    def __init__(self, reraise=False, post_mortem=False):
-        self.reraise = reraise
-        self.post_mortem = post_mortem
-
-    def on_exception(self, event, exc_type, exc_obj, exc_tb):
-        if self.post_mortem:
-            pdb.post_mortem()
-        if self.reraise:
-            raise exc_type, exc_obj, exc_tb
-
-
 class CounterSink(object):
     def __init__(self, getter=None, threshold=0.001):
         if getter is None:
             getter = lambda end_event: end_event.record.name
-
         if not callable(getter):
-            raise TypeError('expected callable for getter, not %r' % (getter,))
+            raise TypeError('expected callable getter, not %r' % (getter,))
+
         self.getter = getter
         self.threshold = threshold
         self.counter_map = {}
