@@ -7,7 +7,7 @@ collection. Very lightweight, very Pythonic.
 """
 
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 __author__ = 'Mahmoud Hashemi'
@@ -33,9 +33,8 @@ setup(name='lithoxyl',
       author=__author__,
       author_email=__contact__,
       url=__url__,
-      packages=['lithoxyl',
-                'lithoxyl.tests'],
-      install_requires=['boltons==16.1.1'],
+      packages=find_packages(),
+      install_requires=['boltons>=16.2.0'],
       include_package_data=True,
       zip_safe=False,
       license=__license__,
