@@ -169,31 +169,26 @@ class SensibleFormatter(object):
         quoter = kwargs.pop('quoter', None)
         extra_fields = kwargs.pop('extra_fields', None)
 
-        self.event_formatters = {}
         for event in EVENTS:
             cur_fmt = kwargs.pop(event, base)
             if not cur_fmt:
                 cur_fmt = ''
             rf = SensibleMessageFormatter(cur_fmt, extra_fields=extra_fields,
                                           quoter=quoter, defaulter=defaulter)
-            self.event_formatters[event] = rf
+            setattr(self, '_' + event + '_formatter', rf)
         return
 
     def on_begin(self, begin_event):
-        rf = self.event_formatters['begin']
-        return rf(begin_event)
+        return self._begin_formatter(begin_event)
 
     def on_warn(self, warn_event):
-        rf = self.event_formatters['warn']
-        return rf(warn_event)
+        return self._warn_formatter(warn_event)
 
     def on_end(self, end_event):
-        rf = self.event_formatters['end']
-        return rf(end_event)
+        return self._end_formatter(end_event)
 
     def on_comment(self, comment_event):
-        rf = self.event_formatters['comment']
-        return rf(comment_event)
+        return self._comment_formatter(comment_event)
 
 
 class SensibleMessageFormatter(object):
