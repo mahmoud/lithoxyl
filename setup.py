@@ -2,8 +2,8 @@
 A systematic approach to logging, profiling, and statistics
 collection. Very lightweight, very Pythonic.
 
-:copyright: (c) 2015 by Mahmoud Hashemi
-:license: BSD, see LICENSE for more details.
+(c) 2015 by Mahmoud Hashemi.
+BSD-licensed, see LICENSE for more details.
 """
 
 import sys
@@ -23,8 +23,10 @@ desc = ('A systematic approach to logging, profiling, and statistics'
 if sys.version_info < (2,6):
     raise NotImplementedError("Sorry, lithoxyl only supports Python >=2.6")
 
+
 if sys.version_info >= (3,):
     raise NotImplementedError("lithoxyl Python 3 support en route to your location")
+
 
 setup(name='lithoxyl',
       version=__version__,
