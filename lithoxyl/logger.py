@@ -243,36 +243,36 @@ class Logger(object):
                 comment_hook(event)
         return
 
-    def debug(self, name, **kw):
+    def debug(self, record_name, **kw):
         "Returns a new :data:`DEBUG`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=DEBUG, name=name,
+        return self.record_type(logger=self, level=DEBUG, name=record_name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
-    def info(self, name, **kw):
+    def info(self, record_name, **kw):
         "Returns a new :data:`INFO`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=INFO, name=name,
+        return self.record_type(logger=self, level=INFO, name=record_name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
-    def critical(self, name, **kw):
+    def critical(self, record_name, **kw):
         "Returns a new :data:`CRITICAL`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=CRITICAL, name=name,
+        return self.record_type(logger=self, level=CRITICAL, name=record_name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
-    def record(self, level, name, **kw):
+    def record(self, level, record_name, **kw):
         "Return a new :class:`Record` named *name* classified as *level*."
-        return self.record_type(logger=self, level=level, name=name,
+        return self.record_type(logger=self, level=level, name=record_name,
                                 data=kw, reraise=kw.pop('reraise', None),
                                 parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
-    def wrap(self, level, name=None, inject_as=None, **kw):
-        def record_wrapper(func_to_log, _name=name):
+    def wrap(self, level, record_name=None, inject_as=None, **kw):
+        def record_wrapper(func_to_log, _name=record_name):
             if _name is None:  # wooo nonlocal
                 _name = func_to_log.__name__
 
