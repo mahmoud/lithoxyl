@@ -41,10 +41,19 @@ def check_encoding_settings(encoding, errors):
 
 class AggregateEmitter(object):
     def __init__(self):
-        self.entries = []
+        self.items = []
+
+    def get_entries(self):
+        return [entry for record, entry in self.items]
+
+    def get_entry(self, idx):
+        return self.items[idx][1]
+
+    def clear(self):
+        self.items[:] = []
 
     def emit_entry(self, record, entry):
-        self.entries.append((record, entry))
+        self.items.append((record, entry))
 
     on_begin = on_warn = on_end = on_comment = emit_entry
 
