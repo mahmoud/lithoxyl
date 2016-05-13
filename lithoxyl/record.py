@@ -131,7 +131,7 @@ class Record(object):
         self.data_map.update(kw)
         if not self.begin_event:
             if not message:
-                message = self.name + ' begun'
+                message = self.name + ' beginning'
 
             self.begin_event = BeginEvent(self, time.time(), message, a)
             self.logger.on_begin(self.begin_event)
@@ -254,7 +254,7 @@ class Record(object):
 
     def get_elapsed_time(self):
         """Simply get the amount of time that has passed since the record was
-        created or begun. This method has no side effects.
+        created or begin was called. This method has no side effects.
         """
         if self.begin_event:
             return time.time() - self.begin_event.etime
