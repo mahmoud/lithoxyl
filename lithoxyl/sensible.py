@@ -268,7 +268,7 @@ class SensibleMessageFormatter(object):
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, self.raw_format_str)
 
-    def format(self, record, *args, **kwargs):
+    def format(self, event, *args, **kwargs):
         """Render text, based on the format-string template used to construct
         the object, plus values from the following sources:
 
@@ -279,7 +279,7 @@ class SensibleMessageFormatter(object):
 
         """
         ret = ''
-        kw_vals = GetterDict(record, self._getter_map)
+        kw_vals = GetterDict(event, self._getter_map)
         kw_vals.update(kwargs)
         q_map, d_map = self.quoter_map, self.default_map
         for t in self.tokens:
@@ -435,7 +435,7 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
                 _SF('record_id', 'd', lambda e: e.record_id),
                 _SF('status_str', 's', lambda e: e.status, quote=False),
                 _SF('status_char', 's', lambda e: e.status_char, quote=False),
-                _SF('warn_char', 's', lambda e: e.warn_char, quote=False),
+                _SF('warn_char', 's', lambda e: e.warn_char, quote=False),  # TODO
                 _SF('level_name', 's', lambda e: e.level_name, quote=False),
                 _SF('data_map', 's', lambda e: json.dumps(e.record.data_map, sort_keys=True), quote=False),
                 _SF('level_name_upper', 's', lambda e: e.level_name.upper(), quote=False),

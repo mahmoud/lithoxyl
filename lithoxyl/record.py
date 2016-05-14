@@ -241,51 +241,19 @@ class Record(object):
         return
 
     def __getitem__(self, key):
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            return self.data_map[key]
+        return self.data_map[key]
 
     def __setitem__(self, key, value):
-        if hasattr(self, key):
-            setattr(self, key, value)
-        else:
-            self.data_map[key] = value
+        self.data_map[key] = value
 
     def get_elapsed_time(self):
-        """Simply get the amount of time that has passed since the record was
-        created or begin was called. This method has no side effects.
+        """Simply get the amount of time that has passed since begin was
+        called on this record, or 0.0 if it has not begun. This method
+        has no side effects.
         """
         if self.begin_event:
             return time.time() - self.begin_event.etime
         return 0.0
-
-    '''
-    @property
-    def status_char(self):
-        """A single-character representation of the status of the Record. See
-        the ``status_chr`` field in the
-        :class:`~lithoxyl.formatter.Formatter` field documentation for
-        more details.
-        """
-        ret = '_'
-        try:
-            if self._is_trans:
-                if self.end_time:
-                    ret = self.status[:1].upper()
-                else:
-                    ret = 'b'
-            else:
-                ret = self.status[:1].lower()
-        except Exception:
-            pass
-        return ret
-
-    @property
-    def warn_char(self):
-        "``'W'`` if the Record has warnings, ``' '`` otherwise."
-        return 'W' if self.warnings else ' '
-    '''
 
 
 # TODO: optimization strategy. if event creation starts to register on
