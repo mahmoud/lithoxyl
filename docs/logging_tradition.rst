@@ -1,9 +1,9 @@
-The Current State of Logging
-============================
+The Logging Tradition
+=====================
 
 For experienced engineers, it may be best to understand lithoxyl by
-first taking a hard look at the current state of logging, with a focus
-on logging in Python.
+first taking a hard look at the past and current state of logging,
+with a focus on logging in Python.
 
 Logging in Python
 -----------------

@@ -4,10 +4,10 @@
 Lithoxyl
 ========
 
-Lithoxyl is a holistic, semantic approach to application
-instrumentation, encompassing logging, both human- and
-machine-readable, statistics collection, and online profiling.
-
+Lithoxyl is an instrumentation toolkit for Python applications,
+offering a semantic approach to logging and metrics
+collection. Lithoxyl integration is compact and performant, minimizing
+impact on codebase readability and system performance.
 
 Section Listing
 ---------------
@@ -15,10 +15,11 @@ Section Listing
 .. toctree::
    :maxdepth: 2
 
-   state_of_logging
+   overview
    logger
    record
-   formatting
+   sensible
+   logging_tradition
    glossary
 
 .. group all the core types into one page? (Logger, Record, Sink)

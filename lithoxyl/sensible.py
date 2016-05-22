@@ -6,6 +6,7 @@
 import os
 import time
 import json
+import socket
 import datetime
 
 from boltons.timeutils import UTC, LocalTZ
@@ -442,9 +443,9 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
                 _SF('level_char', 's', lambda e: e.level_name.upper()[0], quote=False),
                 _SF('level_number', 'd', lambda e: e.level._value),
                 _SF('begin_message', 's', lambda e: e.begin_event.message),
-                _SF('begin_raw_message', 's', lambda e: e.begin_event.raw_message),
+                _SF('begin_message_raw', 's', lambda e: e.begin_event.raw_message),
                 _SF('end_message', 's', lambda e: e.record.end_event.message),
-                _SF('end_raw_message', 's', lambda e: e.record.end_event.raw_message),
+                _SF('end_message_raw', 's', lambda e: e.record.end_event.raw_message),
                 _SF('begin_timestamp', '.14g', lambda e: e.record.begin_time),
                 _SF('end_timestamp', '.14g', lambda e: e.record.end_time),
                 _SF('duration_s', '.3f', lambda e: e.record.duration),
@@ -521,6 +522,25 @@ PARENT_FIELDS = [
         lambda e: e.record.parent_depth * PARENT_DEPTH_INDENT,
         quote=False)]
 
+import binascii
+
+_GUID_SALT = '-'.join([str(os.getpid()),
+                       socket.gethostname() or '<nohostname>',
+                       str(time.time()),
+                       binascii.hexlify(os.urandom(4))])
+
+# I'd love to use UUID.uuid4, but this is 20x faster
+import hashlib
+
+# sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
+# chance of a collision after 2^64 messages.
+
+
+def _get_id_guid(id_int):
+    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
+
+
+# TODO: fallback to UUID if hashlib isn't available
 
 for f in BASIC_FIELDS:
     register_builtin_field(f)
