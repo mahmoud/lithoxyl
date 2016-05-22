@@ -1,6 +1,9 @@
 TODO
 ====
 
+* Conditional wrap (bool on Logger.wrap)
+* utils.wrap_all(logger, level=str_or_callable, enable=True)
+* DummyRecord
 * Level remapping
 * Dynamic (as in scope) transaction association (parent ID)
 * Parser from Formatter
@@ -20,6 +23,7 @@ Formatting
   * Time shortening (h, m, s, ms, us)
   * Shortened string
   * reprlib
+* cur_event timestamps
 
 Sinks/emitters
 --------------
