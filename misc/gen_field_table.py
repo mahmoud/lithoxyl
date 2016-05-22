@@ -5,8 +5,7 @@ sys.path.append('..')
 
 from tabulate import tabulate
 from lithoxyl import Logger
-from lithoxyl.fields import BASIC_FIELDS, ISO8601_FIELDS
-from lithoxyl.formatters import Formatter
+from lithoxyl.sensible import BASIC_FIELDS, ISO8601_FIELDS, SensibleMessageFormatter as SMF
 
 
 def summarize(text, length):
@@ -37,12 +36,12 @@ test_rec = get_test_record()
 
 def get_field_table_text(fields, quoted, maxlen=36, indent=True):
     rows = []
-    headers = ['Name', 'Example', 'Description']
+    headers = ['Name', 'Description', 'Example']
     if quoted:
         headers.append('Quoted')
     for f in fields:
-        example = Formatter('{' + f.fname + '}').format_record(test_rec)
-        row = ['``' + f.fname + '``', '``' + summarize(example, maxlen) + '``', 'X' + (' ' * 30) + 'X']
+        example = SMF('{' + f.fname + '}').format(test_rec.end_event)
+        row = ['``' + f.fname + '``', 'X' + (' ' * 60) + 'X', '``' + summarize(example, maxlen) + '``']
         if quoted:
             row.append('Y' if f.quote else ' ')
         rows.append(row)
@@ -52,6 +51,6 @@ def get_field_table_text(fields, quoted, maxlen=36, indent=True):
     return text
 
 
-print get_field_table_text(BASIC_FIELDS, quoted=True)
+print get_field_table_text(BASIC_FIELDS, quoted=False)
 print
 print get_field_table_text(ISO8601_FIELDS, quoted=False)
