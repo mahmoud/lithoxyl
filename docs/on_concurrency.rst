@@ -1,7 +1,7 @@
 On Concurrency, Crossing, and Continuity
 ========================================
 
-One of the biggest challenges for developers is maintaining log
+oOne of the biggest challenges for developers is maintaining log
 continuity across operations.
 
 Lithoxyl solves this within the same process with the

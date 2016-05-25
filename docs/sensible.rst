@@ -4,13 +4,7 @@ The Sensible Suite
 Lithoxyl has many uses, but one of them is as a toolkit for creating
 structured logs, or logs with a uniform format to make them machine
 readable. The Sensible approach offers structured logging without
-sacrificing human readability. To achieve this, it uses four key types
-with a sensible naming scheme:
-
-  * The SensibleSink
-  * The SensibleFormatter
-  * The SensibleField
-  * The SensibleFilter
+sacrificing human readability.
 
 Let's look at an example. Perhaps the most common structured log is
 the HTTP server access log, such as the one created by Apache or
@@ -55,9 +49,9 @@ running order:
 
   * **Filters** - This list of objects checks each event, and returns
     True/False depending on whether it should be logged. See the
-    :type:`~sensible.SensibleFilter` for more info.
+    :class:`~sensible.SensibleFilter` for more info.
   * **Formatter** - Turns events that make it through the filters into
-    strings. The :type:`~sensible.SensibleFormatter` is the canonical
+    strings. The :class:`~sensible.SensibleFormatter` is the canonical
     formatter of the suite, though you're free to provide your own.
   * **Emitters** - Writes formatted strings into files or network
     streams. Emitters are not strictly a Sensible construct; several
@@ -67,7 +61,28 @@ The flow through the SensibleSink is clear: Filtration →  Formatting →
 Output. Any records passing through the ``a_log`` Logger will have
 their *end* events logged to *access.log*.
 
-.. ref:: fields
+The Sensible Interfaces
+-----------------------
+
+To achieve human-readable strutured logging, Lithoxyl's Sensible suite
+uses four key types with a sensible naming scheme:
+
+  * The :class:`~sensible.SensibleSink`
+  * The :class:`~sensible.SensibleFilter`
+  * The :class:`~sensible.SensibleFormatter`
+  * The :class:`~sensible.SensibleField`
+
+The first three are used fairly regularly, but SensibleField is mostly
+behind the scenes. That said, the built-in fields can in many ways the
+most important part. See the :ref:`Sensible Fields` section below for
+details on those.
+
+.. autoclass:: sensible.SensibleSink
+.. autoclass:: sensible.SensibleFilter
+.. autoclass:: sensible.SensibleFormatter
+
+
+.. _fields:
 
 Sensible Fields
 ---------------
@@ -191,3 +206,14 @@ start.
     +-------------------------------+----------------------------------------------------------------+-------------------------------------+
     | **import_delta_ms**           | Floating-point number of milliseconds since lithoxyl import.   | ``2887.265``                        |
     +-------------------------------+----------------------------------------------------------------+-------------------------------------+
+
+Creating custom fields
+~~~~~~~~~~~~~~~~~~~~~~
+
+Most custom data does not require new fields. Unrecognized fields are
+treated as quoted and escaped string data. If you want to change that
+representation, you can create a SensibleField and either register it
+locally with a Formatter, or globally, using
+sensible.register_field().
+
+.. autoclass:: sensible.SensibleField
