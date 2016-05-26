@@ -18,7 +18,16 @@ def unwrap(target, attr_name):
     return
 
 
-def unwrap_all(target):
+def unwrap_all(target=None):
+    if target is None or isinstance(target, int):
+        target = target or 1
+        try:
+            target_module_name = sys._getframe(target).f_globals.__name__
+            calling_module = sys.modules[target_module_name]
+        except Exception:
+            raise ValueError('unable to wrap all with target: %r' % target)
+        target = calling_module
+
     for attr_name in dir(target):
         try:
             unwrap(target, attr_name)
