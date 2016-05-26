@@ -290,6 +290,9 @@ class Logger(object):
                 with rec:
                     return func_to_log(*a, **kw)
 
+            wrapping_info = (self, level, record_name, func_to_log)
+            logged_func.__lithoxyl_wrapped__ = wrapping_info
+
             return logged_func
 
         return record_wrapper

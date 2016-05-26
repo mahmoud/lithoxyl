@@ -9,6 +9,7 @@ from lithoxyl.sensible import (SensibleSink,
                                SensibleFilter,
                                SensibleFormatter,
                                SensibleMessageFormatter)
+from lithoxyl.sinks import AggregateSink
 
 
 from boltons.formatutils import DeferredValue
