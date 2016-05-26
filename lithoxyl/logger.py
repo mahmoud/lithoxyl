@@ -59,9 +59,9 @@ def get_frame_excluding_subtypes(target_type, offset=0):
 
 class Logger(object):
     """The ``Logger`` is one of three core Lithoxyl types, and the main
-    entrypoint to creating :class:`~lithoxyl.record.Record`
-    instances. It is responsible for the fan-out of publishing
-    :term:`records <record>` to :term:`sinks <sink>`.
+    entrypoint to creating :class:`~lithoxyl.record.Record` instances,
+    and publishing those :term:`records <record>` to :term:`sinks
+    <sink>`.
 
     Args:
         name (str): Name of this Logger.
@@ -82,6 +82,7 @@ class Logger(object):
     Each creates a new :term:`record` with a given name, passing any
     additional keyword arguments on through to the
     :class:`lithoxyl.record.Record` constructor.
+
     """
 
     record_type = Record
@@ -271,8 +272,13 @@ class Logger(object):
                                 parent=kw.pop('parent_record', None),
                                 frame=sys._getframe(1))
 
-    def wrap(self, level, record_name=None, inject_as=None, **kw):
-        def record_wrapper(func_to_log, _name=record_name):
+    def wrap(self, level, record_name=None,
+             inject_as=None, enable_wrap=True, **kw):
+        def record_wrapper(func_to_log,
+                           _enable=enable_wrap,
+                           _name=record_name):
+            if not _enable:
+                return func_to_log
             if _name is None:  # wooo nonlocal
                 _name = func_to_log.__name__
 
