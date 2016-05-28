@@ -1,6 +1,8 @@
 # lithoxyl
 
-Application instrumentation and logging, with a geological bent.
+Application instrumentation and logging, with a geological
+bent. Documentation is available on
+[Read the Docs](http://lithoxyl.readthedocs.io).
 
 ## An infomercial of sorts
 
@@ -47,16 +49,16 @@ def create_user(name):
 * Transactional logging
 * Semantic instrumentation
 * Pure Python
-* Context manager API is Pythonic and minimizes developer errors
+* Pythonic context manager API minimizes developer errors
 * Decorator syntax is convenient and unobtrusive
 * Human-readable structured logs
 * Reparseability thanks to autoescaping
 * Statistical accumulators for prerolled metrics
 * Programmatic configuration with sensible defaults just an import away
 * Synchronous mode for simplicity
-* Asynchronous operation for performance (TBI)
-* Log file headers for metadata handling (TBI)
-* Heartbeat for periodic output and checkpointing (TBI)
+* Asynchronous operation for performance critical applications
+* Log file headers for metadata handling
+* Heartbeat for periodic output and checkpointing
 * Automatic, fast log parser generation (TBI)
 * Sinks
     * EWMASink
@@ -64,8 +66,8 @@ def create_user(name):
     * MomentSink
     * QuantileSink
     * StreamSink
-    * ...
-    * Syslog (TBI)
+    * SyslogSink
+    * and more
 
 ## Reasons to use Lithoxyl
 
