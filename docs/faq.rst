@@ -34,8 +34,9 @@ libraries, one expects that code will "fail fast". However, failing
 fast does not work well for instrumentation code.
 
 Lithoxyl assumes that you are instrumenting a system which has
-behavior other than logging and statistics collection. Instrumentation
-must degrade gracefully.
+behavior other than logging and statistics collection. Your system's
+primary functions take priority. Instrumentation must degrade
+gracefully.
 
 This means if your message is malformed Lithoxyl will do its best to
 output the most that it can and no exception will be raised. If your
