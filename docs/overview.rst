@@ -56,7 +56,7 @@ keyword arguments (*state*).
 
    Even if message formatting fails, the log message will degrade
    gracefully. As a rule, Lithoxyl degrades gracefully, to minimize
-   impact to core application logic.
+   impact to your application's primary functionality.
 
 Furthermore, in cases like this, where you want the whole function
 logged, you can simply do::

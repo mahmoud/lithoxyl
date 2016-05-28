@@ -4,8 +4,8 @@ Frequently Asked Questions
 Lithoxyl's many powerful paradigms mean that there is plenty to
 learn. Here are a few of the questions that pop up more than others.
 
-Hard questions
---------------
+Design questions
+----------------
 
 Some questions are hard because they are ultimately decided by your
 application's design. Lithoxyl is mostly an API to
@@ -25,8 +25,34 @@ questions, an example is often best. With an HTTP server, returning a
 the application, which is performing fine. A 500, on the other hand,
 is generally unexpected and deserves an exception status.
 
-Easy questions
---------------
+Why does Lithoxyl sometimes fail silently?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Built-in to the design of Lithoxyl itself, there are several
+deviations from what one might consider standard practice. With most
+libraries, one expects that code will "fail fast". However, failing
+fast does not work well for instrumentation code.
+
+Lithoxyl assumes that you are instrumenting a system which has
+behavior other than logging and statistics collection. Instrumentation
+must degrade gracefully.
+
+This means if your message is malformed Lithoxyl will do its best to
+output the most that it can and no exception will be raised. If your
+logging service is down, maybe the Sink queues the message, but
+eventually that queues bounds will be overrun and messages may
+silently drop.
+
+This graceful degradation takes place at all the runtime integration
+points, i.e., record interactions within your application code. For
+Sink and Logger setup, actions which are typically performed at
+startup and import time, exceptions are still raised as usual.
+
+If you discover an area that should degrade with more grace, please
+file an issue.
+
+Factual questions
+-----------------
 
 Other questions are pretty straightforward.
 
