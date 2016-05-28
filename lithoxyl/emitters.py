@@ -6,6 +6,7 @@ or network streams.
 
 import os
 import sys
+from collections import deque
 
 from lithoxyl.context import note
 
@@ -40,8 +41,9 @@ def check_encoding_settings(encoding, errors):
 
 
 class AggregateEmitter(object):
-    def __init__(self):
-        self.items = []
+    def __init__(self, limit=None):
+        self._limit = limit
+        self.items = deque(maxlen=limit)
 
     def get_entries(self):
         return [entry for record, entry in self.items]
@@ -50,12 +52,18 @@ class AggregateEmitter(object):
         return self.items[idx][1]
 
     def clear(self):
-        self.items[:] = []
+        self.items.clear()
 
     def emit_entry(self, record, entry):
         self.items.append((record, entry))
 
     on_begin = on_warn = on_end = on_comment = emit_entry
+
+    def __repr__(self):
+        cn = self.__class__.__name__
+        args = (cn, self._limit, len(self.items))
+        msg = '<%s limit=%r entry_count=%r>' % args
+        return msg
 
 
 class StreamEmitter(object):

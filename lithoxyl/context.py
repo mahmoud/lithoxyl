@@ -55,7 +55,7 @@ def _consec_set_active_parent(logger, record):
 
 class LithoxylContext(object):
     def __init__(self, **kwargs):
-        self.loggers = []
+        self.loggers = []  # TODO: weakref?
 
         self.async_mode = False
         self.async_actor = None

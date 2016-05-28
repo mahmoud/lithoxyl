@@ -46,11 +46,14 @@ silently drop.
 
 This graceful degradation takes place at all the runtime integration
 points, i.e., record interactions within your application code. For
-Sink and Logger setup, actions which are typically performed at
-startup and import time, exceptions are still raised as usual.
+Sink and Logger configuration, actions which are typically performed at
+startup and import time, exceptions are still raised as usual. In
+fact, it is considered good Lithoxyl practice to forward-check these
+configurations. This means checking that callable arguments are
 
-If you discover an area that should degrade with more grace, please
-file an issue.
+If you discover a runtime scenario that should degrade with more grace
+or a configuration-time scenario which could prevent runtime failures
+through more forward checking, please do file an issue.
 
 Factual questions
 -----------------

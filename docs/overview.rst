@@ -1,13 +1,18 @@
 Lithoxyl Overview
 =================
 
-The Lithoxyl approach to application instrumentation is
-straightforward. First, write your code. Then, once you have half a
-module or find yourself asking, "How long does this part take?" then
-it's time to ``pip install lithoxyl``.
+The Lithoxyl approach to application instrumentation is a practical
+one. First, write your code. Then, once you have half a module or find
+yourself asking, "How long does this part take?" then it's time to
+``pip install lithoxyl``. There are two steps. First comes
+instrumentation, then we select a configuration.
 
-With Lithoxyl, logging and other instrumentations starts with wrapping
-important parts of your application in microtransactions called
+Application instrumentation
+---------------------------
+
+With Lithoxyl, logging and other instrumentation starts with knowing
+your application. We want to find the important parts of your
+application, and wrap them in microtransactions called
 ``Records``. Records can be created directly, but they are most often
 created through ``Loggers``.
 
@@ -78,13 +83,68 @@ Note the decorator syntax, as well as the ability to inject the log
 record as one of the arguments of the function. This reduces the
 instrumentation's code footprint even further.
 
-Small- to medium-sized applications can go pretty far with just one
-Logger, but larger applications benefit from multiple. Loggers
-generally correspond to an aspect of the system.
+That about covers creating and interacting with records. Now we turn
+to the origin and destination of the records we create and populate:
+Loggers and Sinks.
 
-Records are used to generate messages and measurements through to any
-number of ``Sinks``, which are responsible for persistence and
-statistics, through log files, network streams, and much more.
+Logger and Sink configuration
+-----------------------------
+
+Logger creation
+~~~~~~~~~~~~~~~
+
+As we learned above, Records come from Loggers. This is nearly half of
+what Loggers do. Half the functionality of a Logger takes only one line::
+
+  from lithoxyl import Logger
+
+  app_log = Logger('entry_system')
+
+Like that, the Logger is created and ready to be imported. A Logger
+only requires a name. Given this simplicity, it's safe to say Loggers
+are lightweight, simple objects, but they are conceptually very
+useful.
+
+A Logger generally corresponds to an aspect of the system. As such,
+they are designed to be created once, configured, and imported by
+other modules. Applications usually starts out with one high level log.
+
+As applications grow, they tend to add aspects. Small- to medium-sized
+applications can go pretty far with just one Logger, but larger
+applications benefit from multiple. For example, if file access grows
+increasingly important to an application, it would make sense to add a
+dedicated low-level log just for instrumenting file access::
+
+  file_log = Logger('file_access')
+
+In short, Loggers themselves are simple, and designed to fit your
+application, no matter how many aspects it may have.
+
+Sink configuration
+~~~~~~~~~~~~~~~~~~
+
+So far, we have discovered two uses of the Lithoxyl Logger:
+
+  * Creating log records
+  * Segmenting and naming aspects of an application
+
+Now, we are ready to add the third: publishing log events to the
+appropriate handlers, called Sinks. Records can carry all sort of
+useful messages and measurements. That variety is only surpassed by
+the Sinks, which handle aggregation and persistence, through log
+files, network streams, and much more. Before getting into those
+complexities, let's configure our ``app_log`` with a simple but very
+useful sink::
+
+  from lithoxyl import AggregateSink
+
+  agg_sink = AggregateSink(limit=100)
+  app_log.add_sink(agg_sink)
+
+Now, we have a technically complete system. At any given point after
+this, the last 100 events passing through the system will be available
+inside the AggregateSink.
+
 
 Structured logging is a critical step for many applications. The
 ability to parse and load logs opens up many new roads in debugging,
