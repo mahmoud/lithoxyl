@@ -1,8 +1,7 @@
 TODO
 ====
 
-* Conditional wrap (bool on Logger.wrap)
-* utils.wrap_all(logger, level=str_or_callable, enable=True)
+* Make wrap use boltons
 * DummyRecord
 * Level remapping
 * Dynamic (as in scope) transaction association (parent ID)
