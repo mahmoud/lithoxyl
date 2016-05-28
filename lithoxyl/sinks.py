@@ -13,12 +13,12 @@ from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
 class AggregateSink(object):
-    "A 'dummy' sink that just aggregates the messages."
-    def __init__(self, max_length=None):
-        self.begin_events = deque(maxlen=max_length)
-        self.warn_events = deque(maxlen=max_length)
-        self.end_events = deque(maxlen=max_length)
-        self.comment_events = deque(maxlen=max_length)
+    "A simple sink that just aggregates the messages."
+    def __init__(self, limit=None):
+        self.begin_events = deque(maxlen=limit)
+        self.warn_events = deque(maxlen=limit)
+        self.end_events = deque(maxlen=limit)
+        self.comment_events = deque(maxlen=limit)
 
     def on_begin(self, begin_event):
         self.begin_events.append(begin_event)
@@ -35,6 +35,7 @@ class AggregateSink(object):
 
 class DevDebugSink(object):
     def __init__(self, reraise=False, post_mortem=False):
+        # reraise and post_mortem should both accept an Exception type
         self.reraise = reraise
         self.post_mortem = post_mortem
 
