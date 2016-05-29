@@ -9,35 +9,13 @@ import sys
 from collections import deque
 
 from lithoxyl.context import note
+from lithoxyl.utils import check_encoding_settings
 
 try:
     # unix only
     from lithoxyl._syslog_emitter import SyslogEmitter
 except ImportError:
     pass
-
-
-class EncodingLookupError(LookupError):
-    pass
-
-
-class ErrorBehaviorLookupError(LookupError):
-    pass
-
-
-def check_encoding_settings(encoding, errors):
-    try:
-        # then test error-handler
-        u''.encode(encoding)
-    except LookupError as le:
-        raise EncodingLookupError(le.message)
-    try:
-        # then test error-handler
-        u'\xdd'.encode('ascii', errors=errors)
-    except LookupError as le:
-        raise ErrorBehaviorLookupError(le.message)
-    except Exception:
-        return
 
 
 class AggregateEmitter(object):

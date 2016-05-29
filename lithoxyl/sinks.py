@@ -43,16 +43,25 @@ class AggregateSink(object):
 
 
 class DevDebugSink(object):
+    """Use this to insert debug prompts where exceptions are raised. Pass
+    the exception type or iterable of exception types to selectively
+    match. Alternatively, pass True for all Exception subtypes.
+
+    """
     def __init__(self, reraise=False, post_mortem=False):
-        # reraise and post_mortem should both accept an Exception type
+        if reraise is True:
+            reraise = Exception
         self.reraise = reraise
+        if post_mortem is True:
+            post_mortem = Exception
         self.post_mortem = post_mortem
 
     def on_exception(self, event, exc_type, exc_obj, exc_tb):
-        if self.post_mortem:
+        if self.post_mortem and isinstance(exc_obj, self.post_mortem):
             pdb.post_mortem()
-        if self.reraise:
+        if self.reraise and isinstance(exc_obj, self.reraise):
             raise exc_type, exc_obj, exc_tb
+        return
 
 
 class RateAccumulator(object):

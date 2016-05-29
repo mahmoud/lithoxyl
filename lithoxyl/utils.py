@@ -7,6 +7,34 @@ import itertools
 from boltons.strutils import indent
 
 
+class EncodingLookupError(LookupError):
+    pass
+
+
+class ErrorBehaviorLookupError(LookupError):
+    pass
+
+
+def check_encoding_settings(encoding, errors, reraise=True):
+    try:
+        # then test error-handler
+        u''.encode(encoding)
+    except LookupError as le:
+        if reraise:
+            raise EncodingLookupError(le.message)
+        return False
+    try:
+        # then test error-handler
+        u'\xdd'.encode('ascii', errors=errors)
+    except LookupError as le:
+        if reraise:
+            raise ErrorBehaviorLookupError(le.message)
+        return False
+    except Exception:
+        # that ascii encode should never work
+        return True
+
+
 def unwrap(target, attr_name):
     wrapped_func = getattr(target, attr_name)
     try:
