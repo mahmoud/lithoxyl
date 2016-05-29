@@ -142,9 +142,8 @@ useful sink::
   app_log.add_sink(agg_sink)
 
 Now, we have a technically complete system. At any given point after
-this, the last 100 events passing through the system will be available
-inside the AggregateSink.
-
+this, the last 100 events that passed through our application log will
+be available inside the AggregateSink.
 
 Structured logging is a critical step for many applications. The
 ability to parse and load logs opens up many new roads in debugging,
