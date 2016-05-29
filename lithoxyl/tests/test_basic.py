@@ -25,6 +25,9 @@ def test_logger_success(trans_count=2):
     for i in range(trans_count):
         do_debug_trans(logger)
     assert len(logger.sinks[0].end_events) == trans_count
+    agg_sink_repr = repr(logger.sinks[0])
+    assert 'begins=' in agg_sink_repr
+    assert 'begins=0' not in agg_sink_repr
 
 
 def test_callpoint_info():
