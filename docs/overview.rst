@@ -129,10 +129,10 @@ So far, we have discovered two uses of the Lithoxyl Logger:
   * Segmenting and naming aspects of an application
 
 Now, we are ready to add the third: publishing log events to the
-appropriate handlers, called Sinks. Records can carry all sort of
-useful messages and measurements. That variety is only surpassed by
-the Sinks, which handle aggregation and persistence, through log
-files, network streams, and much more. Before getting into those
+appropriate handlers, called Sinks. Records can carry all manner of
+messages and measurements. That variety is only surpassed by the
+Sinks, which handle aggregation and persistence, through log files,
+network streams, and much more. Before getting into those
 complexities, let's configure our ``app_log`` with a simple but very
 useful sink::
 
@@ -141,10 +141,64 @@ useful sink::
   agg_sink = AggregateSink(limit=100)
   app_log.add_sink(agg_sink)
 
-Now, we have a technically complete system. At any given point after
-this, the last 100 events that passed through our application log will
-be available inside the AggregateSink.
+Now, by adding an instance of the AggregateSink to the ``app_log``, we
+have a technically complete system. At any given point after this, the
+last 100 events that passed through our application log will be
+available inside ``agg_sink``. However, AggregateSinks only provide
+in-memory storage, meaning data must be pulled out, either through a
+monitoring thread or network service. Most developers expect
+persistent logging to streams (stdout/stderr) and files. Lithoxyl is
+more than capable.
 
-Structured logging is a critical step for many applications. The
-ability to parse and load logs opens up many new roads in debugging,
-optimization, and system robustification.
+Sensible logging
+^^^^^^^^^^^^^^^^
+
+For developers who want a sensible and practical default, Lithoxyl
+provides the SensibleSink. See The Sensible Suite for a full
+introduction.
+
+In short, the SensibleSink aims to create human-readable structured
+logs. Structured logs are logs which can be automatically parsed. This
+allows logs to be loaded for further processing steps, such as
+collation with other logs, ETL into OLAP and other databases, and
+calculation of system-wide statistics. Extending the flow of logged
+information opens up many new roads in debugging, optimization, and
+system robustification.
+
+Numeric Sinks
+^^^^^^^^^^^^^
+
+Sink internals
+~~~~~~~~~~~~~~
+
+Lithoxyl aims to provide a sufficient set of Sinks for most
+small-to-medium use cases. That said, creating new Sinks is
+straightforward and encouraged.
+
+Events
+^^^^^^
+
+Sinks are objects designed to handle events. Lithoxyl currently has
+five event types, and Sinks can handle them by implementing one or
+more of the following methods:
+
+  * ``on_begin(self, begin_event)`` - Called whenever a Record begins,
+    whether manually or through entering the context managed block of
+    code. Designed to be called once per Record.
+  * ``on_end(self, end_event)`` - Called whenever a Record completes,
+    whether manually through ``success()`` or ``failure()``, through
+    exiting the context-managed block, or through an exception being
+    raised from within the context-managed block. Designed to be
+    called once per Record.
+  * ``on_warn(self, warn_event)`` - Called whenever Record.warn() is
+    called. Can be called an arbitrary number of times.
+  * ``on_comment(self, comment_event)`` - Called whenever
+    Record.comment() is called. Can be called an arbitrary number of
+    times.
+  * ``on_exception(self, exc_event, exc_type, exc_obj, exc_tb)`` -
+    Called when an exception is raised from within the context-managed
+    block, or when an exception is manually handled with
+    Record.exception(). Designed to be called up to once.
+
+Event objects are meant to be practically-immutable objects, only
+having their values set once at creation.
