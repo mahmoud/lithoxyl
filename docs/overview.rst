@@ -5,9 +5,9 @@ The Lithoxyl approach to application instrumentation is a practical
 one. First, write your code. Then, once you have half a module or find
 yourself asking, "How long does this part take?" then it's time to
 ``pip install lithoxyl``. There are two steps. First comes
-instrumentation, then we select a configuration.
+instrumentation, then we get into configuration.
 
-Application instrumentation
+Records for instrumentation
 ---------------------------
 
 With Lithoxyl, logging and other instrumentation starts with knowing
@@ -87,14 +87,11 @@ That about covers creating and interacting with records. Now we turn
 to the origin and destination of the records we create and populate:
 Loggers and Sinks.
 
-Logger and Sink configuration
------------------------------
+Logger creation
+---------------
 
 Records make up most of an application's interaction with Lithoxyl,
 but it would not be very easy to create a Record without a Logger.
-
-Logger creation
-~~~~~~~~~~~~~~~
 
 As we learned above, before a Record can be populated, it must be
 created, and Records are created through Logger. As for the Logger
@@ -123,8 +120,8 @@ your application, no matter how many aspects it may have. On their
 own, they are conceptually useful, but without Sinks, they are all
 potential.
 
-Sink configuration
-~~~~~~~~~~~~~~~~~~
+BasicSink configuration
+-----------------------
 
 So far, we have discovered two uses of the Lithoxyl Logger:
 
@@ -154,7 +151,7 @@ persistent logging to streams (stdout/stderr) and files. Lithoxyl is
 more than capable.
 
 Sensible logging
-^^^^^^^^^^^^^^^^
+----------------
 
 For developers who want a sensible and practical default, Lithoxyl
 provides the SensibleSink. The Sensible Suite chapter has a full
