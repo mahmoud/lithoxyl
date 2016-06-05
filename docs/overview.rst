@@ -153,9 +153,9 @@ more than capable.
 Logging Sensibly
 ----------------
 
-For developers who want a sensible and practical default, Lithoxyl
-provides the SensibleSink. The Sensible Suite chapter has a full
-introduction, so here we will just cover the most basic usage.
+For developers who want a sensible and practical default Sink,
+Lithoxyl provides the SensibleSink. The Sensible Suite chapter has a
+full introduction, so let's just cover the basics.
 
 The Sensible approach has 3 steps:
 
@@ -166,13 +166,20 @@ The Sensible approach has 3 steps:
 While totally pluggable and overridable, the Sensible suite ships with
 types for each of these::
 
-  from lithoxyl import SensibleFilter, SensibleFormatter, StreamEmitter, SensibleSink
+  from lithoxyl import (SensibleFilter,
+                        SensibleFormatter,
+                        StreamEmitter,
+                        SensibleSink)
 
   # Create a filter that controls output verbosity
-  fltr = SensibleFilter(success='critical', failure='info', exception='debug')
+  fltr = SensibleFilter(success='critical',
+                        failure='info',
+                        exception='debug')
 
-  # Create a simple formatter with just the time since startup/import and message.
-  # These are built-in "fields", and the syntax is new-style string formatting syntax.
+  # Create a simple formatter with just two bits of info:
+  # The time since startup/import and end event message.
+  # These are just two of the built-in "fields",
+  # and the syntax is new-style string formatting syntax.
   fmtr = SensibleFormatter('+{import_delta_s} - {end_message}')
 
   # Create an emitter to write to stderr. 'stdout' and open file objects
@@ -185,14 +192,15 @@ types for each of these::
   # Add the sink to app_log, a vanilla Logger created above
   app_log.add_sink(sink)
 
-Using built-in Lithoxyl types, we create a filter, formatter, and
-emitter, then we bind them all together with a SensibleSink. The
-output is first filtered by our SensibleFilter, which only shows
-critical-level successes and info-level failures, but shows all
-exceptions. Our SensibleFormatter provides a simple but practical
-output, giving us a play-by-play timing and message. That message is
-output to stderr by our StreamEmitter. Just don't forget to add our
-newly-created SensibleSink to the app_log.
+In these six lines of code, using only built-in Lithoxyl types, we
+create a filter, formatter, and emitter, then we bind them all
+together with a SensibleSink. The output is first filtered by our
+SensibleFilter, which only shows critical-level successes and
+info-level failures, but shows all exceptions. Our SensibleFormatter
+provides a simple but practical output, giving us a play-by-play
+timing and message. That message is output to stderr by our
+StreamEmitter. Just don't forget to add our newly-created SensibleSink
+to the app_log.
 
 As configured, the app_log will now write to stderr output that looks
 like::
@@ -203,14 +211,16 @@ like::
   +0.547119 - "optional backup failed"
   +1.258266 - "processing task succeeded"
 
-And here we see the SensibleFormatter at work. The most ambitious aim
-of the Sensible approach is to create human-readable structured
-logs. These are logs that are guaranteed to be uniformly formatted and
-escaped, allowing them to be loaded for further processing steps, such
-as collation with other logs, ETL into database/OLAP, and calculation
-of system-wide statistics. Extending the flow of logged information
-opens up many new roads in debugging, optimization, and system
-robustification.
+And here we see the SensibleFormatter at work. It may not look like
+much, but there is a powerful feature at work.
+
+The most ambitious aim of the Sensible approach is to create
+human-readable structured logs. These are logs that are guaranteed to
+be uniformly formatted and escaped, allowing them to be loaded for
+further processing steps, such as collation with other logs, ETL into
+database/OLAP, and calculation of system-wide statistics. Extending
+the flow of logged information opens up many new roads in debugging,
+optimization, and system robustification.
 
 Here we only used two fields, *import_time_s* and *end_message*. The
 list of Sensible built-in fields is quite expansive and worth a look
