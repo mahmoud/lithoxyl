@@ -7,8 +7,8 @@ yourself asking, "How long does this part take?" then it's time to
 ``pip install lithoxyl``. There are two steps. First comes
 instrumentation, then we get into configuration.
 
-Records for instrumentation
----------------------------
+Instrumenting with Records
+--------------------------
 
 With Lithoxyl, logging and other instrumentation starts with knowing
 your application. We want to find the important parts of your
@@ -87,8 +87,8 @@ That about covers creating and interacting with records. Now we turn
 to the origin and destination of the records we create and populate:
 Loggers and Sinks.
 
-Logger creation
----------------
+Creating Loggers
+----------------
 
 Records make up most of an application's interaction with Lithoxyl,
 but it would not be very easy to create a Record without a Logger.
@@ -120,8 +120,8 @@ your application, no matter how many aspects it may have. On their
 own, they are conceptually useful, but without Sinks, they are all
 potential.
 
-BasicSink configuration
------------------------
+Configuring Sinks
+-----------------
 
 So far, we have discovered two uses of the Lithoxyl Logger:
 
@@ -150,7 +150,7 @@ monitoring thread or network service. Most developers expect
 persistent logging to streams (stdout/stderr) and files. Lithoxyl is
 more than capable.
 
-Sensible logging
+Logging Sensibly
 ----------------
 
 For developers who want a sensible and practical default, Lithoxyl
