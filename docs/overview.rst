@@ -90,35 +90,38 @@ Loggers and Sinks.
 Logger and Sink configuration
 -----------------------------
 
+Records make up most of an application's interaction with Lithoxyl,
+but it would not be very easy to create a Record without a Logger.
+
 Logger creation
 ~~~~~~~~~~~~~~~
 
-As we learned above, Records come from Loggers. This is nearly half of
-what Loggers do. Half the functionality of a Logger takes only one line::
+As we learned above, before a Record can be populated, it must be
+created, and Records are created through Logger. As for the Logger
+itself, here is how it is created::
 
   from lithoxyl import Logger
 
   app_log = Logger('entry_system')
 
-Like that, the Logger is created and ready to be imported. A Logger
-only requires a name. Given this simplicity, it's safe to say Loggers
-are lightweight, simple objects, but they are conceptually very
-useful.
+Like that, the Logger we've been using above is ready to be
+imported. A Logger is a lightweight, simple object, requiring only a
+name. They are designed to be created once, configured, and imported
+by other modules. That said, they are conceptually very useful.
 
-A Logger generally corresponds to an aspect of the system. As such,
-they are designed to be created once, configured, and imported by
-other modules. Applications usually starts out with one high level log.
-
-As applications grow, they tend to add aspects. Small- to medium-sized
-applications can go pretty far with just one Logger, but larger
-applications benefit from multiple. For example, if file access grows
-increasingly important to an application, it would make sense to add a
-dedicated low-level log just for instrumenting file access::
+Loggers generally correspond to parts or aspects of the
+application. Small- to medium-sized applications can be fully
+instrumented with just one Logger, but as applications grow, they tend
+to add aspects. For example, if file access grows increasingly
+important to an application, it would make sense to add a dedicated
+low-level log just for instrumenting file access::
 
   file_log = Logger('file_access')
 
-In short, Loggers themselves are simple, and designed to fit your
-application, no matter how many aspects it may have.
+In short, Loggers themselves are simple, and designed to be fit to
+your application, no matter how many aspects it may have. On their
+own, they are conceptually useful, but without Sinks, they are all
+potential.
 
 Sink configuration
 ~~~~~~~~~~~~~~~~~~
@@ -154,51 +157,64 @@ Sensible logging
 ^^^^^^^^^^^^^^^^
 
 For developers who want a sensible and practical default, Lithoxyl
-provides the SensibleSink. See The Sensible Suite for a full
-introduction.
+provides the SensibleSink. The Sensible Suite chapter has a full
+introduction, so here we will just cover the most basic usage.
 
-In short, the SensibleSink aims to create human-readable structured
-logs. Structured logs are logs which can be automatically parsed. This
-allows logs to be loaded for further processing steps, such as
-collation with other logs, ETL into OLAP and other databases, and
-calculation of system-wide statistics. Extending the flow of logged
-information opens up many new roads in debugging, optimization, and
-system robustification.
+The Sensible approach has 3 steps:
 
-Numeric Sinks
-^^^^^^^^^^^^^
+1. **Filter** - Optionally ignore events for a given Sink.
+2. **Format** - Convert an event into a string.
+3. **Emit** - Output the formatted string to a file, database, network, etc.
 
-Sink internals
-~~~~~~~~~~~~~~
+While totally pluggable and overridable, the Sensible suite ships with
+types for each of these::
 
-Lithoxyl aims to provide a sufficient set of Sinks for most
-small-to-medium use cases. That said, creating new Sinks is
-straightforward and encouraged.
+  from lithoxyl import SensibleFilter, SensibleFormatter, StreamEmitter, SensibleSink
 
-Events
-^^^^^^
+  # Create a filter that controls output verbosity
+  fltr = SensibleFilter(success='critical', failure='info', exception='debug')
 
-Sinks are objects designed to handle events. Lithoxyl currently has
-five event types, and Sinks can handle them by implementing one or
-more of the following methods:
+  # Create a simple formatter with just the time since startup/import and message.
+  # These are built-in "fields", and the syntax is new-style string formatting syntax.
+  fmtr = SensibleFormatter('+{import_delta_s} - {end_message}')
 
-  * ``on_begin(self, begin_event)`` - Called whenever a Record begins,
-    whether manually or through entering the context managed block of
-    code. Designed to be called once per Record.
-  * ``on_end(self, end_event)`` - Called whenever a Record completes,
-    whether manually through ``success()`` or ``failure()``, through
-    exiting the context-managed block, or through an exception being
-    raised from within the context-managed block. Designed to be
-    called once per Record.
-  * ``on_warn(self, warn_event)`` - Called whenever Record.warn() is
-    called. Can be called an arbitrary number of times.
-  * ``on_comment(self, comment_event)`` - Called whenever
-    Record.comment() is called. Can be called an arbitrary number of
-    times.
-  * ``on_exception(self, exc_event, exc_type, exc_obj, exc_tb)`` -
-    Called when an exception is raised from within the context-managed
-    block, or when an exception is manually handled with
-    Record.exception(). Designed to be called up to once.
+  # Create an emitter to write to stderr. 'stdout' and open file objects
+  # also behave predictably.
+  emtr = StreamEmitter('stderr')
 
-Event objects are meant to be practically-immutable objects, only
-having their values set once at creation.
+  # Tie them all together. Note that filters accepts an iterable
+  sink = SensibleSink(filters=[fltr], formatter=fmtr, emitter=emtr)
+
+  # Add the sink to app_log, a vanilla Logger created above
+  app_log.add_sink(sink)
+
+Using built-in Lithoxyl types, we create a filter, formatter, and
+emitter, then we bind them all together with a SensibleSink. The
+output is first filtered by our SensibleFilter, which only shows
+critical-level successes and info-level failures, but shows all
+exceptions. Our SensibleFormatter provides a simple but practical
+output, giving us a play-by-play timing and message. That message is
+output to stderr by our StreamEmitter. Just don't forget to add our
+newly-created SensibleSink to the app_log.
+
+As configured, the app_log will now write to stderr output that looks
+like::
+
+  +0.015255 - "load credential succeeded"
+  +0.179199 - "client authorization succeeded"
+  +0.344523 - "load configuration succeeded"
+  +0.547119 - "optional backup failed"
+  +1.258266 - "processing task succeeded"
+
+And here we see the SensibleFormatter at work. The most ambitious aim
+of the Sensible approach is to create human-readable structured
+logs. These are logs that are guaranteed to be uniformly formatted and
+escaped, allowing them to be loaded for further processing steps, such
+as collation with other logs, ETL into database/OLAP, and calculation
+of system-wide statistics. Extending the flow of logged information
+opens up many new roads in debugging, optimization, and system
+robustification.
+
+Here we only used two fields, *import_time_s* and *end_message*. The
+list of Sensible built-in fields is quite expansive and worth a look
+when designing your own log formats.
