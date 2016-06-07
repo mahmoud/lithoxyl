@@ -19,21 +19,20 @@ class DefaultException(Exception):
 
 
 class Record(object):
-    """The ``Record`` type is one of the three core Lithoxyl types, and
-    the underlying currency of the Lithoxyl system. Records are
-    usually instantiated through convenience methods on
-    :class:`~lithoxyl.logger.Logger` instances, and most
-    instrumentation will be done through populating records with
-    relevant data.
+    """The Record type is one of the core Lithoxyl types, and the key to
+    instrumenting application logic. Records are usually instantiated
+    through convenience methods on :class:`~lithoxyl.logger.Logger`
+    instances, associated with their level (e.g.,
+    :meth:`~Logger.critical`).
 
     Args:
-        logger: The Logger instance responsible for creating (and
-            publishing) the Record.
+        logger: The Logger instance responsible for creating and
+            publishing the Record.
         level: Log level of the Record. Generally one of
             :data:`~lithoxyl.common.DEBUG`,
             :data:`~lithoxyl.common.INFO`, or
             :data:`~lithoxyl.common.CRITICAL`. Defaults to ``None``.
-        name (str): The Record name describes some application action.
+        name (str): A string description of some application action.
         data (dict): A mapping of non-builtin fields to user
             values. Defaults to an empty dict (``{}``) and can be
             populated after Record creation by accessing the Record
@@ -46,15 +45,10 @@ class Record(object):
         frame: Frame of the callpoint creating the Record. Defaults to
             the caller's frame.
 
-    All additional keyword arguments are automatically included in the
-    Record's ``data_map`` attribute.
-
-    >>> record = Record('our_mission', CRITICAL, mission='explore new worlds')
-
     Most of these parameters are managed by the Records and respective
-    Loggers themselves. While they are provided here for advanced use
-    cases, usually only the *name*, *raw_message*, *reraise*, and
-    extra values should be provided.
+    :class:`~lithoxyl.Logger` themselves. While they are provided here
+    for advanced use cases, usually only the *name* and *raw_message*
+    are provided.
 
     Records are :class:`dict`-like, and can be accessed as mappings
 
@@ -64,7 +58,7 @@ class Record(object):
     >>> record['my_lore'] = -record['my_data'] / 10.0
     >>> from pprint import pprint
     >>> pprint(record.data_map)
-    {'mission': 'explore new worlds', 'my_data': 20.0, 'my_lore': -2.0}
+    {'my_data': 20.0, 'my_lore': -2.0}
 
     """
     _is_trans = None

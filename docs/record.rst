@@ -1,5 +1,29 @@
 The Record
-==============
+==========
+
+Record objects are Lithoxyl's fundamental construct for instrumenting
+application logic. Records are created with a
+:class:`~lithoxyl.logger.Logger`, and wrap functions and code blocks
+to collect messages and timing information.
+
+Lithoxyl Records are like transactions wrapping important pieces of
+your application::
+
+  with log.info('user creation', username=name) as r:
+      success = _create_user(name)
+      if not success:
+          r.failure()
+
+At their most basic, Records have a:
+
+  * **name** - A string description of the application action.
+  * **level** - An indicator of the importance of the application action.
+  * **status** - The state of the record (begin, success, failure, exception).
+  * **duration** - The time between the begin and end events of a
+    completed record, i.e., the time between entering and exiting the
+    code block.
+
+Read on to learn more about each of these attributes.
 
 .. automodule:: lithoxyl.record
 
