@@ -1,4 +1,4 @@
-The ``Record``
+The Record
 ==============
 
 .. automodule:: lithoxyl.record

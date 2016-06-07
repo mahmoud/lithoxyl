@@ -1,4 +1,4 @@
-The ``Logger``
+The Logger
 ==============
 
 .. automodule:: lithoxyl.logger

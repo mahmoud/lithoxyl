@@ -18,6 +18,7 @@ Section Listing
    overview
    logger
    record
+   sinks
    sensible
    logging_tradition
    glossary

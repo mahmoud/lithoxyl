@@ -1,10 +1,12 @@
 The Sensible Suite
 ==================
 
-Lithoxyl has many uses, but one of them is as a toolkit for creating
-structured logs, or logs with a uniform format to make them machine
-readable. The Sensible approach offers structured logging without
-sacrificing human readability.
+Structured logging creates logs with a consistent format, allowing
+them to be loaded later for further processing and analysis.
+
+One of Lithoxyl's primary uses is as a toolkit for creating these
+structured logs. The Sensible Suite is the first generalized approach
+to offer structured logging without sacrificing human readability.
 
 Let's look at an example. Perhaps the most common structured log is
 the HTTP server access log, such as the one created by Apache or
