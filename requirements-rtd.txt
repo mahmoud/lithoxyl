@@ -1,2 +1,2 @@
 sphinxcontrib-napoleon
-boltons==16.3.1
+boltons>=16.4.0
