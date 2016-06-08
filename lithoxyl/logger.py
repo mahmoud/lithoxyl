@@ -11,7 +11,8 @@ import itertools
 from collections import deque
 from threading import RLock
 
-from lithoxyl.utils import wraps
+from boltons.funcutils import wraps
+
 from lithoxyl.context import get_context
 from lithoxyl.common import DEBUG, INFO, CRITICAL
 from lithoxyl.record import Record, BeginEvent, EndEvent, CommentEvent
