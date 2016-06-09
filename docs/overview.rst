@@ -1,8 +1,26 @@
 Lithoxyl Overview
 =================
 
+Lithoxyl is next-generation logging and instrumentation for
+Python. This practical tutorial walks new users through the
+fundamentals necessary to get up and running with Lithoyxl in under 10
+minutes.
+
+Motivating factors
+------------------
+
+Lithoxyl began as a response to the tired traditions of
+logging. Traditions that included leaving it all as an afterthought,
+only added once things break.
+
+Logging is not the last step anymore. Lithoxyl makes instrumentation
+worthwhile from day 1, so developers design for introspectability
+from the start. Lithoxyl takes full advantage of Python's rich syntax
+and runtime to provide valuable features, from metrics collection to
+structured logging to interactive debugging hooks.
+
 The Lithoxyl approach to application instrumentation is a practical
-one. First, write your code. Then, once you have half a module or find
+one. First, write some code. Then, once you have half a module or find
 yourself asking, "How long does this part take?" then it's time to
 ``pip install lithoxyl``. After that, here are two steps. First comes
 instrumentation, then we get into configuration.
