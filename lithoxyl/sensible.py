@@ -439,6 +439,7 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
                 _SF('warn_char', 's', lambda e: e.warn_char, quote=False),  # TODO
                 _SF('level_name', 's', lambda e: e.level_name, quote=False),
                 _SF('data_map', 's', lambda e: json.dumps(e.record.data_map, sort_keys=True), quote=False),
+                _SF('data_map_repr', 's', lambda e: repr(e.record.data_map), quote=False),
                 _SF('level_name_upper', 's', lambda e: e.level_name.upper(), quote=False),
                 _SF('level_char', 's', lambda e: e.level_name.upper()[0], quote=False),
                 _SF('level_number', 'd', lambda e: e.level._value),
