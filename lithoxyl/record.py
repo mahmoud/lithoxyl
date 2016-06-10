@@ -145,7 +145,10 @@ class Record(object):
         also be added to the Record's ``data_map`` attribute.
         """
         if not message:
-            message = self.name + ' succeeded'
+            if self.data_map:
+                message = self.name + ' succeeded ({data_map_repr})'
+            else:
+                message = self.name + ' succeeded'
         return self._end('success', message, a, kw)
 
     def failure(self, message=None, *a, **kw):
@@ -155,7 +158,11 @@ class Record(object):
         also be added to the Record's ``data_map`` attribute.
         """
         if not message:
-            message = self.name + ' failed'
+            if self.data_map:
+                message = self.name + ' failed ({data_map_repr})'
+            else:
+                message = self.name + ' failed'
+
         return self._end('failure', message, a, kw)
 
     def exception(self, message=None, *a, **kw):
@@ -180,7 +187,12 @@ class Record(object):
         etime = time.time()
         exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
-            message = '%s raised exception: %r' % (self.name, exc_val)
+            cp = exc_info.tb_info.frames[-1]
+            t = "%s raised exception: %s(%r) from %s on line %s of file '%s'"
+            if self.data_map:
+                t += ' ({data_map_repr})'
+            message = t % (self.name, exc_info.exc_type, exc_info.exc_msg,
+                           cp.func_name, cp.lineno, cp.module_path)
 
         self.exc_event = ExceptionEvent(self, etime, message, fargs, exc_info)
         self.logger.on_exception(self.exc_event, exc_type, exc_val, exc_tb)

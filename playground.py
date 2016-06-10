@@ -35,13 +35,15 @@ from lithoxyl import context
 
 # context.get_context().enable_async()
 
-log = Logger('test')  # , sinks=[stderr_sink])
+log = Logger('test', sinks=[stderr_sink])
 
 
 def one_two():
-    with log.critical('first'):
+    with log.critical('first') as r1:
+        r1['x'] = 'hi'
         with log.critical('second'):
             print 'did some work'
+        raise ValueError("oh no, one of those")
     return
 
 
