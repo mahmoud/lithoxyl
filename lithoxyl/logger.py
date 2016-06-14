@@ -275,9 +275,13 @@ class Logger(object):
 
     def wrap(self, level, record_name=None,
              inject_as=None, enable_wrap=True, **kw):
+
+        record_kwargs = kw
+
         def record_wrapper(func_to_log,
                            _enable=enable_wrap,
-                           _name=record_name):
+                           _name=record_name,
+                           _record_kwargs=record_kwargs):
             if not _enable:
                 return func_to_log
             if _name is None:  # wooo nonlocal
@@ -285,7 +289,7 @@ class Logger(object):
 
             @wraps(func_to_log, injected=inject_as)
             def logged_func(*a, **kw):
-                rec = self.record(level, _name, **kw)
+                rec = self.record(level, _name, **record_kwargs)
                 if inject_as:
                     kw[inject_as] = rec
                 with rec:
