@@ -21,4 +21,5 @@ Sections
    sinks
    sensible
    logging_tradition
+   faq
    glossary

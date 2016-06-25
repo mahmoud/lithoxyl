@@ -1,8 +1,9 @@
 Frequently Asked Questions
 ==========================
 
-Lithoxyl's many powerful paradigms mean that there is plenty to
-learn. Here are a few of the questions that pop up more than others.
+Lithoxyl's new approach answers quite a lot of questions, but raises a
+few others. These questions fall into two categories, `Design
+<#design-questions>`_ and `Background <#background-questions>`_.
 
 Design questions
 ----------------
@@ -55,10 +56,11 @@ If you discover a runtime scenario that should degrade with more grace
 or a configuration-time scenario which could prevent runtime failures
 through more forward checking, please do file an issue.
 
-Factual questions
------------------
+Background questions
+--------------------
 
-Other questions are pretty straightforward.
+Unlike the design questions above, background questions relate to just
+the objective facts.
 
 .. ref:: etymology
 
