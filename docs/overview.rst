@@ -14,28 +14,30 @@ logging. Traditions that included leaving it all as an afterthought,
 only added once things break.
 
 Logging is not the last step anymore. Lithoxyl makes instrumentation
-worthwhile from day 1, so developers design for introspectability
-from the start. Lithoxyl takes full advantage of Python's rich syntax
-and runtime to provide valuable features, from metrics collection to
-structured logging to interactive debugging hooks.
+worthwhile from day 1, so projects are designed for introspectability
+from the ground up. Lithoxyl takes full advantage of Python's rich
+syntax and runtime to provide valuable features, from metrics
+collection to structured logging to interactive debugging hooks.
 
-The Lithoxyl approach to application instrumentation is a practical
-one. First, write some code. Then, once you have half a module or find
-yourself asking, "How long does this part take?" then it's time to
-``pip install lithoxyl``. After that, here are two steps. First comes
-instrumentation, then we get into configuration.
+The Lithoxyl approach to application instrumentation is
+practical. First, write some code. Then, once you have half a module
+or find yourself asking, "How long does this part take?" then it's
+time to ``pip install lithoxyl``.
+
+Integrating Lithoxyl comes down to two steps, instrumentation and
+configuration. First, instrumentation.
 
 Instrumenting with Records
 --------------------------
 
 With Lithoxyl, all instrumentation, including logging, starts with
 knowing your application. We want to find the important parts of your
-application. Then, we wrap them in microtransactions, called Records.
+application and wrap them in microtransactions, called Records.
 
-Records are much more than print statements. Records are objects. Each
-Record has a name and level, for aggregation and filtering. More
-importantly, Records track the state of code execution, from timing
-information to uncaught exceptions.
+Records are much more than print statements. Records are lightweight
+objects that track the state of code execution, from timing
+information to uncaught exceptions. Plus, each Record has a name and
+a level, to enable aggregation and filtering down the line.
 
 Records are created with Loggers. Here's a basic example of creating
 an *info*-level Record with a preconfigured Logger:
@@ -148,6 +150,8 @@ In short, Loggers themselves are simple, and designed to be fit to
 your application, no matter how many aspects it may have. On their
 own, they are conceptually useful, but without Sinks, they are all
 potential.
+
+.. _configuring_sinks:
 
 Configuring Sinks
 -----------------

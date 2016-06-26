@@ -72,18 +72,9 @@ class Logger(object):
         module (str): Name of the module where the new Logger instance
             will be stored.  Defaults to the module of the caller.
 
-    The Logger is primarily used through its
-    :class:`~lithoxyl.record.Record`-creating methods named after
-    various log levels:
-
-        * :meth:`Logger.critical`
-        * :meth:`Logger.info`
-        * :meth:`Logger.debug`
-
-    Each creates a new :term:`record` with a given name, passing any
-    additional keyword arguments on through to the
-    :class:`lithoxyl.record.Record` constructor.
-
+    Most Logger methods and attributes fal into three categories:
+    :class:`~lithoxyl.record.Record` creation, Sink registration, and
+    Event handling.
     """
 
     record_type = Record

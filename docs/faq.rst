@@ -62,7 +62,7 @@ Background questions
 Unlike the design questions above, background questions relate to just
 the objective facts.
 
-.. ref:: etymology
+.. _etymology:
 
 What's with the name, Lithoxyl, what's that even mean?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
