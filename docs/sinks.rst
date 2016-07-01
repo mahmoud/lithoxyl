@@ -9,7 +9,7 @@ step.
 Writing a simple Sink
 ---------------------
 
-Sinks range from very complex to very simple. A useful Sink can be as
+Sinks can grow to be very involved, but a useful Sink can be as
 simple as::
 
   import sys
@@ -23,8 +23,8 @@ simple as::
 Note that our new Sink does not have to inherit from any special
 object. DotSink is a correct and capable Sink, ready to be
 instantiated and installed with :meth:`Logger.add_sink`, just like in
-the overview. Once added to your Logger, every time a Record ends, a
-dot will be written out to your console.
+:ref:`the overview <configuring_sinks>`. Once added to your Logger,
+every time a Record ends, a dot will be written out to your console.
 
 In this example, ``on_end`` is the handler for just one of Lithoxyl's
 events. The next section takes a look at all five of them.
