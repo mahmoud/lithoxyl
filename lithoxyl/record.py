@@ -188,7 +188,14 @@ class Record(object):
         exc_info = ExceptionInfo.from_exc_info(exc_type, exc_val, exc_tb)
         if not message:
             cp = exc_info.tb_info.frames[-1]
-            t = "%s raised exception: %s(%r) from %s on line %s of file '%s'"
+            t = "%s raised exception: "
+            exc_repr = "%s(%r)"
+            errno = getattr(exc_val, 'errno', None)
+            if errno and str(errno) not in exc_repr:
+                t += exc_repr + ' (errno %s)' % exc_val.errno
+            else:
+                t += exc_repr
+            t += "from %s on line %s of file '%s'"
             if self.data_map:
                 t += ' - ({data_map_repr})'
             message = t % (self.name, exc_info.exc_type, exc_info.exc_msg,
