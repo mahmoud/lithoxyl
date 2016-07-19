@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import time
-from functools import total_ordering
+from boltons.funcutils import total_ordering
+
 
 EVENTS = ('begin', 'warn', 'end', 'exception', 'comment')
 IMPORT_TIME = time.time()
