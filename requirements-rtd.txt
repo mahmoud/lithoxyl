@@ -1,2 +1,2 @@
 sphinxcontrib-napoleon
-boltons>=16.4.0
+-r requirements.txt
