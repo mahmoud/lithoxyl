@@ -1,7 +1,7 @@
 docs/_build
 
 *.py[cod]
-
+.cache/
 # emacs
 *~
 ._*
