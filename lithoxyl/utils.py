@@ -23,7 +23,8 @@ def check_encoding_settings(encoding, errors, reraise=True):
         return False
     try:
         # then test error-handler
-        u'\xdd'.encode('ascii', errors=errors)
+        # python2.6 does not support kwargs for encode
+        u'\xdd'.encode('ascii', errors)
     except LookupError as le:
         if reraise:
             raise ErrorBehaviorLookupError(le.message)
