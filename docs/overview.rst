@@ -3,7 +3,7 @@ Lithoxyl Overview
 
 Lithoxyl is next-generation logging and instrumentation for
 Python. This practical tutorial walks new users through the
-fundamentals necessary to get up and running with Lithoyxl in under 10
+fundamentals necessary to get up and running with Lithoxyl in under 10
 minutes.
 
 Motivating factors
@@ -247,13 +247,14 @@ like::
 And here we see the SensibleFormatter at work. It may not look like
 much, but there is a powerful feature at work.
 
-The most ambitious aim of the Sensible approach is to create
+The ambitious aim underlying the Sensible approach is to create
 human-readable structured logs. These are logs that are guaranteed to
 be uniformly formatted and escaped, allowing them to be loaded for
 further processing steps, such as collation with other logs, ETL into
 database/OLAP, and calculation of system-wide statistics. Extending
 the flow of logged information opens up many new roads in debugging,
-optimization, and system robustification.
+optimization, and system robustification, easily justifying a bit of
+extra up-front setup.
 
 Here we only used two fields, *import_time_s* and *end_message*. The
 list of Sensible built-in fields is quite expansive and worth a look
