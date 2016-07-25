@@ -195,7 +195,7 @@ class Record(object):
                 t += exc_repr + ' (errno %s)' % exc_val.errno
             else:
                 t += exc_repr
-            t += "from %s on line %s of file '%s'"
+            t += " from %s on line %s of file '%s'"
             if self.data_map:
                 t += ' - ({data_map_repr})'
             message = t % (self.name, exc_info.exc_type, exc_info.exc_msg,
