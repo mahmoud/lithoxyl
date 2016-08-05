@@ -17,7 +17,7 @@ Copyright 2013, 3-clause BSD License
 class P2Estimator(object):
     def __init__(self, q_points, data):
         self._q_points = self._process_q_points(q_points)
-        self._q_points = (0.0,) + self._q_points + (100.0,)
+        self._q_points = (0.0,) + self._q_points + (1.0,)
         len_data, len_qps = len(data), len(self._q_points)
         if len_data < len_qps:
             msg = ('expected %d or more initial points for '
@@ -30,11 +30,12 @@ class P2Estimator(object):
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
         self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
-        qp_divs = [q / 100.0 for q in self._q_points]
-        self._quads = zip(qp_divs[1:], vals, vals[1:], vals[2:])
+
+        self._quads = zip(self._q_points[1:], vals, vals[1:], vals[2:])
 
         for i in xrange(len_qps, len_data):
             self.add(data[i])
+        return
 
     @staticmethod
     def _process_q_points(q_points):
@@ -42,9 +43,9 @@ class P2Estimator(object):
             qps = sorted([float(x) for x in set(q_points or [])])
             if qps[0] == 0.0:
                 qps = qps[1:]
-            if qps[-1] == 100.0:
+            if qps[-1] == 1.0:
                 qps = qps[:-1]
-            if not qps or not all([0 < x < 100 for x in qps]):
+            if not qps or not all([0.0 < x < 1.0 for x in qps]):
                 raise ValueError()
         except Exception:
             raise ValueError('invalid quantile point(s): %r' % (q_points,))
@@ -101,7 +102,7 @@ def test_random(vals=None, nsamples=100000):
     import time
     from pprint import pprint
     random.seed(12345)
-    qp = (1.0, 5.0, 25.0, 50.0, 75.0, 90.0, 95.0, 99.0)
+    qp = (0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
     if not vals:
         vals = [random.random() for i in range(nsamples)]
     try:
@@ -122,8 +123,8 @@ def test_random(vals=None, nsamples=100000):
     for k, v in p:
         if not k:
             continue
-        if not 0.95 < v / (k / 100.0) < 1.05:
-            print "problem: %s is %s, should be ~%s" % (k, v, k / 100.0)
+        if not 0.95 < v / k < 1.05:
+            print "problem: %s is %s, should be ~%s" % (k, v, k)
     return
 
 

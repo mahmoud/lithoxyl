@@ -8,7 +8,7 @@ from collections import deque
 from boltons.cacheutils import ThresholdCounter as TCounter
 
 from lithoxyl.emitters import StreamEmitter
-from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
+from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator, QP_PRAG
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
 
@@ -321,18 +321,22 @@ class QuantileSink(object):
         if use_p2:
             default_acc = P2Accumulator
 
-        acc_type = kwargs.pop('acc_type', default_acc)
-
-        self._acc_type = acc_type
+        self._acc_type = kwargs.pop('acc_type', default_acc)
+        self.q_points = kwargs.pop('q_points', QP_PRAG)
 
         self.qas = {}
 
+        if kwargs:
+            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+
     def to_dict(self):
         ret = {}
-        for r_name, acc in self.qas.iteritems():
-            ret[r_name] = {'count': acc.count,
-                           'trimean': acc.trimean,
-                           'quantiles': dict(acc.get_quantiles())}
+        for log_name, rec_map in self.qas.items():
+            ret[log_name] = cur_map = {}
+            for rec_name, acc in rec_map.items():
+                cur_map[rec_name] = {'count': acc.count,
+                                     'trimean': acc.trimean,
+                                     'quantiles': dict(acc.get_quantiles())}
         return ret
 
     def on_end(self, event):
@@ -343,7 +347,8 @@ class QuantileSink(object):
         try:
             acc = logger_accs[event.name]
         except KeyError:
-            acc = logger_accs[event.name] = self._acc_type()
+            acc = self._acc_type(q_points=self.q_points)
+            logger_accs[event.name] = acc
 
         acc.add(self.getter(event))
 

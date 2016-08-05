@@ -12,17 +12,19 @@ HistogramCell = namedtuple('HistogramCell',
                            'q_range val_range ratio count')
 
 
-P2_MIN = (25.0, 50.0, 75.0)
-P2_PRAG = (1.0, 5.0, 25.0, 50.0, 75.0, 90.0, 95.0, 99.0)
-P2_PRO = (0.1, 1, 2, 5, 10, 25, 50, 75, 80, 85, 90, 95,
-          98, 99, 99.5, 99.8, 99.9, 99.99)
+QP_MIN = (0.25, 0.50, 0.75)
+QP_PRAG = (0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
+QP_PRO = (0.001, 0.01, 0.02, 0.05, 0.10,
+          0.25, 0.50, 0.75, 0.80, 0.85, 0.90, 0.95,
+          0.98, 0.99, 0.995, 0.998, 0.999, 0.9999)
 
 
 class BaseQuantileAccumulator(object):
-    def __init__(self):
+    def __init__(self, q_points=None):
         self._count = 0
         self._min = float('inf')
         self._max = float('-inf')
+        self._q_points = q_points or QP_PRAG
 
     def add(self, val, idx=None):
         self._count += 1
@@ -32,10 +34,10 @@ class BaseQuantileAccumulator(object):
             self._max = val
 
     def get_quantiles(self, q_points=None):
-        q_points = q_points or P2_PRAG
+        q_points = q_points or self._q_points
         ret = [(0.0, self.min)]
         ret.extend([(q, self._get_quantile(q)) for q in q_points])
-        ret.append((100.0, self.max))
+        ret.append((1.0, self.max))
         return ret
 
     def get_histogram(self, q_points=None):
@@ -46,7 +48,7 @@ class BaseQuantileAccumulator(object):
         get_quantiles(), and probably even less so for very small
         dataset-size-to-bucket-count ratios.
 
-        TODO: Because it stores observations, this BasicAccumulator
+        TODO: Because it stores observations, a BasicAccumulator
         could actually give back a real histogram, too.
         """
         ret = []
@@ -55,13 +57,13 @@ class BaseQuantileAccumulator(object):
         for sq, eq in zip(qwantz, qwantz[1:]):
             q_range = start_q, end_q = sq[0], eq[0]
             val_range = start_val, end_val = sq[1], eq[1]
-            ratio = (end_q - start_q) / 100.0
+            ratio = end_q - start_q
             count = int(ratio * total_count)
             if total_count < len(qwantz):
                 if end_val > start_val:
                     count += 1  # not exactly, but sorta.
             else:
-                if start_q == 0.0 or end_q == 100.0:
+                if start_q == 0.0 or end_q == 1.0:
                     count += 1  # make range inclusive
             ret.append(HistogramCell(q_range, val_range, ratio, count))
         return ret
@@ -84,17 +86,17 @@ class BaseQuantileAccumulator(object):
 
     @property
     def median(self):
-        return self._get_quantile(50)
+        return self._get_quantile(0.50)
 
     @property
     def quartiles(self):
         gq = self._get_quantile
-        return gq(25), gq(50), gq(75)
+        return gq(0.25), gq(0.50), gq(0.75)
 
     @property
     def iqr(self):
         gq = self._get_quantile
-        return gq(75) - gq(25)
+        return gq(0.75) - gq(0.25)
 
     @property
     def trimean(self):
@@ -103,8 +105,8 @@ class BaseQuantileAccumulator(object):
 
 
 class ReservoirAccumulator(BaseQuantileAccumulator):
-    def __init__(self, data=None, cap=None):
-        super(ReservoirAccumulator, self).__init__()
+    def __init__(self, data=None, cap=None, q_points=None):
+        super(ReservoirAccumulator, self).__init__(q_points=q_points)
         self._typecode = 'f'  # TODO
         self._data = array.array(self._typecode)
         self._is_sorted = True
@@ -119,7 +121,6 @@ class ReservoirAccumulator(BaseQuantileAccumulator):
             self.add(v)
 
     def _sort(self):
-
         if self._is_sorted:
             return
         if callable(getattr(self._data, 'sort', None)):
@@ -142,12 +143,12 @@ class ReservoirAccumulator(BaseQuantileAccumulator):
                 self._is_sorted = False
                 super(ReservoirAccumulator, self).add(val)
 
-    def _get_quantile(self, q=50):
-        if not (0 < q < 100):
-            raise ValueError('expected a value in range 0-100 (non-inclusive)')
+    def _get_quantile(self, q=0.5):
+        if not (0.0 < q < 1.0):
+            raise ValueError('expected a value in range 0.0 - 1.0 (non-inclusive)')
         self._sort()
         data, n = self._data, len(self._data)
-        idx = q / 100.0 * (n - 1)
+        idx = q * (n - 1)
         idx_f, idx_c = int(floor(idx)), int(ceil(idx))
         if idx_f == idx_c:
             return data[idx_f]
@@ -155,10 +156,11 @@ class ReservoirAccumulator(BaseQuantileAccumulator):
 
 
 class P2Accumulator(BaseQuantileAccumulator):
-    def __init__(self, data=None, q_points=P2_PRAG):
-        super(P2Accumulator, self).__init__()
+    def __init__(self, data=None, q_points=None):
+        super(P2Accumulator, self).__init__(q_points=q_points)
         data = data or []
-        self._q_points = P2Estimator._process_q_points(q_points)
+
+        self._q_points = P2Estimator._process_q_points(self._q_points)
         self._tmp_acc = ReservoirAccumulator(cap=None)
         self._thresh = len(self._q_points) + 2
         self._est = None

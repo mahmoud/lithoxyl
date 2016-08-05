@@ -102,4 +102,4 @@ def test_acc_random():
     for acc in (qa, capqa, p2qa):
         for qp, v in acc.get_quantiles():
             if qp > 0:
-                assert 0.95 < v / (qp / 100.0) < 1.05
+                assert 0.95 < (v / qp) < 1.05

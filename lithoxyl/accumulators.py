@@ -4,6 +4,7 @@ from bisect import bisect_right, insort
 
 # TODO: trivial to implement reset on these, but recreation might be better practice?
 
+
 class MaxAccumulator(object):
     # max_list is sorted in ascending order
     def __init__(self, count=10):
