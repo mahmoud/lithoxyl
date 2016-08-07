@@ -29,6 +29,8 @@ def test_logger_success(trans_count=2):
     assert 'begins=' in agg_sink_repr
     assert 'begins=0' not in agg_sink_repr
 
+    assert '<Logger' in repr(logger)
+
 
 def test_callpoint_info():
     log = Logger('test_logger', [])
@@ -81,3 +83,52 @@ def test_structured(trans_count=5):
     log = Logger('test_logger', [acc])
     for i in range(trans_count):
         do_debug_trans(log)
+
+
+def test_dup_sink():
+    log = Logger('test_exc_logger')
+    agg_sink = AggregateSink()
+
+    log.add_sink(agg_sink)
+    log.add_sink(agg_sink)
+
+    assert len(log.sinks) == 1
+
+
+def test_exception():
+    log = Logger('test_exc_logger')
+
+    exc_list = []
+
+    class ExcSink(object):
+        def on_exception(self, event, etype, eobj, etb):
+            exc_list.append(event)
+
+    exc_sink = ExcSink()
+    log.add_sink(exc_sink)
+
+    try:
+        with log.critical('raise_act'):
+            raise RuntimeError('whooops')
+    except RuntimeError:
+        pass
+
+    assert len(exc_list) == 1
+    assert exc_list[0].exc_info.exc_type == 'RuntimeError'
+
+
+def test_comment():
+    log = Logger('test_comment')
+
+    events = []
+
+    class ComSink(object):
+        def on_comment(self, event):
+            events.append(event)
+
+    log.add_sink(ComSink())
+
+    log.comment('the first')
+    log.comment('the second')
+
+    assert len(events) == 2

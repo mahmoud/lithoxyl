@@ -13,10 +13,16 @@ def test_wrap():
 
     assert t_func() is True
 
+    @logger.wrap('critical', inject_as='yep')
+    def y_func(yep):
+        return bool(yep)
+
+    assert y_func() is True
+
     # try inject_as with an argument that isn't there
     with pytest.raises(ValueError):
         @logger.wrap('critical', inject_as='nope')
         def t_func():
-            return True
+            return False
 
     return

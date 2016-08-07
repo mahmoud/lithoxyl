@@ -22,6 +22,22 @@ def test_async_on_off():
     return
 
 
+def test_async_basic():
+    ctx = get_context()
+
+    ctx.enable_async()
+
+    log = Logger('async_basic')
+    with log.critical('test', reraise=False) as log_rec:
+        log.comment('i got a bad feeling about this')
+        log_rec.warn('here it comes')
+        1 / 0
+    log.flush()
+
+    ctx.disable_async()
+    return
+
+
 def test_preflush_catching_and_noting():
     ctx = LithoxylContext()
 

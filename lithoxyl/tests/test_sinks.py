@@ -40,6 +40,10 @@ def test_sensible_basic():
         pass
 
     assert aggr_emtr.get_entry(-1).startswith('E')
+    assert 'limit=' in repr(aggr_emtr)
+    assert aggr_emtr.get_entries()
+    aggr_emtr.clear()
+    assert not aggr_emtr.get_entries()
 
 
 def test_bad_encoding():
