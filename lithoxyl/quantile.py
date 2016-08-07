@@ -48,7 +48,7 @@ class BaseQuantileAccumulator(object):
         get_quantiles(), and probably even less so for very small
         dataset-size-to-bucket-count ratios.
 
-        TODO: Because it stores observations, a BasicAccumulator
+        TODO: Because it stores observations, a ReservoirAccumulator
         could actually give back a real histogram, too.
         """
         ret = []

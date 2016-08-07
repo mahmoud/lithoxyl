@@ -294,8 +294,7 @@ class EWMASink(object):
     def __repr__(self):
         cn = self.__class__.__name__
         total_values = self.get_values()['__all__']
-        return '<%s total_values=%r>' % (cn,
-                                         total_values)
+        return '<%s total_values=%r>' % (cn, total_values)
 
 
 class QuantileSink(object):
