@@ -10,9 +10,10 @@ from lithoxyl.logger import Logger
 
 fmtr = SF('{status_char}{begin_timestamp}')
 strm_emtr = StreamEmitter('stderr')
+fltr = SensibleFilter('debug')
 aggr_emtr = AggregateEmitter()
 strm_sink = SensibleSink(formatter=fmtr, emitter=strm_emtr)
-fake_sink = SensibleSink(formatter=fmtr, emitter=aggr_emtr)
+fake_sink = SensibleSink(filters=[fltr], formatter=fmtr, emitter=aggr_emtr)
 
 
 def test_sensible_basic():
