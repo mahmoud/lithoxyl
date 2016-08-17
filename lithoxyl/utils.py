@@ -106,7 +106,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
         kwargs = dict(extras)
 
         kwargs['level'] = level_map.get(attr_name, level)
-        kwargs['record_name'] = label + '.' + attr_name
+        kwargs['action_name'] = label + '.' + attr_name
 
         log_wrapper = logger.wrap(**kwargs)
 

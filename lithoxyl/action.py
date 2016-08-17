@@ -11,53 +11,53 @@ from lithoxyl.sensible import SensibleMessageFormatter
 from lithoxyl.common import to_unicode, get_level
 
 
-_REC_ID_ITER = itertools.count()
+_ACT_ID_ITER = itertools.count()
 
 
 class DefaultException(Exception):
     "Only used when traceback extraction fails"
 
 
-class Record(object):
-    """The Record type is one of the core Lithoxyl types, and the key to
-    instrumenting application logic. Records are usually instantiated
+class Action(object):
+    """The Action type is one of the core Lithoxyl types, and the key to
+    instrumenting application logic. Actions are usually instantiated
     through convenience methods on :class:`~lithoxyl.logger.Logger`
     instances, associated with their level (e.g.,
     :meth:`~Logger.critical`).
 
     Args:
         logger: The Logger instance responsible for creating and
-            publishing the Record.
-        level: Log level of the Record. Generally one of
+            publishing the Action.
+        level: Log level of the Action. Generally one of
             :data:`~lithoxyl.common.DEBUG`,
             :data:`~lithoxyl.common.INFO`, or
             :data:`~lithoxyl.common.CRITICAL`. Defaults to ``None``.
         name (str): A string description of some application action.
         data (dict): A mapping of non-builtin fields to user
             values. Defaults to an empty dict (``{}``) and can be
-            populated after Record creation by accessing the Record
+            populated after Action creation by accessing the Action
             like a ``dict``.
-        reraise (bool): Whether or not the Record should catch and
+        reraise (bool): Whether or not the Action should catch and
             reraise exceptions. Defaults to ``True``. Setting to
             ``False`` will cause all exceptions to be caught and
             logged appropriately, but not reraised. This should be
             used to eliminate ``try``/``except`` verbosity.
-        frame: Frame of the callpoint creating the Record. Defaults to
+        frame: Frame of the callpoint creating the Action. Defaults to
             the caller's frame.
 
-    Most of these parameters are managed by the Records and respective
+    Most of these parameters are managed by the Actions and respective
     :class:`~lithoxyl.Logger` themselves. While they are provided here
     for advanced use cases, usually only the *name* and *raw_message*
     are provided.
 
-    Records are :class:`dict`-like, and can be accessed as mappings
+    Actions are :class:`dict`-like, and can be accessed as mappings
 
     and used to store additional structured data:
 
-    >>> record['my_data'] = 20.0
-    >>> record['my_lore'] = -record['my_data'] / 10.0
+    >>> action['my_data'] = 20.0
+    >>> action['my_lore'] = -action['my_data'] / 10.0
     >>> from pprint import pprint
-    >>> pprint(record.data_map)
+    >>> pprint(action.data_map)
     {'my_data': 20.0, 'my_lore': -2.0}
 
     """
@@ -66,7 +66,7 @@ class Record(object):
 
     def __init__(self, logger, level, name,
                  data=None, reraise=True, parent=None, frame=None):
-        self.record_id = next(_REC_ID_ITER)
+        self.action_id = next(_ACT_ID_ITER)
         self.logger = logger
         self.level = get_level(level)
         self.name = name
@@ -85,9 +85,9 @@ class Record(object):
         self.exc_events = []
 
         if parent:
-            self.parent_record = parent
+            self.parent_action = parent
         else:
-            self.parent_record = logger.context.get_active_parent(logger, self)
+            self.parent_action = logger.context.get_active_parent(logger, self)
         return
 
     def __repr__(self):
@@ -116,9 +116,9 @@ class Record(object):
     @property
     def parent_depth(self):
         i = 0
-        while self.parent_record and i < 500:
+        while self.parent_action and i < 500:
             i += 1
-            self = self.parent_record  # reuse var
+            self = self.parent_action  # reuse var
         return i
 
     def begin(self, message=None, *a, **kw):
@@ -139,10 +139,10 @@ class Record(object):
         return self
 
     def success(self, message=None, *a, **kw):
-        """Mark this Record successful. Also set the Record's
+        """Mark this Action successful. Also set the Action's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
-        also be added to the Record's ``data_map`` attribute.
+        also be added to the Action's ``data_map`` attribute.
         """
         if not message:
             if self.data_map:
@@ -152,10 +152,10 @@ class Record(object):
         return self._end('success', message, a, kw)
 
     def failure(self, message=None, *a, **kw):
-        """Mark this Record failed. Also set the Record's
+        """Mark this Action failed. Also set the Action's
         *message* template. Positional and keyword arguments will be
         used to generate the formatted message. Keyword arguments will
-        also be added to the Record's ``data_map`` attribute.
+        also be added to the Action's ``data_map`` attribute.
         """
         if not message:
             if self.data_map:
@@ -166,13 +166,13 @@ class Record(object):
         return self._end('failure', message, a, kw)
 
     def exception(self, message=None, *a, **kw):
-        """Mark this Record as having had an exception. Also
-        sets the Record's *message* template similar to
-        :meth:`Record.success` and :meth:`Record.failure`.
+        """Mark this Action as having had an exception. Also
+        sets the Action's *message* template similar to
+        :meth:`Action.success` and :meth:`Action.failure`.
 
         Unlike those two attributes, this method is rarely called
         explicitly by application code, because the context manager
-        aspect of the Record catches and sets the appropriate
+        aspect of the Action catches and sets the appropriate
         exception fields. When called explicitly, this method should
         only be called in an :keyword:`except` block.
         """
@@ -237,7 +237,7 @@ class Record(object):
                 self._exception(exc_type, exc_val, exc_tb,
                                 message=None, fargs=(), data={})
             except Exception as e:
-                note('record_exit',
+                note('action_exit',
                      'got %r while already handling exception %r', e, exc_val)
                 pass  # TODO: still have to create end_event
         else:
@@ -247,7 +247,7 @@ class Record(object):
                 # now that _defer_publish=False, this will also publish
                 self.success()
 
-        self.logger.context.set_active_parent(self.logger, self.parent_record)
+        self.logger.context.set_active_parent(self.logger, self.parent_action)
 
         if self._reraise is False:
             return True  # ignore exception
@@ -261,7 +261,7 @@ class Record(object):
 
     def get_elapsed_time(self):
         """Simply get the amount of time that has passed since begin was
-        called on this record, or 0.0 if it has not begun. This method
+        called on this action, or 0.0 if it has not begun. This method
         has no side effects.
         """
         if self.begin_event:
@@ -272,9 +272,9 @@ class Record(object):
 # TODO: optimization strategy. if event creation starts to register on
 # profiling, convert events to fixed-length tuples with empty
 # dictionaries for caching lazy values. e.g.,
-# ('begin', record, etime, event_id, to_unicode(raw_message), fargs, {})
+# ('begin', action, etime, event_id, to_unicode(raw_message), fargs, {})
 #
-# could also shove those as internal attrs on the record and put
+# could also shove those as internal attrs on the action and put
 # caching properties in place for the actual event objects. simplifies
 # adding new fields.
 
@@ -282,10 +282,10 @@ class Event(object):
     _message = None
 
     def __getitem__(self, key):
-        return self.record[key]
+        return self.action[key]
 
     def __getattr__(self, name):
-        return getattr(self.record, name)
+        return getattr(self.action, name)
 
     @property
     def message(self):
@@ -305,17 +305,17 @@ class Event(object):
 
     def __repr__(self):
         cn = self.__class__.__name__
-        return '<%s %s %r>' % (cn, self.record_id, self.raw_message)
+        return '<%s %s %r>' % (cn, self.action_id, self.raw_message)
 
 
 class BeginEvent(Event):
     status = 'begin'
     status_char = 'b'
 
-    def __init__(self, record, etime, raw_message, fargs):
-        self.record = record
+    def __init__(self, action, etime, raw_message, fargs):
+        self.action = action
         self.etime = etime
-        self.event_id = next(_REC_ID_ITER)
+        self.event_id = next(_ACT_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
@@ -324,21 +324,21 @@ class ExceptionEvent(Event):
     status = 'exception'
     status_char = '!'
 
-    def __init__(self, record, etime, raw_message, fargs, exc_info):
-        self.record = record
+    def __init__(self, action, etime, raw_message, fargs, exc_info):
+        self.action = action
         self.etime = etime
-        self.event_id = next(_REC_ID_ITER)
+        self.event_id = next(_ACT_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.exc_info = exc_info
 
 
 class EndEvent(Event):
-    def __init__(self, record, etime, raw_message, fargs, status,
+    def __init__(self, action, etime, raw_message, fargs, status,
                  exc_info=None):
-        self.record = record
+        self.action = action
         self.etime = etime
-        self.event_id = next(_REC_ID_ITER)
+        self.event_id = next(_ACT_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
         self.status = status
@@ -346,7 +346,7 @@ class EndEvent(Event):
 
     @property
     def status_char(self):
-        if self.record._is_trans:
+        if self.action._is_trans:
             ret = self.status[:1].upper()
         else:
             ret = self.status[:1].lower()
@@ -357,10 +357,10 @@ class WarningEvent(Event):
     status = 'warning'
     status_char = 'W'
 
-    def __init__(self, record, etime, raw_message, fargs):
-        self.record = record
+    def __init__(self, action, etime, raw_message, fargs):
+        self.action = action
         self.etime = etime
-        self.event_id = next(_REC_ID_ITER)
+        self.event_id = next(_ACT_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
@@ -369,24 +369,24 @@ class CommentEvent(Event):
     status = 'comment'
     status_char = '#'
 
-    def __init__(self, record, etime, raw_message, fargs):
-        self.record = record
+    def __init__(self, action, etime, raw_message, fargs):
+        self.action = action
         self.etime = etime
-        self.event_id = next(_REC_ID_ITER)
+        self.event_id = next(_ACT_ID_ITER)
         self.raw_message = to_unicode(raw_message)
         self.fargs = fargs
 
 
 """What to do on multiple begins and multiple ends?
 
-If a record is atomic (i.e., never entered/begun), then should it fire
+If a action is atomic (i.e., never entered/begun), then should it fire
 a logger on_begin? Leaning no.
 
-Should the BeginEvent be created on record creation? currently its
+Should the BeginEvent be created on action creation? currently its
 presence is used to track whether on_begin has been called on the
 Logger yet.
 
-Things that normally change on a Record currently:
+Things that normally change on a Action currently:
 
  - Status
  - Message

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Implements types and functions for rendering
-:class:`~lithoxyl.record.Record` instances into strings.
+:class:`~lithoxyl.action.Action` instances into strings.
 """
 
 import os
@@ -106,33 +106,33 @@ class SensibleFilter(object):
         self.verbose_check = kw.pop('verbose_check', None)
         if not self.verbose_check:
             verbose_flag = kw.pop('verbose_flag', 'verbose')
-            self.verbose_check = lambda e: e.record.data_map.get(verbose_flag)
+            self.verbose_check = lambda e: e.action.data_map.get(verbose_flag)
 
         if kw:
             raise TypeError('got unexpected keyword arguments: %r' % kw)
 
     def on_begin(self, ev):
-        if ev.record.level >= self.begin_level:
+        if ev.action.level >= self.begin_level:
             return True
         elif self.verbose_check and self.verbose_check(ev):
             return True
         return False
 
     def on_end(self, ev):
-        ret, rec, status = False, ev.record, ev.status
+        ret, act, status = False, ev.action, ev.status
         if status == 'success':
-            ret = rec.level >= self.success_level
+            ret = act.level >= self.success_level
         elif status == 'failure':
-            ret = rec.level >= self.failure_level
+            ret = act.level >= self.failure_level
         elif status == 'exception':
-            ret = rec.level >= self.exception_level
+            ret = act.level >= self.exception_level
         if not ret:
             if self.verbose_check and self.verbose_check(ev):
                 ret = True
         return ret
 
     def on_warn(self, ev):
-        if ev.record.level >= self.warn_level:
+        if ev.action.level >= self.warn_level:
             return True
         elif self.verbose_check and self.verbose_check(ev):
             return True
@@ -144,8 +144,8 @@ class SensibleFilter(object):
 
 class GetterDict(dict):
     """An internal-use-only dict to enable the fetching of values from a
-    :class:`~lithoxyl.record.Record`. Tries to fetch a key on a
-    record, failing that, tries built-in getters, if that fails,
+    :class:`~lithoxyl.action.Action`. Tries to fetch a key on a
+    action, failing that, tries built-in getters, if that fails,
     returns ``None``. Exceptions raised from getters are not caught
     here.
     """
@@ -194,7 +194,7 @@ class SensibleFormatter(object):
 
 class SensibleMessageFormatter(object):
     """The basic ``Formatter`` type implements a constrained, but robust,
-    microtemplating system rendering Records to strings that are both
+    microtemplating system rendering Actions to strings that are both
     human-readable *and* machine-readable. This system is based on
     :class:`FormatFields <lithoxyl.fields.FormatField>`, many of which
     are built-in.
@@ -211,13 +211,13 @@ class SensibleMessageFormatter(object):
 
     Generally a Formatter is called only with the template string.
 
-    >>> from lithoxyl.record import Record
-    >>> fmtr = SensibleFormatter('Record status: {status_str}.')
-    >>> fmtr.format_record(Record('test').success())
-    'Record status: success.'
+    >>> from lithoxyl.action import Action
+    >>> fmtr = SensibleFormatter('Action status: {status_str}.')
+    >>> fmtr.format_action(Action('test').success())
+    'Action status: success.'
 
     Other types of Formatters do not need to inherit from any special
-    class. A Formatter is any callable which accepts a Record/mapping,
+    class. A Formatter is any callable which accepts a Action/mapping,
     ``*args``, and ``**kwargs``, and returns text.
     """
     def __init__(self, format_str, **kwargs):
@@ -276,7 +276,7 @@ class SensibleMessageFormatter(object):
           * Positional arguments to this method (``*args``)
           * Keyword arguments to this method (``**kwargs``)
           * Default FormatFields built-in to Lithoxyl
-          * Structured data stored in the Record object's ``data_map``
+          * Structured data stored in the Action object's ``data_map``
 
         """
         ret = ''
@@ -358,7 +358,7 @@ to the left, and lower verbosity, down and to the right.
 
 """Lithoxyl comes with many built-in format *fields* meant to be used
 with the standard :class:`~lithoxyl.logger.Logger` and
-:class:`~lithoxyl.record.Record`. Sinks can take advantage of these
+:class:`~lithoxyl.action.Action`. Sinks can take advantage of these
 with the :class:`~lithoxyl.sensible.SensibleFormatter` type or subtypes.
 """
 # NOTE: docstring table needs slashes double escaped. Also, newline
@@ -420,7 +420,7 @@ class SensibleField(BaseFormatField):
 
 
 def duration_auto(event):
-    duration = event.record.duration
+    duration = event.action.duration
     if duration < 0.001:
         return '%.3fus' % (duration * 1e6)
     if duration < 1.0:
@@ -430,28 +430,28 @@ def duration_auto(event):
 
 # default, fmt_specs
 _SF = SensibleField
-BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
-                _SF('logger_id', 'd', lambda e: e.record.logger.logger_id),
-                _SF('record_name', 's', lambda e: e.record.name),
-                _SF('record_id', 'd', lambda e: e.record_id),
+BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.action.logger.name),
+                _SF('logger_id', 'd', lambda e: e.action.logger.logger_id),
+                _SF('action_name', 's', lambda e: e.action.name),
+                _SF('action_id', 'd', lambda e: e.action_id),
                 _SF('status_str', 's', lambda e: e.status, quote=False),
                 _SF('status_char', 's', lambda e: e.status_char, quote=False),
                 _SF('warn_char', 's', lambda e: e.warn_char, quote=False),  # TODO
                 _SF('level_name', 's', lambda e: e.level_name, quote=False),
-                _SF('data_map', 's', lambda e: json.dumps(e.record.data_map, sort_keys=True), quote=False),
-                _SF('data_map_repr', 's', lambda e: repr(e.record.data_map), quote=False),
+                _SF('data_map', 's', lambda e: json.dumps(e.action.data_map, sort_keys=True), quote=False),
+                _SF('data_map_repr', 's', lambda e: repr(e.action.data_map), quote=False),
                 _SF('level_name_upper', 's', lambda e: e.level_name.upper(), quote=False),
                 _SF('level_char', 's', lambda e: e.level_name.upper()[0], quote=False),
                 _SF('level_number', 'd', lambda e: e.level._value),
                 _SF('begin_message', 's', lambda e: e.begin_event.message),
                 _SF('begin_message_raw', 's', lambda e: e.begin_event.raw_message),
-                _SF('end_message', 's', lambda e: e.record.end_event.message),
-                _SF('end_message_raw', 's', lambda e: e.record.end_event.raw_message),
-                _SF('begin_timestamp', '.14g', lambda e: e.record.begin_time),
-                _SF('end_timestamp', '.14g', lambda e: e.record.end_time),
-                _SF('duration_s', '.3f', lambda e: e.record.duration),
-                _SF('duration_ms', '.3f', lambda e: e.record.duration * 1e3),
-                _SF('duration_us', '.3f', lambda e: e.record.duration * 1e6),
+                _SF('end_message', 's', lambda e: e.action.end_event.message),
+                _SF('end_message_raw', 's', lambda e: e.action.end_event.raw_message),
+                _SF('begin_timestamp', '.14g', lambda e: e.action.begin_time),
+                _SF('end_timestamp', '.14g', lambda e: e.action.end_time),
+                _SF('duration_s', '.3f', lambda e: e.action.duration),
+                _SF('duration_ms', '.3f', lambda e: e.action.duration * 1e3),
+                _SF('duration_us', '.3f', lambda e: e.action.duration * 1e6),
                 _SF('duration_auto', '>9s', duration_auto, quote=False),
                 _SF('module_name', 's', lambda e: e.callpoint.module_name),
                 _SF('module_path', 's', lambda e: e.callpoint.module_path),
@@ -470,38 +470,38 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.record.logger.name),
 #   * with/without timezone (_noms variants have textual timezone)
 ISO8601_FIELDS = [
     _SF('iso_begin', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.etime)),
+        lambda e: timestamp2iso8601(e.action.begin_event.etime)),
     _SF('iso_end', 's',
-        lambda e: timestamp2iso8601(e.record.end_event.etime)),
+        lambda e: timestamp2iso8601(e.action.end_event.etime)),
     _SF('iso_begin_notz', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.etime,
+        lambda e: timestamp2iso8601(e.action.begin_event.etime,
                                     with_tz=False)),
     _SF('iso_end_notz', 's',
-        lambda e: timestamp2iso8601(e.record.end_event.etime,
+        lambda e: timestamp2iso8601(e.action.end_event.etime,
                                     with_tz=False)),
     _SF('iso_begin_local', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.etime,
+        lambda e: timestamp2iso8601(e.action.begin_event.etime,
                                     local=True)),
     _SF('iso_end_local', 's',
-        lambda e: timestamp2iso8601(e.record.end_event.etime,
+        lambda e: timestamp2iso8601(e.action.end_event.etime,
                                     local=True)),
     _SF('iso_begin_local_notz', 's',
-        lambda e: timestamp2iso8601(e.record.begin_event.etime,
+        lambda e: timestamp2iso8601(e.action.begin_event.etime,
                                     local=True, with_tz=False)),
     _SF('iso_end_local_notz', 's',
-        lambda e: timestamp2iso8601(e.record.end_event.etime,
+        lambda e: timestamp2iso8601(e.action.end_event.etime,
                                     local=True, with_tz=False)),
     _SF('iso_begin_local_noms', 's',
-        lambda e: timestamp2iso8601_noms(e.record.begin_event.etime,
+        lambda e: timestamp2iso8601_noms(e.action.begin_event.etime,
                                          local=True)),
     _SF('iso_end_local_noms', 's',
-        lambda e: timestamp2iso8601_noms(e.record.end_event.etime,
+        lambda e: timestamp2iso8601_noms(e.action.end_event.etime,
                                          local=True)),
     _SF('iso_begin_local_noms_notz', 's',
-        lambda e: timestamp2iso8601_noms(e.record.begin_event.etime,
+        lambda e: timestamp2iso8601_noms(e.action.begin_event.etime,
                                          local=True, with_tz=False)),
     _SF('iso_end_local_noms_notz', 's',
-        lambda e: timestamp2iso8601_noms(e.record.end_event.etime,
+        lambda e: timestamp2iso8601_noms(e.action.end_event.etime,
                                          local=True, with_tz=False))]
 
 # using the T separator means no whitespace and thus no quoting
@@ -518,9 +518,9 @@ PARENT_DEPTH_INDENT = '   '
 
 
 PARENT_FIELDS = [
-    _SF('parent_depth', 'd', lambda e: e.record.parent_depth),
+    _SF('parent_depth', 'd', lambda e: e.action.parent_depth),
     _SF('parent_depth_indent', 's',
-        lambda e: e.record.parent_depth * PARENT_DEPTH_INDENT,
+        lambda e: e.action.parent_depth * PARENT_DEPTH_INDENT,
         quote=False)]
 
 import binascii

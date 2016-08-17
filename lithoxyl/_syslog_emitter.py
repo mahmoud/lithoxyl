@@ -31,15 +31,15 @@ class SyslogEmitter(object):
 
         self.syslog_conn = syslog.openlog(ident, options, facility)
 
-    def _get_syslog_priority(self, event_name, record):
-        level = get_level(record.level)
+    def _get_syslog_priority(self, event_name, action):
+        level = get_level(action.level)
 
         if event_name == 'warn':
             status = 'warn'
         elif event_name == 'begin':
             status = 'begin'
         else:
-            status = record.status
+            status = action.status
         return self.priority_map[level][status]
 
     def on_begin(self, begin_event, entry):

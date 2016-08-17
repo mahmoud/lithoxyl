@@ -138,7 +138,7 @@ class RateAccumulator(object):
 class RateSink(object):
     """\
     The RateSink provides basic accounting and rate estimation
-    facilities for records as they pass through the system.
+    facilities for actions as they pass through the system.
 
     It uses a reservoir system for predictable and stable memory
     use. See RateAccumulator for more information.
@@ -147,7 +147,9 @@ class RateSink(object):
     """
     def __init__(self, getter=None, sample_size=128):
         if getter is None:
-            getter = lambda end_event: end_event.etime
+            def end_time_getter(end_event):
+                return end_event.etime
+            getter = end_time_getter
         if not callable(getter):
             raise TypeError('expected callable getter, not %r' % getter)
         self.getter = getter
@@ -242,7 +244,7 @@ class EWMASink(object):
                  periods=DEFAULT_PERIODS,
                  interval=DEFAULT_INTERVAL):
         if getter is None:
-            getter = lambda record: record.duration
+            getter = lambda action: action.duration
         if not callable(getter):
             raise TypeError('expected callable getter, not %r' % getter)
         self.getter = getter
@@ -250,16 +252,16 @@ class EWMASink(object):
         self.interval = interval
         self.acc_map = {}
 
-    def on_end(self, record):
-        name_time_map = self.acc_map.setdefault(record.logger.name, {})
-        status_time_map = name_time_map.setdefault(record.name, {})
+    def on_end(self, action):
+        name_time_map = self.acc_map.setdefault(action.logger.name, {})
+        status_time_map = name_time_map.setdefault(action.name, {})
         try:
-            acc = status_time_map[record.status]
+            acc = status_time_map[action.status]
         except Exception:
             acc = self.accumulator_type(periods=self.periods,
                                         interval=self.interval)
-            status_time_map[record.status] = acc
-        value = self.getter(record)
+            status_time_map[action.status] = acc
+        value = self.getter(action)
         acc.add(value)
 
     @staticmethod
@@ -364,7 +366,7 @@ class QuantileSink(object):
 class CounterSink(object):
     def __init__(self, getter=None, threshold=0.001):
         if getter is None:
-            getter = lambda end_event: end_event.record.name
+            getter = lambda end_event: end_event.action.name
         if not callable(getter):
             raise TypeError('expected callable getter, not %r' % (getter,))
 
@@ -375,9 +377,9 @@ class CounterSink(object):
     def on_end(self, end_event):
         ev, ctr_map = end_event, self.counter_map
         try:
-            counter = ctr_map[ev.record.logger]
+            counter = ctr_map[ev.action.logger]
         except KeyError:
-            counter = ctr_map[ev.record.logger] = TCounter(self.threshold)
+            counter = ctr_map[ev.action.logger] = TCounter(self.threshold)
 
         key = self.getter(end_event)
         counter.add(key)

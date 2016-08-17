@@ -31,8 +31,8 @@ def note(name, message, *a, **kw):
     return get_context().note(name, message, *a, **kw)
 
 
-_CONSEC_ACTIVE_REC_MAP = {}
-# TODO: idea to be implemented elsewhere: a map of parent records to
+_CONSEC_ACTIVE_ACT_MAP = {}
+# TODO: idea to be implemented elsewhere: a map of parent action to
 # lists of children, to allow children to look up their siblings. will
 # allow properly-ordered, non-overlapping output in many concurrent
 # applications
@@ -40,16 +40,16 @@ _CONSEC_ACTIVE_REC_MAP = {}
 
 # consec = consecutive. this approach works in systems without
 # concurrency. threads, gevent, etc. will require separate hooks.
-def _consec_get_active_parent(logger, record):
-    return _CONSEC_ACTIVE_REC_MAP.get(logger)
+def _consec_get_active_parent(logger, action):
+    return _CONSEC_ACTIVE_ACT_MAP.get(logger)
 
 
-def _consec_set_active_parent(logger, record):
-    # record can be None to unset the oldest record
-    if record:
-        _CONSEC_ACTIVE_REC_MAP[logger] = record
+def _consec_set_active_parent(logger, action):
+    # action can be None to unset the oldest action
+    if action:
+        _CONSEC_ACTIVE_ACT_MAP[logger] = action
     else:
-        _CONSEC_ACTIVE_REC_MAP.pop(logger, None)
+        _CONSEC_ACTIVE_ACT_MAP.pop(logger, None)
     return
 
 

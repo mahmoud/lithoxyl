@@ -28,9 +28,9 @@ def test_async_basic():
     ctx.enable_async()
 
     log = Logger('async_basic')
-    with log.critical('test', reraise=False) as log_rec:
+    with log.critical('test', reraise=False) as act:
         log.comment('i got a bad feeling about this')
-        log_rec.warn('here it comes')
+        act.warn('here it comes')
         1 / 0
     log.flush()
 

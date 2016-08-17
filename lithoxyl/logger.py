@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The :class:`Logger` is the application developer's primary
 interface to using Lithoxyl. It is used to conveniently create
-:class:`Records <Record>` and publish them to :class:`sinks <Sink>`.
+:class:`Actions <Action>` and publish them to :class:`sinks <Sink>`.
 
 """
 
@@ -15,7 +15,7 @@ from boltons.funcutils import wraps
 
 from lithoxyl.context import get_context
 from lithoxyl.common import DEBUG, INFO, CRITICAL
-from lithoxyl.record import Record, BeginEvent, EndEvent, CommentEvent
+from lithoxyl.action import Action, BeginEvent, EndEvent, CommentEvent
 
 
 QUEUE_LIMIT = 10000
@@ -60,8 +60,8 @@ def get_frame_excluding_subtypes(target_type, offset=0):
 
 class Logger(object):
     """The ``Logger`` is one of three core Lithoxyl types, and the main
-    entrypoint to creating :class:`~lithoxyl.record.Record` instances,
-    and publishing those :term:`records <record>` to :term:`sinks
+    entrypoint to creating :class:`~lithoxyl.action.Action` instances,
+    and publishing those :term:`actions <action>` to :term:`sinks
     <sink>`.
 
     Args:
@@ -73,12 +73,12 @@ class Logger(object):
             will be stored.  Defaults to the module of the caller.
 
     Most Logger methods and attributes fal into three categories:
-    :class:`~lithoxyl.record.Record` creation, Sink registration, and
+    :class:`~lithoxyl.action.Action` creation, Sink registration, and
     Event handling.
     """
 
-    record_type = Record
-    "Override *record_type* in subtypes for custom Record behavior."
+    action_type = Action
+    "Override *action_type* in subtypes for custom Action behavior."
 
     def __init__(self, name, sinks=None, **kwargs):
         self.logger_id = next(_LOG_ID_ITER)
@@ -108,7 +108,7 @@ class Logger(object):
 
     def flush(self):
         # only one flush allowed to run at a time
-        # ensures that records are delivered to sinks in order
+        # ensures that actions are delivered to sinks in order
         with self.async_lock:
             for preflush_hook in self.preflush_hooks:
                 try:
@@ -221,14 +221,14 @@ class Logger(object):
 
     def comment(self, message, *a, **kw):
         # comments are not enterable, they're not returned
-        rec_type = self.record_type
-        rec = rec_type(logger=self, level=CRITICAL, name='comment', data=kw,
-                       parent=kw.pop('parent_record', None))
+        act_type = self.action_type
+        act = act_type(logger=self, level=CRITICAL, name='comment', data=kw,
+                       parent=kw.pop('parent_action', None))
         cur_time = time.time()
-        rec.begin_event = BeginEvent(rec, cur_time, 'comment', ())
-        rec.end_event = EndEvent(rec, cur_time,
+        act.begin_event = BeginEvent(act, cur_time, 'comment', ())
+        act.end_event = EndEvent(act, cur_time,
                                  'comment', (), 'success')
-        event = CommentEvent(rec, cur_time, message, a)
+        event = CommentEvent(act, cur_time, message, a)
         if self.async_mode:
             self.event_queue.append(('comment', event))
         else:
@@ -236,43 +236,43 @@ class Logger(object):
                 comment_hook(event)
         return
 
-    def debug(self, record_name, **kw):
-        "Returns a new :data:`DEBUG`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=DEBUG, name=record_name,
+    def debug(self, action_name, **kw):
+        "Returns a new :data:`DEBUG`-level :class:`Action` named *name*."
+        return self.action_type(logger=self, level=DEBUG, name=action_name,
                                 data=kw, reraise=kw.pop('reraise', None),
-                                parent=kw.pop('parent_record', None),
+                                parent=kw.pop('parent_action', None),
                                 frame=sys._getframe(1))
 
-    def info(self, record_name, **kw):
-        "Returns a new :data:`INFO`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=INFO, name=record_name,
+    def info(self, action_name, **kw):
+        "Returns a new :data:`INFO`-level :class:`Action` named *name*."
+        return self.action_type(logger=self, level=INFO, name=action_name,
                                 data=kw, reraise=kw.pop('reraise', None),
-                                parent=kw.pop('parent_record', None),
+                                parent=kw.pop('parent_action', None),
                                 frame=sys._getframe(1))
 
-    def critical(self, record_name, **kw):
-        "Returns a new :data:`CRITICAL`-level :class:`Record` named *name*."
-        return self.record_type(logger=self, level=CRITICAL, name=record_name,
+    def critical(self, action_name, **kw):
+        "Returns a new :data:`CRITICAL`-level :class:`Action` named *name*."
+        return self.action_type(logger=self, level=CRITICAL, name=action_name,
                                 data=kw, reraise=kw.pop('reraise', None),
-                                parent=kw.pop('parent_record', None),
+                                parent=kw.pop('parent_action', None),
                                 frame=sys._getframe(1))
 
-    def record(self, level, record_name, **kw):
-        "Return a new :class:`Record` named *name* classified as *level*."
-        return self.record_type(logger=self, level=level, name=record_name,
+    def action(self, level, action_name, **kw):
+        "Return a new :class:`Action` named *name* classified as *level*."
+        return self.action_type(logger=self, level=level, name=action_name,
                                 data=kw, reraise=kw.pop('reraise', None),
-                                parent=kw.pop('parent_record', None),
+                                parent=kw.pop('parent_action', None),
                                 frame=sys._getframe(1))
 
-    def wrap(self, level, record_name=None,
+    def wrap(self, level, action_name=None,
              inject_as=None, enable_wrap=True, **kw):
 
-        record_kwargs = kw
+        action_kwargs = kw
 
-        def record_wrapper(func_to_log,
+        def action_wrapper(func_to_log,
                            _enable=enable_wrap,
-                           _name=record_name,
-                           _record_kwargs=record_kwargs):
+                           _name=action_name,
+                           _action_kwargs=action_kwargs):
             if not _enable:
                 return func_to_log
             if _name is None:  # wooo nonlocal
@@ -280,18 +280,18 @@ class Logger(object):
 
             @wraps(func_to_log, injected=inject_as)
             def logged_func(*a, **kw):
-                rec = self.record(level, _name, **record_kwargs)
+                act = self.action(level, _name, **action_kwargs)
                 if inject_as:
-                    kw[inject_as] = rec
-                with rec:
+                    kw[inject_as] = act
+                with act:
                     return func_to_log(*a, **kw)
 
-            wrapping_info = (self, level, record_name, func_to_log)
+            wrapping_info = (self, level, action_name, func_to_log)
             logged_func.__lithoxyl_wrapped__ = wrapping_info
 
             return logged_func
 
-        return record_wrapper
+        return action_wrapper
 
     def __repr__(self):
         cn = self.__class__.__name__
