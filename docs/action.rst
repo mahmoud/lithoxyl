@@ -1,21 +1,21 @@
-The Record
+The Action
 ==========
 
-Record objects are Lithoxyl's fundamental construct for instrumenting
-application logic. Records are created with a
+Action objects are Lithoxyl's fundamental construct for instrumenting
+application logic. Actions are created with a
 :class:`~lithoxyl.logger.Logger`, and wrap functions and code blocks
 to collect messages and timing information.
 
-At their most basic, Records have a:
+At their most basic, Actions have a:
 
   * **name** - A string description of the application action.
   * **level** - An indicator of the importance of the application action.
-  * **status** - The state of the record (begin, success, failure, exception).
+  * **status** - The state of the action (begin, success, failure, exception).
   * **duration** - The time between the begin and end events of a
-    completed record, i.e., the time between entering and exiting the
+    completed action, i.e., the time between entering and exiting the
     code block.
 
-Lithoxyl Records are like transactions wrapping important pieces of
+Lithoxyl Actions are like transactions wrapping important pieces of
 your application::
 
   with log.info('user creation', username=name) as r:
@@ -23,9 +23,9 @@ your application::
       if not succeeded:
           r.failure()
 
-This pattern is using the Record as a *context manager*. The indented
+This pattern is using the Action as a *context manager*. The indented
 part of the code after the **with** statement is the code block
-managed by the Record. Here is how the basics of the Record are
+managed by the Action. Here is how the basics of the Action are
 populated in our example:
 
   * **name** - "user creation"
@@ -41,13 +41,13 @@ populated in our example:
 
 There's quite a bit going on, but Lithoxyl has several tricks that let
 it flow with the semantics of applications. First, let's learn a bit
-about these attributes, starting with the Record level.
+about these attributes, starting with the Action level.
 
-.. automodule:: lithoxyl.record
+.. automodule:: lithoxyl.action
 
 .. _levels:
 
-Record level
+Action level
 ------------
 
 Levels are a basic indicator of how important a block of application
@@ -65,39 +65,39 @@ significant is the success of this code block, how catastrophic is a
 failure in this function?
 
 It's only natural that instrumented code will start with more
-*critical* records. The most important parts should be instrumented
+*critical* actions. The most important parts should be instrumented
 first. Eventually the instrumentation spreads to lower levels.
 
 .. note::
 
    As a general tendency, as code gets closer to the operating system,
-   the corresponding Record also gets a lower level. High-level
-   operations get higher levels of Records. Start high and move lower
+   the corresponding Action also gets a lower level. High-level
+   operations get higher levels of Actions. Start high and move lower
    as necessary.
 
 .. _status:
 
-Record status
+Action status
 -------------
 
-The Lithoxyl Record has an eventful lifetime. Even the most basic
-usage sees the Record going from creation to beginning to one of the
+The Lithoxyl Action has an eventful lifetime. Even the most basic
+usage sees the Action going from creation to beginning to one of the
 ending states: success, failure, or exception.
 
-First, simply creating a Record does not "begin" it. A record begins
+First, simply creating a Action does not "begin" it. A action begins
 when it is entered with a **with** statement, as we saw in the example
-above. Entering a record creates a timestamp and makes it the parent
-of future records, until it is ended.
+above. Entering a action creates a timestamp and makes it the parent
+of future actions, until it is ended.
 
 There are three end statuses:
 
-* **success** - The action described by the record completed without
+* **success** - The action described by the action completed without
   issue. This is the automatic default when no exception is raised.
 * **failure** - The action did not complete successfully, and the
   failure was expected and/or handled within the application.
 * **exception** - The action terminated unexpectedly, likely with a
   Python exception. This is the automatic default when an exception is
-  raised within a record context manager.
+  raised within a action context manager.
 
 The split between *failure* and *exception* should be familiar to
 users of standard testing frameworks like `py.test`_. Test frameworks
@@ -110,24 +110,24 @@ runtime instrumentation.
 
 .. note::
 
-   If a record is manually set to complete with
-   :meth:`~Record.success()` or :meth:`~Record.failure()`, and an
-   unexpected exception occurs, the Record will end with the
+   If a action is manually set to complete with
+   :meth:`~Action.success()` or :meth:`~Action.failure()`, and an
+   unexpected exception occurs, the Action will end with the
    *exception* status.
 
-Record API
+Action API
 ----------
 
-Records are usually constructed through Loggers, but it can help to
+Actions are usually constructed through Loggers, but it can help to
 know the underlying API and see the obvious parallels.
 
-.. autoclass:: lithoxyl.record.Record
+.. autoclass:: lithoxyl.action.Action
    :members:
 
 
 .. _concurrency:
 
-Record concurrency
+Action concurrency
 ------------------
 
 TODO

@@ -5,25 +5,25 @@ The Logger
 
 .. autoclass:: lithoxyl.logger.Logger
 
-Record creation
+Action creation
 ~~~~~~~~~~~~~~~
 
 The Logger is primarily used through its
-:class:`~lithoxyl.record.Record`-creating convenience methods named
+:class:`~lithoxyl.action.Action`-creating convenience methods named
 after various log levels: :meth:`~Logger.debug`, :meth:`~Logger.info`,
 and :meth:`~Logger.critical`.
 
-Each creates a new :term:`record` with a given name, passing any
+Each creates a new :term:`action` with a given name, passing any
 additional keyword arguments on through to the
-:class:`lithoxyl.record.Record` constructor.
+:class:`lithoxyl.action.Action` constructor.
 
 .. automethod:: lithoxyl.logger.Logger.debug
 .. automethod:: lithoxyl.logger.Logger.info
 .. automethod:: lithoxyl.logger.Logger.critical
 
-The record level can also be passed in:
+The action level can also be passed in:
 
-.. automethod:: lithoxyl.logger.Logger.record
+.. automethod:: lithoxyl.logger.Logger.action
 
 Sink registration
 ~~~~~~~~~~~~~~~~~

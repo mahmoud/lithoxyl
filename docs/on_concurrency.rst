@@ -16,14 +16,14 @@ can, but it's up to framework developers to adapt Lithoxyl more
 completely.
 
 One option is to solve it at a higher level, IDs that are used to
-correlate and collate records. Lithoxyl provides a few helpful values
+correlate and collate actions. Lithoxyl provides a few helpful values
 in this domain:
 
 * context.PROCESS_GUID
 * context.get_context().context_guid
 * Logger.logger_guid and logger.logger_id
-* Record.record_id
-* sensible.get_record_guid
+* Action.action_id
+* sensible.get_action_guid
 
 GUIDs are opaque values with uniqueness assurance. They are similar to
 UUIDs, but are denser (base64, not hex) for smaller logs and faster to

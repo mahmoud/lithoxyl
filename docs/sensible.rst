@@ -31,7 +31,7 @@ represented by SensibleField objects. The Sensible suite comes with
 over twenty built-in fields to cover most use cases, and sensible
 default handling for other values. These fields are used to create a
 template for the SensibleFormatter, which knows how to turn a Lithoxyl
-Record into a structured string. Let's see how it all comes together
+Action into a structured string. Let's see how it all comes together
 by creating an equivalent log that uses Lithoxyl built-in behavior::
 
   from lithoxyl import SensibleFormatter, FileEmitter, Logger
@@ -60,7 +60,7 @@ running order:
     can be found in the :mod:`emitters` module.
 
 The flow through the SensibleSink is clear: Filtration →  Formatting →
-Output. Any records passing through the ``a_log`` Logger will have
+Output. Any actions passing through the ``a_log`` Logger will have
 their *end* events logged to *access.log*.
 
 The Sensible Interfaces
@@ -93,12 +93,12 @@ There are many built-in Sensible Fields, for a variety of use
 cases. First, some example code to set the context for the field examples::
 
     logger = Logger('test_logger')
-    with logger.critical('test_task', reraise=False) as test_rec:
+    with logger.critical('test_task', reraise=False) as act:
         time.sleep(0.7)
-        test_rec['item'] = 'cur_item'
-        test_rec.failure('task status: {status_str}')
+        act['item'] = 'cur_item'
+        act.failure('task status: {status_str}')
         raise ValueError('unexpected value for {item}')
-    return test_rec
+    return act
 
 And now the fields themselves:
 
@@ -109,23 +109,23 @@ And now the fields themselves:
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **logger_id**         | An automatic integer ID. See :ref:`concurrency`.               | ``3``                                         |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **record_name**       | Short string description of the record. Quoted.                | ``"test_task"``                               |
+    | **action_name**       | Short string description of the action. Quoted.                | ``"test_task"``                               |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **record_id**         | An automatic integer ID. See :ref:`concurrency`.               |  ``17``                                       |
+    | **action_id**         | An automatic integer ID. See :ref:`concurrency`.               |  ``17``                                       |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **status_str**        | The full name of record status. See :ref:`status`.             | ``exception``                                 |
+    | **status_str**        | The full name of action status. See :ref:`status`.             | ``exception``                                 |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **status_char**       | A single-character record status. See :ref:`status`.           | ``E``                                         |
+    | **status_char**       | A single-character action status. See :ref:`status`.           | ``E``                                         |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **level_name**        | Full name of the record level.                                 | ``critical``                                  |
+    | **level_name**        | Full name of the action level.                                 | ``critical``                                  |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **level_name_upper**  | Full name of the record level, in uppercase. See :ref:`levels`.| ``CRITICAL``                                  |
+    | **level_name_upper**  | Full name of the action level, in uppercase. See :ref:`levels`.| ``CRITICAL``                                  |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **level_char**        | Single-character form of the record level.                     | ``C``                                         |
+    | **level_char**        | Single-character form of the action level.                     | ``C``                                         |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **level_number**      | The integer value associated with the record level.            | ``90``                                        |
+    | **level_number**      | The integer value associated with the action level.            | ``90``                                        |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **data_map**          | JSON-serialized form of all values in the Record data map.     | ``{"item": "cur_item"}``                      |
+    | **data_map**          | JSON-serialized form of all values in the Action data map.     | ``{"item": "cur_item"}``                      |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **begin_message**     | The message associated with the begin event.                   | ``"test_task beginning"``                     |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
@@ -143,13 +143,13 @@ And now the fields themselves:
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **duration_auto**     | Duration in floating point with automatic unit (s/ms/us).      | ``700.908ms``                                 |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **module_name**       | The name of the module where the record was created.           | ``"__main__"``                                |
+    | **module_name**       | The name of the module where the action was created.           | ``"__main__"``                                |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **module_path**       | The path of the module where the record was created.           | ``"misc/gen_field_table.py"``                 |
+    | **module_path**       | The path of the module where the action was created.           | ``"misc/gen_field_table.py"``                 |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **func_name**         | The name of the function that created the record               | ``get_test_record``                           |
+    | **func_name**         | The name of the function that created the action               | ``get_test_action``                           |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **line_number**       | The line number where the record was created.                  | ``26``                                        |
+    | **line_number**       | The line number where the action was created.                  | ``26``                                        |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **exc_type**          | The name of the exception type, if an exception was caught.    | ``ValueError``                                |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+

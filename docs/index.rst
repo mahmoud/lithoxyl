@@ -16,7 +16,7 @@ Sections
    :maxdepth: 2
 
    overview
-   record
+   action
    logger
    sinks
    sensible

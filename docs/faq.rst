@@ -18,9 +18,9 @@ What is the difference between failure status and exception status?
 There are a couple angles to answer this. First, it is pretty rare to
 set an exception status manually, as exception information is usually
 populated automatically when there are uncaught exceptions. That
-contrasts with :meth:`~Record.failure`, which is seen more often.
+contrasts with :meth:`~Action.failure`, which is seen more often.
 
-So when to call :meth:`~Record.failure`? As with many design
+So when to call :meth:`~Action.failure`? As with many design
 questions, an example is often best. With an HTTP server, returning a
 4xx or even a 503 can be viewed as failures outside of the control of
 the application, which is performing fine. A 500, on the other hand,
@@ -46,10 +46,10 @@ eventually that queues bounds will be overrun and messages may
 silently drop.
 
 This graceful degradation takes place at all the runtime integration
-points, i.e., record interactions within your application code. For
-Sink and Logger configuration, actions which are typically performed at
-startup and import time, exceptions are still raised as usual. In
-fact, it is considered good Lithoxyl practice to forward-check these
+points, i.e., action usage within your application code. For Sink and
+Logger configuration, actions which are typically performed at startup
+and import time, exceptions are still raised as usual. In fact, it is
+considered good Lithoxyl practice to forward-check these
 configurations. This means checking that callable arguments are
 
 If you discover a runtime scenario that should degrade with more grace
