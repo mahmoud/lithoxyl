@@ -84,9 +84,9 @@ The Lithoxyl Action has an eventful lifetime. Even the most basic
 usage sees the Action going from creation to beginning to one of the
 ending states: success, failure, or exception.
 
-First, simply creating a Action does not "begin" it. A action begins
+First, simply creating an Action does not "begin" it. An action begins
 when it is entered with a **with** statement, as we saw in the example
-above. Entering a action creates a timestamp and makes it the parent
+above. Entering an action creates a timestamp and makes it the parent
 of future actions, until it is ended.
 
 There are three end statuses:
@@ -97,7 +97,7 @@ There are three end statuses:
   failure was expected and/or handled within the application.
 * **exception** - The action terminated unexpectedly, likely with a
   Python exception. This is the automatic default when an exception is
-  raised within a action context manager.
+  raised within an action context manager.
 
 The split between *failure* and *exception* should be familiar to
 users of standard testing frameworks like `py.test`_. Test frameworks
@@ -110,7 +110,7 @@ runtime instrumentation.
 
 .. note::
 
-   If a action is manually set to complete with
+   If an action is manually set to complete with
    :meth:`~Action.success()` or :meth:`~Action.failure()`, and an
    unexpected exception occurs, the Action will end with the
    *exception* status.

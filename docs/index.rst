@@ -5,9 +5,10 @@ Lithoxyl
 ========
 
 Lithoxyl is a next-generation instrumentation toolkit for Python
-applications, offering a semantic approach to logging and metrics
-collection. Lithoxyl integration is compact and performant, minimizing
-impact on codebase readability and system performance.
+applications, offering a semantic, action-oriented approach to logging
+and metrics collection. Lithoxyl integration is compact and
+performant, minimizing impact on codebase readability and system
+performance.
 
 Sections
 --------

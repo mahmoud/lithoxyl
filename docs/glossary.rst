@@ -21,7 +21,7 @@ Glossary
      published to :term:`sinks <sink>`.
 
    status
-     The completion state of a :term:`action`, meant to represent one
+     The completion state of an :term:`action`, meant to represent one
      of four possible task outcomes:
 
        * **Begin** - not yet completed
@@ -35,11 +35,11 @@ Glossary
 
      An occurence associated with a Logger and Action. One of:
 
-       * **begin** - The start of a Action.
-       * **end** - The completion of a Action (success, failure, or exception)
-       * **warn** - A warning related to a Action.
+       * **begin** - The start of an Action.
+       * **end** - The completion of an Action (success, failure, or exception)
+       * **warn** - A warning related to an Action.
        * **comment** - A metadata event associated with a Logger
-       * **exception** - An unhandled exception during a Action.
+       * **exception** - An unhandled exception during an Action.
 
      :term:`Sinks <sink>` implement methods to handle each of these events.
 
@@ -62,3 +62,9 @@ Glossary
 
    lithoxyl
      Mineralized wood.
+
+   with
+     Python's compact context manager syntax, roughly approximating a
+     "try-finally" block. With blocks have *enter* and *exit* hooks
+     that enable tracking of Action events, no matter whether the
+     wrapped code executes successfully or raises an exception.
