@@ -1,30 +1,30 @@
 The Action
 ==========
 
-Action objects are Lithoxyl's fundamental construct for instrumenting
-application logic. Actions are created with a
-:class:`~lithoxyl.logger.Logger`, and wrap functions and code blocks
-to collect messages and timing information.
+*Actions* are Lithoxyl's primary interface for instrumenting your
+application. Actions are created with a
+:class:`~lithoxyl.logger.Logger` instance, and are used to wrap
+functions and code blocks.
 
 At their most basic, Actions have a:
 
-  * **name** - A string description of the application action.
-  * **level** - An indicator of the importance of the application action.
+  * **name** - A string description of the behavior being wrapped.
+  * **level** - An indicator of the importance of the action (debug, info, critical).
   * **status** - The state of the action (begin, success, failure, exception).
   * **duration** - The time between the begin and end events of a
-    completed action, i.e., the time between entering and exiting the
+    completed action, i.e., the time between entering and exiting a
     code block.
 
-Lithoxyl Actions are like transactions wrapping important pieces of
-your application::
+To track this information, Lithoxyl wraps important pieces of
+your application in microtransactions called Actions::
 
-  with log.info('user creation', username=name) as r:
+  with log.info('user creation', username=name) as act:
       succeeded = _create_user(name)
       if not succeeded:
-          r.failure()
+          act.failure()
 
-This pattern is using the Action as a *context manager*. The indented
-part of the code after the **with** statement is the code block
+This pattern is using an *info*-level Action as a *context manager*. The indented
+part of the code after the :term:`with` statement is the code block
 managed by the Action. Here is how the basics of the Action are
 populated in our example:
 
