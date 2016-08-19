@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.3.1dev'
+__version__ = '0.4.0'
 __contact__ = 'mahmoudrhashemi@gmail.com'
 __url__ = 'https://github.com/mahmoud/lithoxyl'
 __license__ = 'BSD'
