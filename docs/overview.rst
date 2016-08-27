@@ -59,7 +59,7 @@ exception. For instance, if **name** is not a string, and **.strip()**
 raises an :exc:`AttributeError`, then that exception is guaranteed to
 be captured and recorded.
 
-You can do much so more with actions. Using dictionary syntax,
+You can do so much more with actions. Using dictionary syntax,
 arbitrary data can be added to the action. And while actions finish
 with a success status and autogenerate a message if no exception is
 raised, failures and exceptions can also be set manually:
