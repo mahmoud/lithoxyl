@@ -88,6 +88,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
     level_map = level_map or {}
 
     if target is None or isinstance(target, int):
+        target = target or 1
         try:
             target_module_name = sys._getframe(target).f_globals.__name__
             calling_module = sys.modules[target_module_name]
