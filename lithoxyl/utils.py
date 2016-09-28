@@ -130,6 +130,8 @@ def wrap_all(logger, level='info', target=None, skip=None,
                     continue
                 wrapped.add(id(val))
                 wrap_sub_target(val, depth - 1, label + '.' + attr_name)
+            elif not hasattr(val, '__name__'):
+                continue
             else:
                 kwargs = dict(extras)
 
