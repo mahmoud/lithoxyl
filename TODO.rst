@@ -1,6 +1,12 @@
 TODO
 ====
 
+Quick:
+
+* begin_timestamp field, correct?
+
+Not as:
+
 * Make wrap use boltons
 * DummyRecord
 * Level remapping
@@ -12,6 +18,7 @@ TODO
   should be encapsulated in lower-level objects like Emitters.
 * Should .comment() have an "immediate" mode where they acquire the
   flush lock and do not go into the async queue?
+* inject_as should detect if **kw is there, inject whatever
 
 Formatting
 ----------
