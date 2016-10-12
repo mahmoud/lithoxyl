@@ -4,23 +4,39 @@
 Here's an example of some ostensibly well-instrumented code.
 """
 
+
+
+
+
 import logging
 
-_create_user = lambda: 'a dummy function that supposedly creates the user'
+_user():
+    'a dummy function that supposedly creates the user'
+    return None
 
 
 def create_user(name):
     logging.info('creating user with name %r', name)
     try:
-        success = _create_user()
-        if success:
+        user = _create_user()
+        if user is not None:
             logging.info('successfully created user %r', name)
         else:
             logging.error('failed to create user %r', name)
     except Exception:
         logging.critical('exception encountered while creating user %r',
                          name, exc_info=True)
-    return success
+    return user
+
+
+
+
+
+
+
+
+
+
 
 
 """
@@ -30,11 +46,12 @@ drowning out the meaning of the code.
 Here's lithoxyl's take
 """
 
-from lithoxyl import stderr_log
+from log import dal_log
 
 
 def create_user(name):
-    with stderr_log.critical('user creation', reraise=False) as r:
-        success = _create_user()
-        if not success:
-            r.failure()
+    with dal_log.critical('user creation', reraise=False) as act:
+        user = _create_user()
+        if user is None:
+            act.failure()
+    return user
