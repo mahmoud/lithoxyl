@@ -159,3 +159,15 @@ Misc.
   * Ask Sinks what fields they're interested in under what conditions (dictionary of field to condition)
 
   * lazily format the message <-
+
+GUID stuff
+----------
+
+$ python -c "from lithoxyl.action import _ACT_ID_ITER; from lithoxyl.sensible import _get_id_guid; print _get_id_guid(next(_ACT_ID_ITER))"
+a4c272b1cf8c
+$ python -m timeit -s "from lithoxyl.action import _ACT_ID_ITER; from lithoxyl.sensible import _get_id_guid" "_get_id_guid(next(_ACT_ID_ITER))"
+1000000 loops, best of 3: 0.904 usec per loop
+$ python -m timeit -s "from lithoxyl.action import Action" "Action(None, 'critical', 'name', parent=object())"
+100000 loops, best of 3: 3.15 usec per loop
+
+A bit heavy to do for every single one, but probably good as a lazy/cached property.

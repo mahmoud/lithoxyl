@@ -436,6 +436,7 @@ BASIC_FIELDS = [_SF('logger_name', 's', lambda e: e.action.logger.name),
                 _SF('action_id', 'd', lambda e: e.action_id),
                 _SF('status_str', 's', lambda e: e.status, quote=False),
                 _SF('status_char', 's', lambda e: e.status_char, quote=False),
+                _SF('action_guid', 's', lambda e: e.action.guid, quote=False),
                 _SF('warn_char', 's', lambda e: e.warn_char, quote=False),  # TODO
                 _SF('level_name', 's', lambda e: e.level_name, quote=False),
                 _SF('data_map', 's', lambda e: json.dumps(e.action.data_map, sort_keys=True), quote=False),
@@ -522,23 +523,6 @@ PARENT_FIELDS = [
     _SF('parent_depth_indent', 's',
         lambda e: e.action.parent_depth * PARENT_DEPTH_INDENT,
         quote=False)]
-
-import binascii
-
-_GUID_SALT = '-'.join([str(os.getpid()),
-                       socket.gethostname() or '<nohostname>',
-                       str(time.time()),
-                       binascii.hexlify(os.urandom(4))])
-
-# I'd love to use UUID.uuid4, but this is 20x faster
-import hashlib
-
-# sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
-# chance of a collision after 2^64 messages.
-
-
-def _get_id_guid(id_int):
-    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
 
 
 # TODO: fallback to UUID if hashlib isn't available

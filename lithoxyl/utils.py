@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
-import inspect
-import itertools
+import time
+import socket
+import hashlib
+import binascii
 
 
 class EncodingLookupError(LookupError):
@@ -115,6 +118,22 @@ def wrap_all(logger, level='info', target=None, skip=None,
         ret.append(attr_name)
 
     return ret
+
+
+_GUID_SALT = '-'.join([str(os.getpid()),
+                       socket.gethostname() or '<nohostname>',
+                       str(time.time()),
+                       binascii.hexlify(os.urandom(4))])
+
+# I'd love to use UUID.uuid4, but this is 20x faster
+
+# sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
+# chance of a collision after 2^64 messages.
+
+
+def int2hexguid(id_int):
+    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
+
 
 
 """decorator.py is bad because it excessively changes your decorator

@@ -5,10 +5,12 @@ import time
 import itertools
 
 from boltons.tbutils import ExceptionInfo, Callpoint
+from boltons.cacheutils import cachedproperty
 
+from lithoxyl.utils import int2hexguid
+from lithoxyl.common import to_unicode, get_level
 from lithoxyl.context import note
 from lithoxyl.sensible import SensibleMessageFormatter
-from lithoxyl.common import to_unicode, get_level
 
 
 _ACT_ID_ITER = itertools.count()
@@ -95,6 +97,10 @@ class Action(object):
         return ('<%s %r %s %r>'
                 % (cn, self.name, self.level.name.upper(), self.status))
 
+    @cachedproperty
+    def guid(self):
+        return int2hexguid(action_id)
+
     @property
     def level_name(self):
         return self.level.name
@@ -113,7 +119,7 @@ class Action(object):
         except Exception:
             return 0.0
 
-    @property
+    @property  # TODO: cachedproperty? can this change?
     def parent_depth(self):
         i = 0
         while self.parent_action and i < 500:
