@@ -52,7 +52,7 @@ class DevDebugSink(object):
         if reraise is True:
             reraise = Exception
         self.reraise = reraise
-        if post_mortem is True:
+        if post_mortem:
             post_mortem = Exception
         self.post_mortem = post_mortem
 
