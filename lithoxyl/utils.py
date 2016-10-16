@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import types
 import socket
 import hashlib
 import binascii
@@ -42,7 +43,7 @@ def unwrap(target, attr_name):
     try:
         unwrapped_func = wrapped_func.__lithoxyl_wrapped__[3]
     except Exception:
-        raise ValueError('%s does not appear to be a wrapped function'
+        raise ValueError('%r does not appear to be a wrapped function'
                          % wrapped_func)
     setattr(target, attr_name, unwrapped_func)
     return
@@ -58,16 +59,31 @@ def unwrap_all(target=None):
             raise ValueError('unable to wrap all with target: %r' % target)
         target = calling_module
 
-    for attr_name in dir(target):
-        try:
-            unwrap(target, attr_name)
-        except ValueError:
-            continue
+    unwrapped = set()
+
+    def unwrap_sub_target(sub_target):
+        for attr_name in dir(sub_target):
+            val = getattr(sub_target, attr_name)
+            if not callable(val):
+                continue
+            elif isinstance(val, (type, types.ClassType)):
+                if id(val) in unwrapped:
+                    continue
+                unwrapped.add(id(val))
+                unwrap_sub_target(val)
+            else:
+                try:
+                    unwrap(sub_target, attr_name)
+                except ValueError:
+                    continue
+        return
+
+    unwrap_sub_target(target)
     return
 
 
 def wrap_all(logger, level='info', target=None, skip=None,
-             label=None, level_map=None, extras=None):
+             label=None, level_map=None, extras=None, depth=1):
     """
     """
     ret = []
@@ -100,22 +116,39 @@ def wrap_all(logger, level='info', target=None, skip=None,
             label = '(%s@%s)' % (target.__class__.__name__, hex(id(target)))
     label = str(label)
 
-    for attr_name in dir(target):
-        if skip_func(attr_name):
-            continue
-        val = getattr(target, attr_name)
-        if not callable(val) or isinstance(val, type):
-            continue
-        kwargs = dict(extras)
+    wrapped = set()
 
-        kwargs['level'] = level_map.get(attr_name, level)
-        kwargs['action_name'] = label + '.' + attr_name
+    def wrap_sub_target(sub_target, depth=depth, label=label):
+        for attr_name in dir(sub_target):
+            if skip_func(attr_name):
+                continue
+            val = getattr(sub_target, attr_name)
+            if not callable(val):
+                continue
+            elif isinstance(val, (type, types.ClassType)):
+                # NOTE: it may be possible to get to the same function / method
+                # via different attribute paths; we will pick one of them randomly
+                # in that case for implementation simplicity
+                if depth <= 0 or id(val) in wrapped:
+                    continue
+                wrapped.add(id(val))
+                wrap_sub_target(val, depth - 1, label + '.' + attr_name)
+            elif not hasattr(val, '__name__'):
+                continue
+            else:
+                kwargs = dict(extras)
 
-        log_wrapper = logger.wrap(**kwargs)
+                kwargs['level'] = level_map.get(attr_name, level)
+                kwargs['action_name'] = label + '.' + attr_name
 
-        wrapped_func = log_wrapper(val)
-        setattr(target, attr_name, wrapped_func)
-        ret.append(attr_name)
+                log_wrapper = logger.wrap(**kwargs)
+
+                wrapped_func = log_wrapper(val)
+                setattr(sub_target, attr_name, wrapped_func)
+                ret.append(label + '.' + attr_name)
+        return
+
+    wrap_sub_target(target)
 
     return ret
 
