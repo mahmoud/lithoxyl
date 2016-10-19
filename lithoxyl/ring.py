@@ -243,6 +243,8 @@ class SQLiteRing(object):
 
     def __init__(self, file_path, table_name, fields, **kwargs):
         self.file_path = file_path
+        if self.file_path == ':memory:':
+            raise ValueError('SQLiteRing requires a file path, :memory: is not supported')
         self.table_name = table_name
         self.trigger_name = self.table_name + self._trig_suffix
         self.fields = tuple(fields)
