@@ -63,7 +63,10 @@ def unwrap_all(target=None):
 
     def unwrap_sub_target(sub_target):
         for attr_name in dir(sub_target):
-            val = getattr(sub_target, attr_name)
+            try:
+                val = getattr(sub_target, attr_name)
+            except AttributeError:
+                continue
             if not callable(val):
                 continue
             elif isinstance(val, (type, types.ClassType)):
