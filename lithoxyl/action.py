@@ -99,7 +99,7 @@ class Action(object):
 
     @cachedproperty
     def guid(self):
-        return int2hexguid(action_id)
+        return int2hexguid(self.action_id)
 
     @property
     def level_name(self):
