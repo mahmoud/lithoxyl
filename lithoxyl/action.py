@@ -82,9 +82,6 @@ class Action(object):
 
         self.begin_event = None
         self.end_event = None
-        # these can go internal and be lazily created through properties
-        self.warn_events = []
-        self.exc_events = []
 
         if parent:
             self.parent_action = parent
@@ -96,6 +93,18 @@ class Action(object):
         cn = self.__class__.__name__
         return ('<%s %r %s %r>'
                 % (cn, self.name, self.level.name.upper(), self.status))
+
+    @property
+    def exc_event(self):
+        return self.exc_events[-1] if self.exc_events else None
+
+    @cachedproperty
+    def exc_events(self):
+        return []  # note that this is a cachedproperty
+
+    @cachedproperty
+    def warn_events(self):
+        return []  # note that this is a cachedproperty
 
     @cachedproperty
     def guid(self):
@@ -207,8 +216,9 @@ class Action(object):
             message = t % (self.name, exc_info.exc_type, exc_info.exc_msg,
                            cp.func_name, cp.lineno, cp.module_path)
 
-        self.exc_event = ExceptionEvent(self, etime, message, fargs, exc_info)
-        self.logger.on_exception(self.exc_event, exc_type, exc_val, exc_tb)
+        exc_event = ExceptionEvent(self, etime, message, fargs, exc_info)
+        self.exc_events.append(exc_event)
+        self.logger.on_exception(exc_event, exc_type, exc_val, exc_tb)
 
         return self._end('exception', message, fargs, data,
                          etime, exc_info)
