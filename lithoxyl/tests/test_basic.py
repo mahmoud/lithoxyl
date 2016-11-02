@@ -13,18 +13,18 @@ def _get_logger():
     return Logger('test_logger', [acc])
 
 
-def do_debug_trans(logger):
-    with logger.debug('hi') as t:
+def do_debug_act(logger):
+    with logger.debug('hi') as act:
         time.sleep(0.01)
-        t.success('yay')
-    return t
+        act.success('yay')
+    return act
 
 
-def test_logger_success(trans_count=2):
+def test_logger_success(act_count=2):
     logger = _get_logger()
-    for i in range(trans_count):
-        do_debug_trans(logger)
-    assert len(logger.sinks[0].end_events) == trans_count
+    for i in range(act_count):
+        do_debug_act(logger)
+    assert len(logger.sinks[0].end_events) == act_count
     agg_sink_repr = repr(logger.sinks[0])
     assert 'begins=' in agg_sink_repr
     assert 'begins=0' not in agg_sink_repr
@@ -34,13 +34,27 @@ def test_logger_success(trans_count=2):
 
 def test_callpoint_info():
     log = Logger('test_logger', [])
-    t = do_debug_trans(log)
-    assert t.callpoint.module_name == __name__
-    assert t.callpoint.module_path.endswith(__file__)
-    assert t.callpoint.func_name == 'do_debug_trans'
-    assert t.callpoint.lineno > 0
-    assert t.callpoint.lasti > 0
-    assert repr(t)
+    act = do_debug_act(log)
+    assert act.callpoint.module_name == __name__
+    assert act.callpoint.module_path.endswith(__file__)
+    assert act.callpoint.func_name == 'do_debug_act'
+    assert act.callpoint.lineno > 0
+    assert act.callpoint.lasti > 0
+    assert repr(act)
+
+
+def test_guid():
+    import string
+
+    log = Logger('test_logger', [])
+    act = do_debug_act(log)
+    assert act.guid
+    assert act.guid.lower() == act.guid
+    assert all([c in string.hexdigits for c in act.guid])
+
+    act2 = do_debug_act(log)
+    assert act.guid != act2.guid
+    assert act.guid < act2.guid  # when int2hexguid_seq is in use
 
 
 def test_reraise_false():
@@ -78,11 +92,11 @@ class SimpleStructuredFileSink(object):
         self.fileobj.write('\n')
 
 
-def test_structured(trans_count=5):
+def test_structured(act_count=5):
     acc = SimpleStructuredFileSink()
     log = Logger('test_logger', [acc])
-    for i in range(trans_count):
-        do_debug_trans(log)
+    for i in range(act_count):
+        do_debug_act(log)
 
 
 def test_dup_sink():

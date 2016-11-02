@@ -7,7 +7,7 @@ import itertools
 from boltons.tbutils import ExceptionInfo, Callpoint
 from boltons.cacheutils import cachedproperty
 
-from lithoxyl.utils import int2hexguid
+from lithoxyl.utils import int2hexguid_seq
 from lithoxyl.common import to_unicode, get_level
 from lithoxyl.context import note
 from lithoxyl.sensible import SensibleMessageFormatter
@@ -108,7 +108,7 @@ class Action(object):
 
     @cachedproperty
     def guid(self):
-        return int2hexguid(self.action_id)
+        return int2hexguid_seq(self.action_id)
 
     @property
     def level_name(self):

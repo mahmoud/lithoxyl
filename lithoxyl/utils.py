@@ -7,6 +7,7 @@ import types
 import socket
 import hashlib
 import binascii
+from os import getpid
 
 
 class EncodingLookupError(LookupError):
@@ -156,20 +157,64 @@ def wrap_all(logger, level='info', target=None, skip=None,
     return ret
 
 
-_GUID_SALT = '-'.join([str(os.getpid()),
-                       socket.gethostname() or '<nohostname>',
-                       str(time.time()),
-                       binascii.hexlify(os.urandom(4))])
+# I'd love to use UUID.uuid4, but this is 10-20x faster
+# 12 bytes (96 bits) means that there's 1 in 2^32 chance of a collision
+# after 2^64 messages.
 
-# I'd love to use UUID.uuid4, but this is 20x faster
 
-# sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
-# chance of a collision after 2^64 messages.
+def reseed_guid():
+    """This is called automatically on fork by the functions below. You
+    probably don't need to call this.
+    """
+    global _PID
+    global _GUID_SALT
+    global _GUID_START
+
+    _PID = getpid()
+    _GUID_SALT = '-'.join([str(getpid()),
+                           socket.gethostname() or '<nohostname>',
+                           str(time.time()),
+                           binascii.hexlify(os.urandom(4))])
+    _GUID_START = int(hashlib.sha1(_GUID_SALT).hexdigest()[:12], 16)
+
+    return
+
+
+# set in reseed
+_PID = None
+_GUID_SALT = None
+_GUID_START = None
+
+
+reseed_guid()
 
 
 def int2hexguid(id_int):
+    """Return a fork-safe, globally-unique, 12-character hexadecimal
+    string, based on an integer input. Originally intended for use
+    with the always-incrementing action_ids and event_ids, this
+    function has been superseded by int2hexguid_seq for lithoxyl's use
+    cases.
+    """
+    if getpid() != _PID:
+        reseed_guid()
     return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
 
+
+def int2hexguid_seq(id_int):
+    """Much like int2hexguid, this function returns a fork-safe,
+    globally-unique, 12-character hexadecimal string, based on an
+    integer input. Intended for use with the always-incrementing
+    action_ids and event_ids.
+
+    This variant is specialized for use in autoincrementing use cases
+    like action_id and event_id, as the guids it produces will
+    maintain the same sortability characteristics as the original
+    ID. (as the input integer increments, so will the output GUID)
+    """
+    if getpid() != _PID:
+        reseed_guid()
+    return '%x' % (_GUID_START + id_int)
 
 
 """decorator.py is bad because it excessively changes your decorator
