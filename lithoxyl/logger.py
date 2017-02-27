@@ -220,14 +220,25 @@ class Logger(object):
         return
 
     def comment(self, message, *a, **kw):
-        # comments are not enterable, they're not returned
+        # Comment actions are not enterable, they're not
+        # returned. They are always critical level, and always finish
+        # with success. In fact, comment actions, as well as begin and
+        # end events, along with their respective messages aren't to
+        # be used directly, they're implemented for compatibility
+        # reasons. They are not enqueued like other events. Only the
+        # CommentEvent and its message are intended to be accessed
+        # directly (e.g., through the event_message sensible formatter
+        # field.
+
         act_type = self.action_type
-        act = act_type(logger=self, level=CRITICAL, name='comment', data=kw,
-                       parent=kw.pop('parent_action', None))
+        act = act_type(logger=self, level=CRITICAL, name='_comment',
+                       data=kw, parent=kw.pop('parent_action', None))
         cur_time = time.time()
-        act.begin_event = BeginEvent(act, cur_time, 'comment', ())
+
+        act.begin_event = BeginEvent(act, cur_time,
+                                     message + ' (begin comment)', a)
         act.end_event = EndEvent(act, cur_time,
-                                 'comment', (), 'success')
+                                 message + ' (end comment)', a, 'success')
         event = CommentEvent(act, cur_time, message, a)
         if self.async_mode:
             self.event_queue.append(('comment', event))

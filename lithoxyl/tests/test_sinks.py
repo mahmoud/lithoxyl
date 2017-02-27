@@ -8,7 +8,7 @@ from lithoxyl.emitters import StreamEmitter, AggregateEmitter
 from lithoxyl.logger import Logger
 
 
-fmtr = SF('{status_char}{begin_timestamp}')
+fmtr = SF('{status_char}{begin_timestamp} - {event_message}')
 strm_emtr = StreamEmitter('stderr')
 fltr = SensibleFilter('debug')
 aggr_emtr = AggregateEmitter()
@@ -25,6 +25,9 @@ def test_sensible_basic():
     assert aggr_emtr.get_entry(-1).startswith('s')
 
     with log.debug('greet') as t:
+        log.comment('a_{}_quick', 'comment')
+        assert aggr_emtr.get_entry(-1).startswith('#')
+        assert 'a_comment_quick' in aggr_emtr.get_entry(-1)
         t.success('hello')
         t.warn("everything ok?")
 

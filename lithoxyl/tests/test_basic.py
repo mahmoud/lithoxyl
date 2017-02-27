@@ -143,6 +143,6 @@ def test_comment():
     log.add_sink(ComSink())
 
     log.comment('the first')
-    log.comment('the second')
+    log.comment('the second {}', 'commenting')
 
     assert len(events) == 2

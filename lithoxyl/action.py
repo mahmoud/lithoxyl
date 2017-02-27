@@ -311,7 +311,7 @@ class Event(object):
         raw_message = self.raw_message
         if raw_message is None:
             self._message = ''
-        elif '{' not in raw_message:  # yay premature optimization
+        elif '{' not in raw_message:  # no templating, bypass
             self._message = raw_message
         else:
             # TODO: Formatter cache
