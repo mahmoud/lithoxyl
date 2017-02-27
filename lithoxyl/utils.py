@@ -160,7 +160,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
 # I'd love to use UUID.uuid4, but this is 10-20x faster
 # 12 bytes (96 bits) means that there's 1 in 2^32 chance of a collision
 # after 2^64 messages.
-
+# TODO: fallback to UUID if hashlib isn't available?
 
 def reseed_guid():
     """This is called automatically on fork by the functions below. You
@@ -175,7 +175,7 @@ def reseed_guid():
                            socket.gethostname() or '<nohostname>',
                            str(time.time()),
                            binascii.hexlify(os.urandom(4))])
-    _GUID_START = int(hashlib.sha1(_GUID_SALT).hexdigest()[:12], 16)
+    _GUID_START = int(hashlib.sha1(_GUID_SALT).hexdigest()[:24], 16)
 
     return
 
@@ -198,7 +198,7 @@ def int2hexguid(id_int):
     """
     if getpid() != _PID:
         reseed_guid()
-    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:12]
+    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:24]
 
 
 def int2hexguid_seq(id_int):

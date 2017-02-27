@@ -525,8 +525,6 @@ PARENT_FIELDS = [
         quote=False)]
 
 
-# TODO: fallback to UUID if hashlib isn't available
-
 for f in BASIC_FIELDS:
     register_builtin_field(f)
 for f in PARENT_FIELDS:
