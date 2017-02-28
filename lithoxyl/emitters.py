@@ -24,7 +24,7 @@ class AggregateEmitter(object):
         self.items = deque(maxlen=limit)
 
     def get_entries(self):
-        return [entry for action, entry in self.items]
+        return [entry for event, entry in self.items]
 
     def get_entry(self, idx):
         return self.items[idx][1]
@@ -32,8 +32,8 @@ class AggregateEmitter(object):
     def clear(self):
         self.items.clear()
 
-    def emit_entry(self, action, entry):
-        self.items.append((action, entry))
+    def emit_entry(self, event, entry):
+        self.items.append((event, entry))
 
     on_begin = on_warn = on_end = on_comment = emit_entry
 
@@ -67,7 +67,7 @@ class StreamEmitter(object):
         self.errors = errors
         self.encoding = encoding
 
-    def emit_entry(self, action, entry):
+    def emit_entry(self, event, entry):
         try:
             entry = entry.encode(self.encoding, self.errors)
         except UnicodeDecodeError as ude:
