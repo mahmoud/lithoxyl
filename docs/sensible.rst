@@ -113,6 +113,8 @@ And now the fields themselves:
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **action_id**         | An automatic integer ID. See :ref:`concurrency`.               |  ``17``                                       |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
+    | **action_guid**       | A globally unique ID string. See :ref:`concurrency`.           |  ``c3124107db02ff33dbde8e85``                 |
+    +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **status_str**        | The full name of action status. See :ref:`status`.             | ``exception``                                 |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **status_char**       | A single-character action status. See :ref:`status`.           | ``E``                                         |
@@ -127,13 +129,19 @@ And now the fields themselves:
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **data_map**          | JSON-serialized form of all values in the Action data map.     | ``{"item": "cur_item"}``                      |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **begin_message**     | The message associated with the begin event.                   | ``"test_task beginning"``                     |
+    | **data_map_repr**     | repr()-serialized form of all values in the Action data map.   | ``{"item": "cur_item"}``                      |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **begin_message_raw** | The message associated with the begin event, before formatting.| ``"test_task beginning"``                     |
+    | **begin_message**     | The message associated with the event's action's begin event.  | ``"test_task beginning"``                     |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **end_message**       | The message associated with the end event.                     | ``"test_task raised ... ue for cur_item',)"`` |
+    | **begin_message_raw** | Same as **begin_message**, before formatting.                  | ``"test_task beginning"``                     |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
-    | **end_message_raw**   | The message associated with the end event, before formatting.  | ``"test_task raised ... lue for {item}',)"``  |
+    | **end_message**       | The message associated with the event's action's end event.    | ``"test_task raised ... ue for cur_item',)"`` |
+    +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
+    | **end_message_raw**   | Same as **end_message**, before formatting.                    | ``"test_task raised ... lue for {item}',)"``  |
+    +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
+    | **event_message**     | The message associated with the event.                         | ``"test_task raised ... ue for cur_item',)"`` |
+    +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
+    | **event_message_raw** | Same as **event_message**, before formatting.                  | ``"test_task raised ... lue for {item}',)"``  |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
     | **duration_s**        | Duration in floating point number of seconds.                  | ``0.701``                                     |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
@@ -162,10 +170,17 @@ And now the fields themselves:
     | **process_id**        | The integer process ID. See :func:`os.getpid`.                 | ``19828``                                     |
     +-----------------------+----------------------------------------------------------------+-----------------------------------------------+
 
+There can be some subtle nuances when designing your log
+structure. For instance, when choosing which message to use for an
+event, you almost certainly want **event_message**, which works
+equally well with all event types, including begin, end, comment, and
+warn.
+
 Timestamp fields
 ~~~~~~~~~~~~~~~~
 
-Timestamps are so important to logging, especially structured logging, that they get a table of their own:
+Timestamps are so important to logging, especially structured logging,
+that they get a table of their own:
 
     +-------------------------------+----------------------------------------------------------------+-------------------------------------+
     | Name                          | Description                                                    | Example                             |
