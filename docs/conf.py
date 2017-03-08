@@ -47,9 +47,9 @@ author = u'Mahmoud Hashemi'
 
 # |version| and |release|
 # The short X.Y version.
-version = '0.1'
+version = '0.4'
 # The full version, including alpha/beta/rc tags.
-release = '0.1.0'
+release = '0.4.1'
 
 if os.name != 'nt':
     today_fmt = '%B %e, %Y'
