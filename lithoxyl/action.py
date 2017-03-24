@@ -71,7 +71,10 @@ class Action(object):
         self.action_id = next(_ACT_ID_ITER)
         self.logger = logger
         self.level = get_level(level)
-        self.name = name
+        try:
+            self.name = unicode(name)
+        except Exception:
+            self.name = repr(name)
 
         self.data_map = data or {}
         self._reraise = reraise
