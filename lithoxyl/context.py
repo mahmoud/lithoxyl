@@ -4,6 +4,8 @@ import os
 import sys
 import atexit
 import signal
+import weakref
+import itertools
 
 from lithoxyl.actors import IntervalThreadActor
 
@@ -52,10 +54,12 @@ def _consec_set_active_parent(logger, action):
         _CONSEC_ACTIVE_ACT_MAP.pop(logger, None)
     return
 
-
 class LithoxylContext(object):
+    # this is purely for deterministic ordering reasons
+    _ctx_logger_count = itertools.count()
+
     def __init__(self, **kwargs):
-        self.loggers = []  # TODO: weakref?
+        self.loggers = weakref.WeakKeyDictionary()
 
         self.async_mode = False
         self.async_actor = None
@@ -110,7 +114,8 @@ class LithoxylContext(object):
             self.async_actor.start()
 
         if update_loggers:
-            for logger in self.loggers:
+            loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+            for logger, _ in loggers:
                 logger.set_async(False)
 
         # graceful thread shutdown and sink flushing
@@ -135,14 +140,16 @@ class LithoxylContext(object):
             self.async_actor.join(join_timeout)
 
         if update_loggers:
-            for logger in self.loggers:
+            loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+            for logger, _ in loggers:
                 logger.set_async(False)
 
         self.flush()
         self.async_mode = False
 
     def flush(self):
-        for logger in self.loggers:
+        loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+        for logger, _ in loggers:
             try:
                 logger.flush()
             except Exception as e:
@@ -152,13 +159,15 @@ class LithoxylContext(object):
 
     def add_logger(self, logger):
         if logger not in self.loggers:
-            self.loggers.append(logger)
+            self.loggers[logger] = next(self._ctx_logger_count)
+        return
 
     def remove_logger(self, logger):
         try:
-            self.loggers.remove(logger)
+            self.loggers.pop(logger)
         except ValueError:
             pass
+        return
 
 
 def signal_sysexit(signum, frame):
