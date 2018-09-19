@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import errno
+
 from lithoxyl import (SensibleSink,
                       SensibleFilter,
                       SensibleFormatter as SF,
@@ -73,9 +75,46 @@ def _test_exception():
              ' - {func_name}:{line_number} - {exc_tb_list}')
     sink = SensibleSink(SF(_tmpl),
                         StreamEmitter('stderr'),
-                        filters=[SensibleFilter(exception=0)])
+                        filters=[SensibleFilter(exception=False)])
     logger = Logger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
         print tr
         raise ValueError('E for Exception')
     return
+
+
+def test_stale_stream(tmpdir):
+    # make mock filestream with write/flush that goes stale after 100 writes
+    # create logger with stream emitter to mocked file stream
+    class StalewardFile(file):
+        def __init__(self, *a, **kw):
+            file.__init__(self, *a, **kw)
+            self._write_count = 0
+
+        def write(self, *a, **kw):
+            self._write_count += 1
+            if self._write_count > 100:
+                exc = IOError('stale file handle')
+                exc.errno = errno.ESTALE
+                self.close()
+                raise exc
+            return file.write(self, *a, **kw)
+
+    file_path = '%s/not_always_fresh.log' % (tmpdir,)
+    stale_file_obj = StalewardFile(file_path, 'wb')
+    emitter = StreamEmitter(stale_file_obj)
+
+    sink = SensibleSink(SF('{status_char} - {iso_end}'), emitter,
+                        filters=[SensibleFilter(success=True)])
+    logger = Logger('excelsilog', [sink])
+
+    assert emitter.stream is stale_file_obj
+
+    for i in range(200):
+        logger.info('yay').success()
+
+    lines = open(file_path).read().splitlines()
+    assert len(lines) == 200
+    assert len(lines[0]) == len(lines[-1])
+    assert stale_file_obj.closed
+    assert emitter.stream is not stale_file_obj

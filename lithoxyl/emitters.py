@@ -6,6 +6,7 @@ or network streams.
 
 import os
 import sys
+import errno
 from collections import deque
 
 from lithoxyl.context import note
@@ -66,6 +67,7 @@ class StreamEmitter(object):
             self.sep = os.linesep
         self.errors = errors
         self.encoding = encoding
+        self._reopen_stale = kwargs.pop('reopen_stale', True)
 
     def emit_entry(self, event, entry):
         try:
@@ -77,12 +79,25 @@ class StreamEmitter(object):
                  ' expected decoded text, not %r', ude, self, entry)
             raise
         try:
-            self.stream.write(entry)
-            if self.sep:
-                self.stream.write(self.sep)
+            self.stream.write(entry + self.sep if self.sep else entry)
             self.flush()
         except Exception as e:
             note('stream_emit', 'got %r on %r.emit_entry()', e, self)
+            if (type(e) is IOError
+                and self._reopen_stale
+                and getattr(e, 'errno', None)
+                and e.errno == errno.ESTALE):
+                name = getattr(self.stream, 'name', None)
+                if name and name not in ('<stdout>', '<stderr>'):
+                    note('stream_emit', 'reopening stale stream to %r', name)
+                    # append in binary mode if the original mode was binary
+                    mode = 'ab' if 'b' in getattr(self.stream, 'mode', 'ab') else 'a'
+                    self.stream = open(name, mode)
+
+                    # retry writing once
+                    self.stream.write(entry + self.sep if self.sep else entry)
+                    self.flush()
+        return
 
     on_begin = on_warn = on_end = on_comment = emit_entry
 
