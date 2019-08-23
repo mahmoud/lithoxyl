@@ -113,7 +113,7 @@ def test_random(vals=None, nsamples=100000):
         tmpl = ("P2Estimator processed %d measurements "
                 "in %f seconds (%f ms each)")
         pprint(p)
-        print tmpl % (nsamples, duration, 1000 * duration / nsamples)
+        print(tmpl % (nsamples, duration, 1000 * duration / nsamples))
     except Exception:
         import traceback
         import pdb
@@ -124,7 +124,7 @@ def test_random(vals=None, nsamples=100000):
         if not k:
             continue
         if not 0.95 < v / k < 1.05:
-            print "problem: %s is %s, should be ~%s" % (k, v, k)
+            print("problem: %s is %s, should be ~%s" % (k, v, k))
     return
 
 

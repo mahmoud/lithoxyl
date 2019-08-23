@@ -51,6 +51,6 @@ def get_field_table_text(fields, quoted, maxlen=36, indent=True):
     return text
 
 
-print get_field_table_text(BASIC_FIELDS, quoted=False)
-print
-print get_field_table_text(ISO8601_FIELDS, quoted=False)
+print(get_field_table_text(BASIC_FIELDS, quoted=False))
+print()
+print(get_field_table_text(ISO8601_FIELDS, quoted=False))

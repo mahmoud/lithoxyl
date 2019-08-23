@@ -21,8 +21,6 @@ fake_sink = SensibleSink(filters=[fltr], formatter=fmtr, emitter=aggr_emtr)
 def test_sensible_basic():
     log = Logger('test_ss', [strm_sink, fake_sink])
 
-    print
-
     log.debug('greet').success('hey')
     assert aggr_emtr.get_entry(-1).startswith('s')
 
@@ -78,7 +76,7 @@ def _test_exception():
                         filters=[SensibleFilter(exception=False)])
     logger = Logger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
-        print tr
+        print(tr)
         raise ValueError('E for Exception')
     return
 

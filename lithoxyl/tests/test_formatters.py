@@ -29,14 +29,14 @@ def test_formatter_basic():
     forming = SF(template)
     output = forming.on_end(t_riker.end_event)
     expected = '"1off" - success - "Riker"'
-    print output
+    print(output)
     assert output[-len(expected):] == expected
 
     act = Action(t_log, 'DEBUG', 'Wharf')
     robf = SF(template)
     act.success('Mr. Wolf')
     ret = robf.on_end(act.end_event)
-    print ret
+    print(ret)
     return ret
 
 

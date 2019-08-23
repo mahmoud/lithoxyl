@@ -42,7 +42,7 @@ def one_two():
     with log.critical('first') as r1:
         r1['x'] = 'hi'
         with log.critical('second'):
-            print 'did some work'
+            print('did some work')
         raise ValueError("oh no, one of those")
     return
 
@@ -52,12 +52,12 @@ for i in range(20):
 
 
 import os
-print os.getpid()
+print(os.getpid())
 
 
 class CommentSink(object):
     def on_comment(self, comment_event):
-        print comment_event, comment_event.message
+        print(comment_event, comment_event.message)
         # import pdb;pdb.set_trace()
 
 
