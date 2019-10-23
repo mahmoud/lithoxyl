@@ -7,6 +7,7 @@ import os
 import time
 import json
 import socket
+import six
 import datetime
 
 from boltons.timeutils import UTC, LocalTZ
@@ -38,7 +39,7 @@ class SensibleSink(object):
     def __init__(self, formatter=None, emitter=None, filters=None, on=EVENTS):
         # TODO: get_level for this
         events = on
-        if isinstance(events, basestring):
+        if isinstance(events, six.string_types):
             events = [events]
         unknown_events = [e for e in events if e not in EVENTS]
         if unknown_events:

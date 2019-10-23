@@ -25,10 +25,6 @@ if sys.version_info < (2,6):
     raise NotImplementedError("Sorry, lithoxyl only supports Python >=2.6")
 
 
-if sys.version_info >= (3,):
-    raise NotImplementedError("lithoxyl Python 3 support en route to your location")
-
-
 setup(name='lithoxyl',
       version=__version__,
       description=desc,

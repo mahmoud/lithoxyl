@@ -13,6 +13,8 @@ Implemented by Kurt Rose and Mahmoud Hashemi.
 Copyright 2013, 3-clause BSD License
 """
 
+from __future__ import print_function
+
 
 class P2Estimator(object):
     def __init__(self, q_points, data):
@@ -26,14 +28,14 @@ class P2Estimator(object):
 
         initial = sorted(data[:len_qps])
         vals = [[i + 1, x] for i, x in enumerate(initial)]
-        self._points = pts = zip(self._q_points, vals)
+        self._points = pts = list(zip(self._q_points, vals))
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
-        self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
+        self._back_tuples = list(reversed(list(zip(vals[1:], vals[2:]))))
 
         self._quads = zip(self._q_points[1:], vals, vals[1:], vals[2:])
 
-        for i in xrange(len_qps, len_data):
+        for i in range(len_qps, len_data):
             self.add(data[i])
         return
 
@@ -113,7 +115,7 @@ def test_random(vals=None, nsamples=100000):
         tmpl = ("P2Estimator processed %d measurements "
                 "in %f seconds (%f ms each)")
         pprint(p)
-        print tmpl % (nsamples, duration, 1000 * duration / nsamples)
+        print(tmpl % (nsamples, duration, 1000 * duration / nsamples))
     except Exception:
         import traceback
         import pdb
@@ -124,7 +126,7 @@ def test_random(vals=None, nsamples=100000):
         if not k:
             continue
         if not 0.95 < v / k < 1.05:
-            print "problem: %s is %s, should be ~%s" % (k, v, k)
+            print("problem: %s is %s, should be ~%s" % (k, v, k))
     return
 
 
