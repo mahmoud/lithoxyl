@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import os
+import hashlib
+import random
+import socket
 import sys
 import time
 import types
-import socket
-import hashlib
-import binascii
+import six
 from os import getpid
 
 
@@ -24,7 +24,7 @@ def check_encoding_settings(encoding, errors, reraise=True):
         u''.encode(encoding)
     except LookupError as le:
         if reraise:
-            raise EncodingLookupError(le.message)
+            raise EncodingLookupError(le.args[0])
         return False
     try:
         # then test error-handler
@@ -32,7 +32,7 @@ def check_encoding_settings(encoding, errors, reraise=True):
         u'\xdd'.encode('ascii', errors)
     except LookupError as le:
         if reraise:
-            raise ErrorBehaviorLookupError(le.message)
+            raise ErrorBehaviorLookupError(le.args[0])
         return False
     except Exception:
         # that ascii encode should never work
@@ -70,7 +70,7 @@ def unwrap_all(target=None):
                 continue
             if not callable(val):
                 continue
-            elif isinstance(val, (type, types.ClassType)):
+            elif isinstance(val, six.class_types):
                 if id(val) in unwrapped:
                     continue
                 unwrapped.add(id(val))
@@ -105,7 +105,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
 
     if skip is None:
         skip = '_'
-    if isinstance(skip, basestring):
+    if isinstance(skip, six.string_types):
         skip_func = lambda attr_name: skip and attr_name.startswith(skip)
     elif callable(skip):
         skip_func = skip
@@ -129,7 +129,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
             val = getattr(sub_target, attr_name)
             if not callable(val):
                 continue
-            elif isinstance(val, (type, types.ClassType)):
+            elif isinstance(val, six.class_types):
                 # NOTE: it may be possible to get to the same function / method
                 # via different attribute paths; we will pick one of them randomly
                 # in that case for implementation simplicity
@@ -171,11 +171,13 @@ def reseed_guid():
     global _GUID_START
 
     _PID = getpid()
-    _GUID_SALT = '-'.join([str(getpid()),
-                           socket.gethostname() or '<nohostname>',
-                           str(time.time()),
-                           binascii.hexlify(os.urandom(4))])
-    _GUID_START = int(hashlib.sha1(_GUID_SALT).hexdigest()[:24], 16)
+    _GUID_SALT = '-'.join([
+        str(getpid()),
+        socket.gethostname() or '<nohostname>',
+        str(time.time()),
+        '%04x' % random.randrange(16 ** 4)
+    ])
+    _GUID_START = int(hashlib.sha1(_GUID_SALT.encode()).hexdigest()[:24], 16)
 
     return
 

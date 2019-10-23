@@ -16,8 +16,11 @@ def test_rate_sink():
             if i % 2:
                 raise ValueError()
     test_rates = sink.get_rates()['testlog']['sleeping']
-    assert 48 <= round(test_rates['__all__']) <= 51
-    assert 24 <= round(test_rates['exception']) <= 26
+    # get_rates() returns per-second rates for logger invocations. These
+    # results are hardware dependent for the lower bound, but the upper bound
+    # is well defined because of the hard coded sleep() call above.
+    assert 40 <= round(test_rates['__all__']) <= 51
+    assert 20 <= round(test_rates['exception']) <= 26
 
     counts = sink.get_total_counts()
     assert counts['__all__'] == 10

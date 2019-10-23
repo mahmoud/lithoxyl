@@ -1,1 +1,1 @@
-boltons>=18.0.1
+boltons>=19.2.0

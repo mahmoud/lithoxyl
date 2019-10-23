@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import errno
 
 from lithoxyl import (SensibleSink,
                       SensibleFilter,
-                      SensibleFormatter as SF,
-                      SensibleMessageFormatter as SMF)
+                      SensibleFormatter as SF)
 from lithoxyl.emitters import StreamEmitter, AggregateEmitter
 from lithoxyl.logger import Logger
-
 
 fmtr = SF('{status_char}{begin_timestamp} - {event_message}')
 strm_emtr = StreamEmitter('stderr')
@@ -21,7 +21,7 @@ fake_sink = SensibleSink(filters=[fltr], formatter=fmtr, emitter=aggr_emtr)
 def test_sensible_basic():
     log = Logger('test_ss', [strm_sink, fake_sink])
 
-    print
+    print()
 
     log.debug('greet').success('hey')
     assert aggr_emtr.get_entry(-1).startswith('s')
@@ -78,7 +78,7 @@ def _test_exception():
                         filters=[SensibleFilter(exception=False)])
     logger = Logger('excelsilog', [sink])
     with logger.info('A for Effort', reraise=False) as tr:
-        print tr
+        print(tr)
         raise ValueError('E for Exception')
     return
 

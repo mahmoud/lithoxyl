@@ -2,15 +2,21 @@
 
 import os
 import random
+import sys
 
 from lithoxyl.moment import MomentAccumulator
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
-import _statsutils
+from . import _statsutils
 
 
 random.seed(8675309)
-test_sets = {'urandom 0-255': [ord(x) for x in os.urandom(16000)],
-             'random.random 0.0-1.0': [random.random() for i in xrange(100000)]}
+
+if sys.version_info < (3, 0):
+    test_sets = {'urandom 0-255': [ord(x) for x in os.urandom(16000)],
+                 'random.random 0.0-1.0': [random.random() for i in range(100000)]}
+else:
+    test_sets = {'urandom 0-255': [x for x in os.urandom(16000)],
+                 'random.random 0.0-1.0': [random.random() for i in range(100000)]}
 
 
 def _assert_round_cmp(a, b, mag=3, name=None):
@@ -40,7 +46,7 @@ def test_momentacc_basic():
 
 def test_momentacc_norm():
     ma = MomentAccumulator()
-    for v in [random.gauss(10, 4) for i in xrange(5000)]:
+    for v in [random.gauss(10, 4) for i in range(5000)]:
         ma.add(v)
     _assert_round_cmp(10, abs(ma.mean), mag=1)
     _assert_round_cmp(4, ma.std_dev, mag=1)
@@ -99,6 +105,7 @@ def test_acc_random():
     qa = ReservoirAccumulator(data)
     capqa = ReservoirAccumulator(data, cap=True)
     p2qa = P2Accumulator(data)
+    ctr = 0
     for acc in (qa, capqa, p2qa):
         for qp, v in acc.get_quantiles():
             if qp > 0:

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Action
 from lithoxyl.sensible import SensibleFormatter as SF
-
-
 
 template = ('{status_char}{action_warn_char}{begin_timestamp}'
             ' - {iso_begin_local} - {iso_begin}'
@@ -29,14 +29,14 @@ def test_formatter_basic():
     forming = SF(template)
     output = forming.on_end(t_riker.end_event)
     expected = '"1off" - success - "Riker"'
-    print output
+    print(output)
     assert output[-len(expected):] == expected
 
     act = Action(t_log, 'DEBUG', 'Wharf')
     robf = SF(template)
     act.success('Mr. Wolf')
     ret = robf.on_end(act.end_event)
-    print ret
+    print(ret)
     return ret
 
 

@@ -11,6 +11,8 @@ from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator, QP_PRAG
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
 
+from six import reraise as raise_
+
 
 class AggregateSink(object):
     "A simple sink that just aggregates the messages."
@@ -60,7 +62,7 @@ class DevDebugSink(object):
         if self.post_mortem and isinstance(exc_obj, self.post_mortem):
             pdb.post_mortem()
         if self.reraise and isinstance(exc_obj, self.reraise):
-            raise exc_type, exc_obj, exc_tb
+            raise_(exc_type, exc_obj, exc_tb)
         return
 
 
