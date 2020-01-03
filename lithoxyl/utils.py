@@ -27,7 +27,7 @@ def check_encoding_settings(encoding, errors, reraise=True):
         u''.encode(encoding)
     except LookupError as le:
         if reraise:
-            raise EncodingLookupError(le.message)
+            raise EncodingLookupError(le.args[0])
         return False
     try:
         # then test error-handler
@@ -35,7 +35,7 @@ def check_encoding_settings(encoding, errors, reraise=True):
         u'\xdd'.encode('ascii', errors)
     except LookupError as le:
         if reraise:
-            raise ErrorBehaviorLookupError(le.message)
+            raise ErrorBehaviorLookupError(le.args[0])
         return False
     except Exception:
         # that ascii encode should never work
