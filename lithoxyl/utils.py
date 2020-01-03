@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 import os
 import sys
 import time
@@ -170,12 +172,18 @@ def reseed_guid():
     global _GUID_SALT
     global _GUID_START
 
+    try:
+        random_hex = os.urandom(4).hex()
+    except AttributeError:
+        # py2
+        random_hex = binascii.hexlify(os.urandom(4))
+
     _PID = getpid()
     _GUID_SALT = '-'.join([str(getpid()),
                            socket.gethostname() or '<nohostname>',
                            str(time.time()),
-                           binascii.hexlify(os.urandom(4))])
-    _GUID_START = int(hashlib.sha1(_GUID_SALT).hexdigest()[:24], 16)
+                           random_hex])
+    _GUID_START = int(hashlib.sha1(_GUID_SALT.encode('utf8')).hexdigest()[:24], 16)
 
     return
 
@@ -190,15 +198,13 @@ reseed_guid()
 
 
 def int2hexguid(id_int):
-    """Return a fork-safe, globally-unique, 12-character hexadecimal
-    string, based on an integer input. Originally intended for use
-    with the always-incrementing action_ids and event_ids, this
-    function has been superseded by int2hexguid_seq for lithoxyl's use
-    cases.
     """
-    if getpid() != _PID:
-        reseed_guid()
-    return hashlib.sha1(_GUID_SALT + str(id_int)).hexdigest()[:24]
+    I'd love to use UUID.uuid4, but this is 20x faster
+
+    sha1 is 20 bytes. 12 bytes (96 bits) means that there's 1 in 2^32
+    chance of a collision after 2^64 messages.
+    """
+    return hashlib.sha1((_GUID_SALT + str(id_int)).encode('utf8')).hexdigest()[:24]
 
 
 def int2hexguid_seq(id_int):

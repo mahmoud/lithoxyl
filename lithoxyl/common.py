@@ -40,6 +40,9 @@ class Level(object):
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self.name, self._value)
 
+    def __hash__(self):
+        return hash((type(self), self.name))
+
 
 DEBUG = Level('debug', 20)
 INFO = Level('info', 70)
