@@ -13,6 +13,15 @@ Implemented by Kurt Rose and Mahmoud Hashemi.
 Copyright 2013, 3-clause BSD License
 """
 
+import sys
+PY3 = sys.version_info[0] == 3
+
+_zip = zip
+if PY3:
+    def _zip(*a, **kw):
+        return list(zip(*a, **kw))
+
+    xrange = range
 
 class P2Estimator(object):
     def __init__(self, q_points, data):
@@ -26,12 +35,12 @@ class P2Estimator(object):
 
         initial = sorted(data[:len_qps])
         vals = [[i + 1, x] for i, x in enumerate(initial)]
-        self._points = pts = zip(self._q_points, vals)
+        self._points = pts = _zip(self._q_points, vals)
         self._min_point, self._max_point = pts[0][1], pts[-1][1]
         self._lookup = dict(pts)
-        self._back_tuples = list(reversed(zip(vals[1:], vals[2:])))
+        self._back_tuples = list(reversed(_zip(vals[1:], vals[2:])))
 
-        self._quads = zip(self._q_points[1:], vals, vals[1:], vals[2:])
+        self._quads = _zip(self._q_points[1:], vals, vals[1:], vals[2:])
 
         for i in xrange(len_qps, len_data):
             self.add(data[i])

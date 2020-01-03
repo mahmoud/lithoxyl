@@ -12,11 +12,11 @@ try:
 except NameError:
     unicode = str  # py3
 
-def to_unicode(obj):
+def to_unicode(obj, encoding='utf8'):
     try:
         return unicode(obj)
     except UnicodeDecodeError:
-        return unicode(obj, encoding='utf8', errors='replace')
+        return unicode(obj, encoding=encoding, errors='replace')
 
 
 @total_ordering

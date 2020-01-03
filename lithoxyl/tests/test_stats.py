@@ -40,7 +40,7 @@ def test_momentacc_basic():
 
 def test_momentacc_norm():
     ma = MomentAccumulator()
-    for v in [random.gauss(10, 4) for i in xrange(5000)]:
+    for v in [random.gauss(10, 4) for i in range(5000)]:
         ma.add(v)
     _assert_round_cmp(10, abs(ma.mean), mag=1)
     _assert_round_cmp(4, ma.std_dev, mag=1)

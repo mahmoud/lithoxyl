@@ -18,6 +18,11 @@ try:
 except ImportError:
     pass
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 class AggregateEmitter(object):
     def __init__(self, limit=None):
@@ -65,6 +70,8 @@ class StreamEmitter(object):
         self.sep = kwargs.pop('sep', None)
         if self.sep is None:
             self.sep = os.linesep
+        if isinstance(self.sep, unicode):
+            self.sep = self.sep.encode(encoding)
         self.errors = errors
         self.encoding = encoding
         self._reopen_stale = kwargs.pop('reopen_stale', True)

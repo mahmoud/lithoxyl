@@ -84,10 +84,11 @@ def _test_exception():
 def test_stale_stream(tmpdir):
     # make mock filestream with write/flush that goes stale after 100 writes
     # create logger with stream emitter to mocked file stream
-    class StalewardFile(file):
-        def __init__(self, *a, **kw):
-            file.__init__(self, *a, **kw)
+
+    class StalewardFile(object):
+        def __init__(self, wrapped):
             self._write_count = 0
+            self.wrapped = wrapped
 
         def write(self, *a, **kw):
             self._write_count += 1
@@ -96,10 +97,13 @@ def test_stale_stream(tmpdir):
                 exc.errno = errno.ESTALE
                 self.close()
                 raise exc
-            return file.write(self, *a, **kw)
+            return self.wrapped.write(*a, **kw)
+
+        def __getattr__(self, name):
+            return getattr(self.wrapped, name)
 
     file_path = '%s/not_always_fresh.log' % (tmpdir,)
-    stale_file_obj = StalewardFile(file_path, 'wb')
+    stale_file_obj = StalewardFile(open(file_path, 'wb'))
     emitter = StreamEmitter(stale_file_obj)
 
     sink = SensibleSink(SF('{status_char} - {iso_end}'), emitter,
