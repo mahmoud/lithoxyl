@@ -12,6 +12,10 @@ from lithoxyl.common import to_unicode, get_level
 from lithoxyl.context import note
 from lithoxyl.sensible import SensibleMessageFormatter
 
+try:
+    unicode
+except NameError:
+    unicode = str  # py3
 
 _ACT_ID_ITER = itertools.count()
 
