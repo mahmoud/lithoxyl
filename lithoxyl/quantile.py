@@ -154,6 +154,10 @@ class ReservoirAccumulator(BaseQuantileAccumulator):
             return data[idx_f]
         return (data[idx_f] * (idx_c - idx)) + (data[idx_c] * (idx - idx_f))
 
+    def __iter__(self):
+        self._sort()
+        return iter(self._data)
+
 
 class P2Accumulator(BaseQuantileAccumulator):
     def __init__(self, data=None, q_points=None):
