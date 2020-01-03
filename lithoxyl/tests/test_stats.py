@@ -9,8 +9,8 @@ import _statsutils
 
 
 random.seed(8675309)
-test_sets = {'urandom 0-255': [ord(x) for x in os.urandom(16000)],
-             'random.random 0.0-1.0': [random.random() for i in xrange(100000)]}
+test_sets = {'urandom 0-255': [x if isinstance(x, int) else ord(x) for x in os.urandom(16000)],  # conditional for py23
+             'random.random 0.0-1.0': [random.random() for i in range(100000)]}
 
 
 def _assert_round_cmp(a, b, mag=3, name=None):

@@ -7,6 +7,7 @@ from collections import deque
 
 from boltons.cacheutils import ThresholdCounter as TCounter
 
+from lithoxyl.utils import reraise
 from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator, QP_PRAG
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
@@ -60,7 +61,7 @@ class DevDebugSink(object):
         if self.post_mortem and isinstance(exc_obj, self.post_mortem):
             pdb.post_mortem()
         if self.reraise and isinstance(exc_obj, self.reraise):
-            raise exc_type, exc_obj, exc_tb
+            reraise(exc_type, exc_obj, exc_tb)
         return
 
 

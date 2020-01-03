@@ -15,6 +15,11 @@ from boltons.formatutils import tokenize_format_str
 
 from lithoxyl.common import EVENTS, IMPORT_TIME, MAX_LEVEL, get_level
 
+try:
+    basestring
+except NameError:
+    basestring = str  # py3
+
 
 __all__ = ['SensibleFormatter', 'SensibleSink']
 

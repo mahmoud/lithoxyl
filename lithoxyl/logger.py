@@ -53,7 +53,7 @@ def get_frame_excluding_subtypes(target_type, offset=0):
             frame = _get_previous_frame(frame)
         else:
             break
-    for i in xrange(offset):
+    for i in range(offset):
         frame = _get_previous_frame(frame)
     return frame
 
