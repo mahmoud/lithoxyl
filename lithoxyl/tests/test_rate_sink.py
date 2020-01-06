@@ -16,8 +16,11 @@ def test_rate_sink():
             if i % 2:
                 raise ValueError()
     test_rates = sink.get_rates()['testlog']['sleeping']
-    assert 48 <= round(test_rates['__all__']) <= 51
-    assert 24 <= round(test_rates['exception']) <= 26
+    # TODO: these are a little flaky, esp when moving between
+    # environments, runtimes, and with/without coverage, hence the
+    # range
+    assert 45 <= round(test_rates['__all__']) <= 51
+    assert 22 <= round(test_rates['exception']) <= 26
 
     counts = sink.get_total_counts()
     assert counts['__all__'] == 10

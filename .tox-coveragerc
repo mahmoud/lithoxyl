@@ -1,0 +1,14 @@
+[run]
+branch = True
+source =
+    lithoxyl
+    ../lithoxyl
+
+[paths]
+source =
+   ../lithoxyl
+   */lib/python*/site-packages/lithoxyl
+   */Lib/site-packages/lithoxyl
+   */pypy/site-packages/lithoxyl
+omit =
+   */flycheck_*
