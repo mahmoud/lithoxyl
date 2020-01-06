@@ -1,0 +1,6 @@
+include README.md LICENSE CHANGELOG.md tox.ini requirements.txt .tox-coveragerc
+exclude TODO.rst appveyor.yml NOTES.rst infomercial.py playground.py requirements-rtd.txt
+
+graft docs
+prune docs/_build
+prune misc
