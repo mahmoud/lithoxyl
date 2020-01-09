@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 
 from lithoxyl.logger import Logger
 from lithoxyl.sinks import RateSink, RateAccumulator
 
+IS_PYPY = '__pypy__' in sys.builtin_module_names
 
 def test_rate_sink():
     sink = RateSink()
@@ -19,7 +21,8 @@ def test_rate_sink():
     # TODO: these are a little flaky, esp when moving between
     # environments, runtimes, and with/without coverage, hence the
     # range
-    assert 45 <= round(test_rates['__all__']) <= 51
+    all_lower_limit = 40 if IS_PYPY else 48
+    assert all_lower_limit <= round(test_rates['__all__']) <= 51
     assert 22 <= round(test_rates['exception']) <= 26
 
     counts = sink.get_total_counts()

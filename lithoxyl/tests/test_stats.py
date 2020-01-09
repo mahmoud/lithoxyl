@@ -5,7 +5,8 @@ import random
 
 from lithoxyl.moment import MomentAccumulator
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
-import _statsutils
+
+from boltons import statsutils as _statsutils
 
 
 random.seed(8675309)

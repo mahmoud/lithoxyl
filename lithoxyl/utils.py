@@ -13,6 +13,13 @@ from os import getpid
 
 PY3 = sys.version_info[0] == 3
 
+try:
+    basestring
+    type_types = (type, types.ClassType)
+except NameError:
+    basestring = str
+    type_types = (type,)
+
 class EncodingLookupError(LookupError):
     pass
 
@@ -73,7 +80,7 @@ def unwrap_all(target=None):
                 continue
             if not callable(val):
                 continue
-            elif isinstance(val, (type, types.ClassType)):
+            elif isinstance(val, type_types):
                 if id(val) in unwrapped:
                     continue
                 unwrapped.add(id(val))
@@ -90,7 +97,8 @@ def unwrap_all(target=None):
 
 
 def wrap_all(logger, level='info', target=None, skip=None,
-             label=None, level_map=None, extras=None, depth=1):
+             label=None, level_map=None, extras=None, depth=1,
+             skip_exc=False):
     """
     """
     ret = []
@@ -115,6 +123,10 @@ def wrap_all(logger, level='info', target=None, skip=None,
     else:
         raise ValueError('skip expected string prefix or callable, not %r' %
                          (skip,))
+    if skip_exc is True:
+        skip_exc = Exception
+    elif skip_exc is False:
+        skip_exc = ()
 
     if label is None:
         try:
@@ -132,7 +144,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
             val = getattr(sub_target, attr_name)
             if not callable(val):
                 continue
-            elif isinstance(val, (type, types.ClassType)):
+            elif isinstance(val, type_types):
                 # NOTE: it may be possible to get to the same function / method
                 # via different attribute paths; we will pick one of them randomly
                 # in that case for implementation simplicity
@@ -149,9 +161,12 @@ def wrap_all(logger, level='info', target=None, skip=None,
                 kwargs['action_name'] = label + '.' + attr_name
 
                 log_wrapper = logger.wrap(**kwargs)
+                try:
+                    wrapped_func = log_wrapper(val)
+                    setattr(sub_target, attr_name, wrapped_func)
+                except skip_exc:
+                    continue
 
-                wrapped_func = log_wrapper(val)
-                setattr(sub_target, attr_name, wrapped_func)
                 ret.append(label + '.' + attr_name)
         return
 
