@@ -2,9 +2,8 @@
 logging, semantic profiling, and statistics collection. Very
 lightweight, very Pythonic.
 
-(c) 2016 by Mahmoud Hashemi.
+(c) 2020 by Mahmoud Hashemi.
 BSD-licensed, see LICENSE for more details.
-
 """
 
 import sys
@@ -12,8 +11,8 @@ from setuptools import setup, find_packages
 
 
 __author__ = 'Mahmoud Hashemi'
-__version__ = '0.4.4dev'
-__contact__ = 'mahmoudrhashemi@gmail.com'
+__version__ = '20.0.0'
+__contact__ = 'mahmoud@hatnote.com'
 __url__ = 'https://github.com/mahmoud/lithoxyl'
 __license__ = 'BSD'
 
@@ -33,7 +32,7 @@ setup(name='lithoxyl',
       author_email=__contact__,
       url=__url__,
       packages=find_packages(),
-      install_requires=['boltons>=18.0.1'],
+      install_requires=['boltons>=20.0.0'],
       include_package_data=True,
       zip_safe=False,
       license=__license__,
