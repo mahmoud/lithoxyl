@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import sys
 import time
 import itertools
@@ -11,11 +12,12 @@ from lithoxyl.utils import int2hexguid_seq
 from lithoxyl.common import to_unicode, get_level
 from lithoxyl.context import note
 from lithoxyl.sensible import SensibleMessageFormatter
+import six
 
 try:
-    unicode
+    six.text_type
 except NameError:
-    unicode = str  # py3
+    six.text_type = str  # py3
 
 
 _ACT_ID_ITER = itertools.count()
@@ -77,7 +79,7 @@ class Action(object):
         self.logger = logger
         self.level = get_level(level)
         try:
-            self.name = unicode(name)
+            self.name = six.text_type(name)
         except Exception:
             self.name = repr(name)
 

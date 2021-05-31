@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import pdb
 import time
 import bisect
@@ -11,6 +12,7 @@ from lithoxyl.utils import reraise
 from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator, QP_PRAG
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
+import six
 
 
 class AggregateSink(object):
@@ -267,7 +269,7 @@ class EWMASink(object):
 
     @staticmethod
     def _update_add(target, other):
-        for k, v in other.iteritems():
+        for k, v in six.iteritems(other):
             if v is None:
                 continue
             try:
@@ -329,7 +331,7 @@ class QuantileSink(object):
         self.qas = {}
 
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+            raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
 
     def to_dict(self):
         ret = {}

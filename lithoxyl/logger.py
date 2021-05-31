@@ -5,6 +5,7 @@ interface to using Lithoxyl. It is used to conveniently create
 
 """
 
+from __future__ import absolute_import
 import sys
 import time
 import itertools

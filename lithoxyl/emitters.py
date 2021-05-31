@@ -4,6 +4,8 @@ and output it to a persistence resource, such as stdout/stderr, files,
 or network streams.
 """
 
+from __future__ import absolute_import
+import io
 import os
 import sys
 import errno
@@ -11,6 +13,7 @@ from collections import deque
 
 from lithoxyl.context import note
 from lithoxyl.utils import check_encoding_settings
+import six
 
 try:
     # unix only
@@ -19,9 +22,9 @@ except ImportError:
     pass
 
 try:
-    unicode
+    six.text_type
 except NameError:
-    unicode = str
+    six.text_type = str
 
 
 class AggregateEmitter(object):
@@ -52,29 +55,45 @@ class AggregateEmitter(object):
 
 class StreamEmitter(object):
     def __init__(self, stream, encoding=None, **kwargs):
-        if stream == 'stdout':
-            stream = sys.stdout
-        elif stream == 'stderr':
-            stream = sys.stderr
-        elif not callable(getattr(stream, 'write', None)):
-            raise TypeError('StreamEmitter expected file-like object'
-                            ' (or shortcut values "stderr" or "stdout"),'
-                            ' not %r' % stream)
-        self.stream = stream
         if encoding is None:
             encoding = getattr(stream, 'encoding', None) or 'UTF-8'
         errors = kwargs.pop('errors', 'backslashreplace')
 
         check_encoding_settings(encoding, errors)  # raises on error
 
+        if stream == 'stdout':
+            stream = sys.stdout
+        elif stream == 'stderr':
+            stream = sys.stderr
+
+        self._own_stream = False
+        if isinstance(stream, io.RawIOBase):
+            stream = io.TextIOWrapper(stream, encoding=encoding, errors=errors)
+            self._own_stream = True
+
+        if not isinstance(stream, io.TextIOWrapper):
+            raise TypeError('StreamEmitter expected instance of TextIOWrapper or'
+                            ' RawIOBase (or shortcut values "stderr" or "stdout"),'
+                            ' not %r' % stream)
+        self.stream = stream
+        self._stream_name = getattr(self.stream, 'name', None)
+
         self.sep = kwargs.pop('sep', None)
         if self.sep is None:
             self.sep = os.linesep
-        if isinstance(self.sep, unicode):
+        if isinstance(self.sep, six.text_type):
             self.sep = self.sep.encode(encoding)
         self.errors = errors
         self.encoding = encoding
         self._reopen_stale = kwargs.pop('reopen_stale', True)
+
+    def __del__(self):
+        if not self._own_stream:
+            return
+        try:
+            self.stream.detach()
+        except Exception:
+            pass
 
     def emit_entry(self, event, entry):
         try:
@@ -94,11 +113,13 @@ class StreamEmitter(object):
                 and self._reopen_stale
                 and getattr(e, 'errno', None)
                 and e.errno == errno.ESTALE):
-                name = getattr(self.stream, 'name', None)
+                name = self._stream_name
                 if name and name not in ('<stdout>', '<stderr>'):
+                    # NB: Stale file handles are pretty common on
+                    # network file systems, so we try to reopen the file
                     note('stream_emit', 'reopening stale stream to %r', name)
                     # append in binary mode if the original mode was binary
-                    mode = 'ab' if 'b' in getattr(self.stream, 'mode', 'ab') else 'a'
+                    mode = 'a' if 'b' in getattr(self.stream, 'mode', 'ab') else 'a'
                     self.stream = open(name, mode)
 
                     # retry writing once

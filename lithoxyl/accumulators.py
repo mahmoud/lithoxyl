@@ -1,6 +1,8 @@
 
+from __future__ import absolute_import
 import math
 from bisect import bisect_right, insort
+from six.moves import zip
 
 # TODO: trivial to implement reset on these, but recreation might be better practice?
 
@@ -76,4 +78,4 @@ class HistogramCounter(object):
         return
 
     def get_results(self):
-        return zip(self.ranges, self.buckets)
+        return list(zip(self.ranges, self.buckets))

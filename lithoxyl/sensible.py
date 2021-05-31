@@ -3,6 +3,7 @@
 :class:`~lithoxyl.action.Action` instances into strings.
 """
 
+from __future__ import absolute_import
 import os
 import time
 import json
@@ -230,7 +231,7 @@ class SensibleMessageFormatter(object):
         quoter = kwargs.pop('quoter', None)
         defaulter = kwargs.pop('defaulter', None)
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+            raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
         if quoter is False:
             # disable quoting
             self.quoter = lambda field: None
@@ -414,7 +415,7 @@ class SensibleField(BaseFormatField):
     def __init__(self, fname, fspec='s', getter=None, **kwargs):
         quote = kwargs.pop('quote', None)
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+            raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
         super(SensibleField, self).__init__(fname, fspec)
         self.getter = getter
         if quote is None:

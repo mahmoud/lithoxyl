@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 from lithoxyl.context import get_context, set_context
 
 from lithoxyl.logger import Logger, DEBUG, INFO, CRITICAL

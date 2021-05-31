@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 from lithoxyl import Logger
 from lithoxyl.sinks import CounterSink
 

@@ -13,7 +13,9 @@ Implemented by Kurt Rose and Mahmoud Hashemi.
 Copyright 2013, 3-clause BSD License
 """
 
+from __future__ import absolute_import
 import sys
+from six.moves import zip
 PY3 = sys.version_info[0] == 3
 
 _zip = zip

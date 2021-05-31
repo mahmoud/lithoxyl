@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import os
 import sys
 import atexit
@@ -101,7 +102,7 @@ class LithoxylContext(object):
                     'daemonize_thread': kwargs.pop('daemonize_thread', True),
                     'note': self.note}
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+            raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
 
         self.async_mode = True
 
@@ -114,7 +115,7 @@ class LithoxylContext(object):
             self.async_actor.start()
 
         if update_loggers:
-            loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+            loggers = sorted(list(self.loggers.items()), key=lambda x: x[1])
             for logger, _ in loggers:
                 logger.set_async(False)
 
@@ -140,7 +141,7 @@ class LithoxylContext(object):
             self.async_actor.join(join_timeout)
 
         if update_loggers:
-            loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+            loggers = sorted(list(self.loggers.items()), key=lambda x: x[1])
             for logger, _ in loggers:
                 logger.set_async(False)
 
@@ -148,7 +149,7 @@ class LithoxylContext(object):
         self.async_mode = False
 
     def flush(self):
-        loggers = sorted(self.loggers.items(), key=lambda x: x[1])
+        loggers = sorted(list(self.loggers.items()), key=lambda x: x[1])
         for logger, _ in loggers:
             try:
                 logger.flush()

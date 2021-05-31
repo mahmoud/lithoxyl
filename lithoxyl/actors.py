@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 import os
 import time
 import threading
@@ -39,7 +40,7 @@ class IntervalThreadActor(object):
         if self._note and not callable(self._note):
             raise ValueError('expected callable for note, not %r' % self._note)
         if kwargs:
-            raise TypeError('unexpected keyword arguments: %r' % kwargs.keys())
+            raise TypeError('unexpected keyword arguments: %r' % list(kwargs.keys()))
 
         self._run_start_time = 0
         self._task_call_time = 0
