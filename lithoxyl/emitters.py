@@ -13,7 +13,6 @@ from collections import deque
 
 from lithoxyl.context import note
 from lithoxyl.utils import check_encoding_settings
-import six
 
 try:
     # unix only
@@ -22,9 +21,9 @@ except ImportError:
     pass
 
 try:
-    six.text_type
+    unicode
 except NameError:
-    six.text_type = str
+    unicode = str
 
 
 class AggregateEmitter(object):
@@ -81,14 +80,14 @@ class StreamEmitter(object):
         self.sep = kwargs.pop('sep', None)
         if self.sep is None:
             self.sep = os.linesep
-        if isinstance(self.sep, six.text_type):
-            self.sep = self.sep.encode(encoding)
+        if isinstance(self.sep, bytes):
+            self.sep = self.sep.decode(encoding)
         self.errors = errors
         self.encoding = encoding
         self._reopen_stale = kwargs.pop('reopen_stale', True)
 
     def __del__(self):
-        if not self._own_stream:
+        if not getattr(self, '_own_stream', False):
             return
         try:
             self.stream.detach()
@@ -97,16 +96,14 @@ class StreamEmitter(object):
 
     def emit_entry(self, event, entry):
         try:
-            entry = entry.encode(self.encoding, self.errors)
+            self.stream.write(entry + self.sep if self.sep else entry)
+            self.flush()
         except UnicodeDecodeError as ude:
             # Note that this is a *decode* error, meaning a bytestring
             # found its way through and implicit decoding is happening.
             note('emit_encode', 'got %r on %s.emit_entry();'
                  ' expected decoded text, not %r', ude, self, entry)
             raise
-        try:
-            self.stream.write(entry + self.sep if self.sep else entry)
-            self.flush()
         except Exception as e:
             note('stream_emit', 'got %r on %r.emit_entry()', e, self)
             if (type(e) is IOError
