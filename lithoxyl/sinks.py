@@ -12,7 +12,6 @@ from lithoxyl.utils import reraise
 from lithoxyl.emitters import StreamEmitter
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator, QP_PRAG
 from lithoxyl.ewma import EWMAAccumulator, DEFAULT_PERIODS, DEFAULT_INTERVAL
-import six
 
 
 class AggregateSink(object):
@@ -269,7 +268,7 @@ class EWMASink(object):
 
     @staticmethod
     def _update_add(target, other):
-        for k, v in six.iteritems(other):
+        for k, v in other.items():
             if v is None:
                 continue
             try:

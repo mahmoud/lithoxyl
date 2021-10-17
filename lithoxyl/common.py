@@ -3,22 +3,21 @@
 from __future__ import absolute_import
 import time
 from boltons.funcutils import total_ordering
-import six
 
 
 EVENTS = ('begin', 'warn', 'end', 'exception', 'comment')
 IMPORT_TIME = time.time()
 
 try:
-    six.text_type
+    unicode
 except NameError:
-    six.text_type = str  # py3
+    unicode = str  # py3
 
 def to_unicode(obj, encoding='utf8'):
     try:
-        return six.text_type(obj)
+        return unicode(obj)
     except UnicodeDecodeError:
-        return six.text_type(obj, encoding=encoding, errors='replace')
+        return unicode(obj, encoding=encoding, errors='replace')
 
 
 @total_ordering

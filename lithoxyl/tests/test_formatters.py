@@ -4,8 +4,6 @@ from __future__ import absolute_import
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Action
 from lithoxyl.sensible import SensibleFormatter as SF
-from six.moves import zip
-
 
 
 template = ('{status_char}{action_warn_char}{begin_timestamp}'
