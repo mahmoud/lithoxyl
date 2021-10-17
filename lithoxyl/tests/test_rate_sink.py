@@ -22,9 +22,9 @@ def test_rate_sink():
     # TODO: these are a little flaky, esp when moving between
     # environments, runtimes, and with/without coverage, hence the
     # range
-    all_lower_limit = 40 if IS_PYPY else 48
+    all_lower_limit = 40 if IS_PYPY else 47
     assert all_lower_limit <= round(test_rates['__all__']) <= 51
-    assert 22 <= round(test_rates['exception']) <= 26
+    assert 21 <= round(test_rates['exception']) <= 26
 
     counts = sink.get_total_counts()
     assert counts['__all__'] == 10

@@ -7,7 +7,6 @@ from math import floor, ceil
 from collections import namedtuple
 
 from lithoxyl.p_squared import P2Estimator
-from six.moves import zip
 
 
 HistogramCell = namedtuple('HistogramCell',
