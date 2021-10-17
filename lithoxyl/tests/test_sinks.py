@@ -108,7 +108,7 @@ def test_stale_stream(tmpdir):
             return getattr(self.wrapped, name)
 
     file_path = '%s/not_always_fresh.log' % (tmpdir,)
-    wrapped = open(file_path, 'wb')
+    wrapped = io.open(file_path, 'wb')
     stale_file_obj = StalewardFile(wrapped)
     emitter = StreamEmitter(stale_file_obj)
 
@@ -133,7 +133,7 @@ def test_stale_stream(tmpdir):
 def test_stream_emitter(tmpdir):
     # TODO: check 'stdout', 'stderr'
     # TODO: check encoding behavior
-    bw_f = open(tmpdir + '/tmp_bw.txt', 'ab')
+    bw_f = io.open('%s/tmp_bw.txt' % (tmpdir,), 'ab')
     bw = bw_f if type(bw_f) is io.BufferedWriter else io.BufferedWriter(bw_f)
     examples = {
         io.BufferedWriter: bw,
@@ -142,10 +142,10 @@ def test_stream_emitter(tmpdir):
     }
     try:
         if file in stream_types:
-            examples[file] = open(tmpdir + '/tmp_file.txt', 'ab')  # py2
+            examples[file] = open('%s/tmp_file.txt' % (tmpdir,), 'ab')  # py2
 
             import StringIO
-            examples[StringIO] = StringIO()
+            examples[StringIO.StringIO] = StringIO.StringIO()
     except NameError:
         pass #py3
 
