@@ -9,7 +9,7 @@ from lithoxyl import (SensibleSink,
                       SensibleFilter,
                       SensibleFormatter as SF,
                       SensibleMessageFormatter as SMF)
-from lithoxyl.emitters import StreamEmitter, AggregateEmitter
+from lithoxyl.emitters import StreamEmitter, AggregateEmitter, stream_types
 from lithoxyl.logger import Logger
 
 
@@ -88,7 +88,7 @@ def test_stale_stream(tmpdir):
     # make mock filestream with write/flush that goes stale after 100 writes
     # create logger with stream emitter to mocked file stream
 
-    class StalewardFile(io.TextIOWrapper):
+    class StalewardFile(io.BufferedWriter):
         def __init__(self, wrapped, *a, **kw):
             super(StalewardFile, self).__init__(wrapped, *a, **kw)
             self._write_count = 0
@@ -108,7 +108,7 @@ def test_stale_stream(tmpdir):
             return getattr(self.wrapped, name)
 
     file_path = '%s/not_always_fresh.log' % (tmpdir,)
-    wrapped = open(file_path, 'w')
+    wrapped = open(file_path, 'wb')
     stale_file_obj = StalewardFile(wrapped)
     emitter = StreamEmitter(stale_file_obj)
 
@@ -128,3 +128,40 @@ def test_stale_stream(tmpdir):
     assert stale_file_obj.closed
     assert emitter.stream.name is stale_file_obj.name
     assert emitter.stream is not first_stream
+
+
+def test_stream_emitter(tmpdir):
+    # TODO: check 'stdout', 'stderr'
+    # TODO: check encoding behavior
+    bw_f = open(tmpdir + '/tmp_bw.txt', 'ab')
+    bw = bw_f if type(bw_f) is io.BufferedWriter else io.BufferedWriter(bw_f)
+    examples = {
+        io.BufferedWriter: bw,
+        io.RawIOBase: bw.raw,
+        io.BytesIO: io.BytesIO(),
+    }
+    try:
+        if file in stream_types:
+            examples[file] = open(tmpdir + '/tmp_file.txt', 'ab')  # py2
+
+            import StringIO
+            examples[StringIO] = StringIO()
+    except NameError:
+        pass #py3
+
+    passing_types = []
+
+    for _type, example_stream in examples.items():
+        assert isinstance(example_stream, _type)
+        emitter = StreamEmitter(example_stream)
+
+        sink = SensibleSink(SF('{status_char} - {iso_end}'), emitter,
+                            filters=[SensibleFilter(success=True)])
+        logger = Logger('excelsilog', [sink])
+        for i in range(201):
+            logger.info('yay{i}', i=i).success()
+        # TODO: check contents
+
+        passing_types.append(_type)
+
+    assert set(stream_types) == set(passing_types)
