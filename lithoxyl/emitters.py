@@ -22,11 +22,13 @@ except ImportError:
 
 try:
     unicode
+    PY3 = False
 except NameError:
+    PY3 = True
     unicode = str
 
 # TODO: not sure about RawIOBase
-stream_types = (io.BytesIO, io.BufferedWriter, io.RawIOBase) 
+stream_types = (io.BytesIO, io.BufferedWriter, io.RawIOBase)
 try:
     # py2
     import StringIO
@@ -60,6 +62,16 @@ class AggregateEmitter(object):
         return msg
 
 
+def _get_sys_stream(name):
+    stream = getattr(sys, name)
+    # originally wanted to grab the buffer only on py3, but that
+    # breaks pytest on py2, which relies on the buffer
+    if PY3 or ('b' not in stream.mode and hasattr(stream, 'buffer')):
+        stream = stream.buffer
+
+    return stream
+
+
 class StreamEmitter(object):
     '''
     py3 notes: need to get this to supporting bytestreams. How to know if a
@@ -75,19 +87,17 @@ class StreamEmitter(object):
 
         check_encoding_settings(encoding, errors)  # raises on error
 
-        if stream == 'stdout':
-            stream = sys.stdout.buffer
-        elif stream == 'stderr':
-            stream = sys.stderr.buffer
+        if stream in ('stdout', 'stderr'):
+            stream = _get_sys_stream(stream)
 
         if not isinstance(stream, stream_types):
             st_names = ', '.join([st.__name__.lstrip('_') for st in stream_types])
             raise TypeError('%s expected instance of %s, or shortcut'
-                            ' values "stderr" or "stdout", not: %r' 
+                            ' values "stderr" or "stdout", not: %r'
                             % (self.__class__.__name__, st_names, stream))
         _mode = getattr(stream, 'mode', None)
-        if _mode and 'b' not in _mode:
-            raise ValueError('expected stream opened in binary mode, not: %r (mode %s)' 
+        if _mode and PY3 and 'b' not in _mode:
+            raise ValueError('expected stream opened in binary mode, not: %r (mode %s)'
                              % (stream, _mode))
         self.stream = stream
         self._stream_name = getattr(self.stream, 'name', None)
@@ -110,8 +120,7 @@ class StreamEmitter(object):
             note('emit_encode', 'got %r on %s.emit_entry();'
                  ' expected decoded text, not %r', ude, self, entry)
             raise
-
-        try:  
+        try:
             self.stream.write(entry + self.sep if self.sep else entry)
             self.flush()
         except Exception as e:

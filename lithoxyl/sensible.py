@@ -7,14 +7,13 @@ from __future__ import absolute_import
 import os
 import time
 import json
-import socket
 import datetime
 
 from boltons.timeutils import UTC, LocalTZ
 from boltons.formatutils import BaseFormatField
 from boltons.formatutils import tokenize_format_str
 
-from lithoxyl.common import EVENTS, IMPORT_TIME, MAX_LEVEL, get_level
+from lithoxyl.common import EVENTS, IMPORT_TIME, MAX_LEVEL, get_level, to_unicode
 
 try:
     basestring
@@ -172,6 +171,7 @@ class GetterDict(dict):
 
 class SensibleFormatter(object):
     def __init__(self, base=None, **kwargs):
+        base = to_unicode(base)
         defaulter = kwargs.pop('defaulter', None)
         quoter = kwargs.pop('quoter', None)
         extra_fields = kwargs.pop('extra_fields', None)
@@ -285,7 +285,7 @@ class SensibleMessageFormatter(object):
           * Structured data stored in the Action object's ``data_map``
 
         """
-        ret = ''
+        ret = u''
         kw_vals = GetterDict(event, self._getter_map)
         kw_vals.update(kwargs)
         q_map, d_map = self.quoter_map, self.default_map
