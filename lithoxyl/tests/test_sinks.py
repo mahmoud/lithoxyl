@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import io
+import json
 import errno
 
 from lithoxyl import (SensibleSink,
@@ -108,7 +109,7 @@ def test_stale_stream(tmpdir):
             return getattr(self.wrapped, name)
 
     file_path = '%s/not_always_fresh.log' % (tmpdir,)
-    wrapped = open(file_path, 'wb')
+    wrapped = io.open(file_path, 'wb')
     stale_file_obj = StalewardFile(wrapped)
     emitter = StreamEmitter(stale_file_obj)
 
@@ -131,36 +132,50 @@ def test_stale_stream(tmpdir):
 
 
 def test_stream_emitter(tmpdir):
-    # TODO: check 'stdout', 'stderr'
-    # TODO: check encoding behavior
-    bw_f = open(tmpdir + '/tmp_bw.txt', 'ab')
-    bw = bw_f if type(bw_f) is io.BufferedWriter else io.BufferedWriter(bw_f)
+    def get_bw(base_dir, suffix):
+        bw_f = io.open('%s/tmp_%s.txt' % (base_dir, suffix), 'wb')
+        bw = bw_f if type(bw_f) is io.BufferedWriter else io.BufferedWriter(bw_f)
+        return bw
+
+    def get_stream_lines(stream):
+        if getattr(stream, 'name', None):
+            contents = open(stream.name, 'rb').read()
+        else:
+            contents = stream.getvalue()
+        contents = contents.decode('utf8')
+        return contents.splitlines()
+
     examples = {
-        io.BufferedWriter: bw,
-        io.RawIOBase: bw.raw,
+        io.BufferedWriter: get_bw(tmpdir, 'bw'),
+        io.RawIOBase: get_bw(tmpdir, 'raw').detach(),
         io.BytesIO: io.BytesIO(),
     }
     try:
         if file in stream_types:
-            examples[file] = open(tmpdir + '/tmp_file.txt', 'ab')  # py2
+            examples[file] = open('%s/tmp_file.txt' % (tmpdir,), 'wb')  # py2
 
             import StringIO
-            examples[StringIO] = StringIO()
+            examples[StringIO.StringIO] = StringIO.StringIO()
     except NameError:
-        pass #py3
+        pass  # py3
 
     passing_types = []
 
+    # import pdb; logger.context.note_handlers.append(lambda x, y: pdb.post_mortem())
     for _type, example_stream in examples.items():
         assert isinstance(example_stream, _type)
-        emitter = StreamEmitter(example_stream)
+        emitter = StreamEmitter(example_stream, encoding='utf8')
 
-        sink = SensibleSink(SF('{status_char} - {iso_end}'), emitter,
+        sink = SensibleSink(SF('{status_char} - {iso_end} - {end_message}'), emitter,
                             filters=[SensibleFilter(success=True)])
         logger = Logger('excelsilog', [sink])
         for i in range(201):
-            logger.info('yay{i}', i=i).success()
-        # TODO: check contents
+            logger.info('action').success('yäy{i}', i=i)
+
+        stream_lines = get_stream_lines(example_stream)
+        assert len(stream_lines) == 201
+        assert json.dumps(u'yäy0') in stream_lines[0]
+        assert json.dumps(u'yäy200') in stream_lines[-1]
 
         passing_types.append(_type)
 
