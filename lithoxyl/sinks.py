@@ -185,7 +185,6 @@ class RateSink(object):
         start_time = kw.pop('start_time', self.creation_time)
         if max_time:
             start_time = end_time - max_time
-
         ret = {}
         all_loggers_rate = 0.0
         for logger, name_map in self.acc_map.items():
