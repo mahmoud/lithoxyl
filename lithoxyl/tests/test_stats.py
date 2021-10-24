@@ -7,7 +7,7 @@ import random
 from lithoxyl.moment import MomentAccumulator
 from lithoxyl.quantile import ReservoirAccumulator, P2Accumulator
 
-from boltons import statsutils as _statsutils
+from boltons import statsutils
 
 
 random.seed(8675309)
@@ -44,7 +44,7 @@ def test_momentacc_basic():
 
         for m_name in attr_names:
             ma_val = getattr(ma, m_name)
-            ctl_val = getattr(_statsutils, m_name)(data)
+            ctl_val = getattr(statsutils, m_name)(data)
             _assert_round_cmp(ctl_val, ma_val, mag=4, name=m_name)
 
         assert ma.count == len(data)
@@ -66,7 +66,7 @@ def test_quantacc_basic(data=None):
     qa = ReservoirAccumulator()
     for v in data:
         qa.add(v)
-    assert qa.median == _statsutils.median(data)
+    assert qa.median == statsutils.median(data)
     q1, q2, q3 = qa.quartiles
     assert q1 < q2 < q3
     return True
@@ -77,7 +77,7 @@ def test_quantacc():
         qa = ReservoirAccumulator()
         for v in data:
             qa.add(v)
-        _assert_round_cmp(qa.median, _statsutils.median(data), mag=6)
+        _assert_round_cmp(qa.median, statsutils.median(data), mag=6)
         q1, q2, q3 = qa.quartiles
         assert q1 < q2 < q3
         hist = qa.get_histogram()
