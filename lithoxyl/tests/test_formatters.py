@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+
+import sys
+
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Action
 from lithoxyl.sensible import SensibleFormatter as SF
+from lithoxyl.sensible import timestamp2iso8601_noms, timestamp2iso8601
 
+IS_PY3 = sys.version_info[0] == 3
 
 template = ('{status_char}{action_warn_char}{begin_timestamp}'
             ' - {iso_begin_local} - {iso_begin}'
@@ -62,6 +67,28 @@ def test_deferred():
         assert output == expected
     return
 
+
+def test_timestamp_fmt():
+    ts = 1635115925.0000000
+
+    combos = [((timestamp2iso8601, True, True), "2021-10-24T15:52:05.000000-0700"),
+              ((timestamp2iso8601, True, False), "2021-10-24T15:52:05.000000"),
+              ((timestamp2iso8601, False, True), "2021-10-24T22:52:05.000000+0000"),
+              ((timestamp2iso8601, False, False), "2021-10-24T22:52:05.000000"),
+              ((timestamp2iso8601_noms, True, False), "2021-10-24T15:52:05"),
+              ((timestamp2iso8601_noms, False, False), "2021-10-24T22:52:05"),]
+
+    if IS_PY3:
+        combos.extend([
+            ((timestamp2iso8601_noms, False, True), "2021-10-24T22:52:05+0000"),
+            ((timestamp2iso8601_noms, True, True), "2021-10-24T15:52:05-0700")
+        ])
+
+
+    for (func, local, with_tz), expected in combos:
+        assert func(ts, local=local, with_tz=with_tz) == expected
+
+    return
 
 """
 Formatter tests todos

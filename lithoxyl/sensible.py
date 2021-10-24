@@ -384,7 +384,7 @@ def timestamp2iso8601_noms(timestamp, local=False, with_tz=True):
     vs. datetime.now(), which is two orders of magnitude faster.
     """
     if with_tz:
-        tformat = '%Y-%m-%dT%H:%M:%S %Z'
+        tformat = '%Y-%m-%dT%H:%M:%S%z'
     else:
         tformat = '%Y-%m-%dT%H:%M:%S'
     if local:

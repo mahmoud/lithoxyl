@@ -147,3 +147,5 @@ def test_comment():
     log.comment('the second {}', 'commenting')
 
     assert len(events) == 2
+    for event in events:
+        assert repr(event).startswith('<')

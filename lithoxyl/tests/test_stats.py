@@ -28,15 +28,26 @@ def _assert_round_cmp(a, b, mag=3, name=None):
 
 
 def test_momentacc_basic():
+    attr_names = ('mean', 'variance', 'std_dev', 'skewness', 'kurtosis')
+
     for name, data in test_sets.items():
         ma = MomentAccumulator()
-        for v in data:
-            ma.add(v)
 
-        for m_name in ('mean', 'variance', 'std_dev', 'skewness', 'kurtosis'):
+        # empty state
+        for m_name in attr_names + ('count',):
+            assert getattr(ma, m_name) == 0.0
+
+        for i, v in enumerate(data):
+            ma.add(v)
+            if i == 0:
+                assert ma.variance == 0.0
+
+        for m_name in attr_names:
             ma_val = getattr(ma, m_name)
             ctl_val = getattr(_statsutils, m_name)(data)
             _assert_round_cmp(ctl_val, ma_val, mag=4, name=m_name)
+
+        assert ma.count == len(data)
     return True
 
 

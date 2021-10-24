@@ -25,7 +25,7 @@ fake_sink = SensibleSink(filters=[fltr], formatter=fmtr, emitter=aggr_emtr)
 def test_sensible_basic():
     log = Logger('test_ss', [strm_sink, fake_sink])
 
-    log.debug('greet').success('hey')
+    log.debug('greet', data={'skey': 'svalue'}).success()
     assert aggr_emtr.get_entry(-1).startswith('s')
 
     with log.debug('greet') as t:
@@ -37,8 +37,8 @@ def test_sensible_basic():
 
     assert aggr_emtr.get_entry(-1).startswith('S')
 
-    with log.debug('greet') as t:
-        t.failure('bye')
+    with log.debug('greet', data={'fkey': 'fval'}) as t:
+        t.failure()
     assert aggr_emtr.get_entry(-1).startswith('F')
 
     try:
@@ -72,19 +72,6 @@ def test_bad_encoding_error_fallback():
         assert False
 
 
-def _test_exception():
-    _tmpl = ('{iso_end} - {exc_type}: {exc_message}'
-             ' - {func_name}:{line_number} - {exc_tb_list}')
-    sink = SensibleSink(SF(_tmpl),
-                        StreamEmitter('stderr'),
-                        filters=[SensibleFilter(exception=False)])
-    logger = Logger('excelsilog', [sink])
-    with logger.info('A for Effort', reraise=False) as tr:
-        print(tr)
-        raise ValueError('E for Exception')
-    return
-
-
 def test_stale_stream(tmpdir):
     # make mock filestream with write/flush that goes stale after 100 writes
     # create logger with stream emitter to mocked file stream
@@ -115,6 +102,7 @@ def test_stale_stream(tmpdir):
 
     sink = SensibleSink(SF('{status_char} - {iso_end}'), emitter,
                         filters=[SensibleFilter(success=True)])
+    assert repr(sink).startswith('<SensibleSink')
     logger = Logger('excelsilog', [sink])
 
     assert emitter.stream.name is stale_file_obj.name

@@ -22,6 +22,8 @@ def test_level_getting():
     assert get_level(int(INFO._value)) == INFO
     assert get_level(DEFAULT_LEVEL) == DEFAULT_LEVEL
 
+    assert repr(DEBUG) == "Level('debug', 20)"
+
 
 def test_level_adjacency():
     assert get_next_level(DEBUG) > DEBUG
