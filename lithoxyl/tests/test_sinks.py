@@ -10,7 +10,7 @@ from lithoxyl import (SensibleSink,
                       SensibleFilter,
                       SensibleFormatter as SF,
                       SensibleMessageFormatter as SMF)
-from lithoxyl.emitters import StreamEmitter, AggregateEmitter, stream_types
+from lithoxyl.emitters import StreamEmitter, AggregateEmitter, stream_types, FileEmitter
 from lithoxyl.logger import Logger
 
 
@@ -168,3 +168,36 @@ def test_stream_emitter(tmpdir):
         passing_types.append(_type)
 
     assert set(stream_types) == set(passing_types)
+
+
+def test_file_emitter(tmpdir):
+    path = '%s/log.txt' % (tmpdir,)
+
+    def get_logger(emitter):
+        sink = SensibleSink(SF('{status_char} - {iso_end} - {end_message}'), emitter,
+                            filters=[SensibleFilter(success=True)])
+        return Logger('excelsilog', [sink])
+
+    def _chk_linecount(count):
+        assert len(open(path).read().splitlines()) == count
+
+    fe = FileEmitter(path)
+    logger = get_logger(fe)
+
+    for i in range(203):
+        logger.info('action').success('yäy{i}', i=i)
+    _chk_linecount(203)
+
+    fe_over = FileEmitter(path, overwrite=True)
+    logger_over = get_logger(fe)
+
+    for i in range(22):
+        logger_over.info('action').success('yäy{i}', i=i)
+    _chk_linecount(22)
+
+    fe_over.close()  # is close really necessary?
+    fe_over.close()
+
+    for i in range(23):
+        logger.info('action').success('yäy{i}', i=i)
+    _chk_linecount(45)

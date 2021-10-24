@@ -73,12 +73,11 @@ def _get_sys_stream(name):
 
 
 class StreamEmitter(object):
-    '''
-    py3 notes: need to get this to supporting bytestreams. How to know if a
-    stream accepts bytes without writing to it? Easiest, just check for subclass
-    of BytesIO, io.BufferedWriter (open('wb'), sys.stdout.buffer), maybe
-    io.RawIOBase (...buffer.raw, parent class of _io.FileIO)
+    '''Allows SensibleSinks to write to streams, be they StringIO or
+    console (stdout/stderr).
 
+    Avoid using StreamEmitter directly when you have a file path for
+    your log file. Use FileEmitter instead.
     '''
     def __init__(self, stream, encoding=None, **kwargs):
         if encoding is None:
@@ -157,18 +156,22 @@ class StreamEmitter(object):
 
 
 class FileEmitter(StreamEmitter):
-    def __init__(self, filepath, encoding=None, **kwargs):
+    """
+    The convenient and correct way to write logs to a file when you have a path available.
+    """
+    def __init__(self, filepath, encoding='utf-8', **kwargs):
         self.filepath = os.path.abspath(filepath)
-        self.encoding = encoding
-        self.mode = 'a' if not kwargs.pop('overwrite', False) else 'w'
-        stream = open(self.filepath, self.mode)
-        super(FileEmitter, self).__init__(stream, self.encoding, **kwargs)
+        mode = 'ab' if not kwargs.pop('overwrite', False) else 'wb'
+        stream = io.open(self.filepath, mode)
+        super(FileEmitter, self).__init__(stream, encoding=encoding, **kwargs)
 
     def close(self):
         if self.stream is None:
             return
         try:
             self.flush()
-            self.stream.close()
+            if self.stream:
+                self.stream.close()
+                self.stream = None
         except Exception as e:
             note('file_close', 'got %r on %r.close()', e, self)
