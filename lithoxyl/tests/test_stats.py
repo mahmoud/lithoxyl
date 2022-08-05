@@ -107,6 +107,9 @@ def test_p2quantacc():
 
 
 def test_acc_random():
+    ma = MomentAccumulator()
+    for v in [random.gauss(10, 4) for i in range(5000)]:
+        ma.add(v)
     data = test_sets['random.random 0.0-1.0']
 
     qa = ReservoirAccumulator(data)
