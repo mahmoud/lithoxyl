@@ -1,4 +1,0 @@
-boltons>=20.0.0
-coverage>=5.0.2
-pytest>=4.6.9
-tox>=3.14.3
