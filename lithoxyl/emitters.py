@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 """Emitters are callable objects which take an entry in *text-form*
 and output it to a persistence resource, such as stdout/stderr, files,
 or network streams.
 """
-
-from __future__ import absolute_import
 import io
 import os
 import sys

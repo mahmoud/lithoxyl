@@ -1,5 +1,3 @@
-
-from __future__ import absolute_import
 from lithoxyl.common import Level, DEBUG, INFO, CRITICAL
 from lithoxyl.common import MIN_LEVEL, MAX_LEVEL, DEFAULT_LEVEL
 from lithoxyl.common import get_level, get_next_level, get_prev_level

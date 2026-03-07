@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
 """The :class:`Logger` is the application developer's primary
 interface to using Lithoxyl. It is used to conveniently create
 :class:`Actions <Action>` and publish them to :class:`sinks <Sink>`.
 
 """
-
-from __future__ import absolute_import
 import sys
 import time
 import itertools

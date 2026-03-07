@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """Implements types and functions for rendering
 :class:`~lithoxyl.action.Action` instances into strings.
 """
 
-from __future__ import absolute_import
 import os
 import time
 import json
