@@ -1,14 +1,14 @@
 [run]
 branch = True
 source =
-    lithoxyl
-    ../lithoxyl
+	lithoxyl
+	../lithoxyl
+omit =
+	*/flycheck_*.py
+	*/tests/*
 
 [paths]
 source =
-   ../lithoxyl
-   */lib/python*/site-packages/lithoxyl
-   */Lib/site-packages/lithoxyl
-   */pypy/site-packages/lithoxyl
-omit =
-   */flycheck_*
+	../lithoxyl
+	*/lib/python*/site-packages/lithoxyl
+	*/Lib/site-packages/lithoxyl

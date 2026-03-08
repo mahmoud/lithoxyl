@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 class MomentAccumulator(object):
     """\
     An accumulator for tracking statistical moments. Supports

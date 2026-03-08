@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
+__version__ = '26.0.0dev'
 
-from __future__ import absolute_import
 from lithoxyl.context import get_context, set_context
 
 from lithoxyl.logger import Logger, DEBUG, INFO, CRITICAL

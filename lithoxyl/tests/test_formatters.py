@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
+import datetime
+import time
 
-from __future__ import absolute_import
-
-import sys
+from boltons.timeutils import UTC, LocalTZ
 
 from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Action
 from lithoxyl.sensible import SensibleFormatter as SF
 from lithoxyl.sensible import timestamp2iso8601_noms, timestamp2iso8601
-
-IS_PY3 = sys.version_info[0] == 3
 
 template = ('{status_char}{action_warn_char}{begin_timestamp}'
             ' - {iso_begin_local} - {iso_begin}'
@@ -71,24 +68,27 @@ def test_deferred():
 def test_timestamp_fmt():
     ts = 1635115925.0000000
 
-    combos = [((timestamp2iso8601, True, True), "2021-10-24T15:52:05.000000-0700"),
-              ((timestamp2iso8601, True, False), "2021-10-24T15:52:05.000000"),
-              ((timestamp2iso8601, False, True), "2021-10-24T22:52:05.000000+0000"),
-              ((timestamp2iso8601, False, False), "2021-10-24T22:52:05.000000"),
-              ((timestamp2iso8601_noms, True, False), "2021-10-24T15:52:05"),
-              ((timestamp2iso8601_noms, False, False), "2021-10-24T22:52:05"),]
+    # Compute expected local representations dynamically so the test
+    # passes regardless of the machine's timezone.
+    local_dt = datetime.datetime.fromtimestamp(ts, tz=LocalTZ)
+    utc_dt = datetime.datetime.fromtimestamp(ts, tz=UTC)
+    local_iso = local_dt.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+    local_iso_noms = local_dt.strftime('%Y-%m-%dT%H:%M:%S')
+    local_iso_noms_tz = local_dt.strftime('%Y-%m-%dT%H:%M:%S%z')
 
-    if IS_PY3:
-        combos.extend([
-            ((timestamp2iso8601_noms, False, True), "2021-10-24T22:52:05+0000"),
-            ((timestamp2iso8601_noms, True, True), "2021-10-24T15:52:05-0700")
-        ])
-
+    combos = [
+        ((timestamp2iso8601, True, True), local_iso),
+        ((timestamp2iso8601, True, False), local_dt.strftime('%Y-%m-%dT%H:%M:%S.%f')),
+        ((timestamp2iso8601, False, True), "2021-10-24T22:52:05.000000+0000"),
+        ((timestamp2iso8601, False, False), "2021-10-24T22:52:05.000000"),
+        ((timestamp2iso8601_noms, True, False), local_iso_noms),
+        ((timestamp2iso8601_noms, False, False), "2021-10-24T22:52:05"),
+        ((timestamp2iso8601_noms, False, True), "2021-10-24T22:52:05+0000"),
+        ((timestamp2iso8601_noms, True, True), local_iso_noms_tz),
+    ]
 
     for (func, local, with_tz), expected in combos:
         assert func(ts, local=local, with_tz=with_tz) == expected
-
-    return
 
 """
 Formatter tests todos

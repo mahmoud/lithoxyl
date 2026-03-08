@@ -1,0 +1,45 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "lithoxyl"
+dynamic = ["version"]
+description = "A systematic approach to application instrumentation, including logging, semantic profiling, and statistics collection."
+readme = "README.md"
+authors = [{ name = "Mahmoud Hashemi", email = "mahmoud@hatnote.com" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+classifiers = [
+		"Development Status :: 5 - Production/Stable",
+		"Intended Audience :: Developers",
+		"Topic :: System :: Logging",
+		"Topic :: Utilities",
+		"Topic :: Software Development :: Libraries :: Application Frameworks",
+		"License :: OSI Approved :: BSD License",
+		"Programming Language :: Python :: 3.10",
+		"Programming Language :: Python :: 3.11",
+		"Programming Language :: Python :: 3.12",
+		"Programming Language :: Python :: 3.13",
+		"Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+		"boltons>=20.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mahmoud/lithoxyl"
+
+[dependency-groups]
+dev = [
+		"pytest>=8",
+		"pytest-cov>=5",
+		"tox>=4",
+		"tox-uv>=1",
+]
+
+[tool.flit.sdist]
+include = ["lithoxyl/tests/", "tox.ini", "LICENSE", "README.md", "CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["lithoxyl/tests"]

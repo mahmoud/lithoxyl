@@ -81,3 +81,23 @@ def create_user(name):
 * More useful: Lithoxyl represents a balance between logging and profiling
 * More composable: Get exactly what you want by recombining new and provided components
 * More lightweight: Simplicity, composability, and practicality, make Lithoxyl something one might reach for earlier in the development process. Logging shouldn't be an afterthought, nor should it be a big investment that weighs down development, maintenance, and refactoring.
+
+
+## Development
+
+lithoxyl uses [uv](https://docs.astral.sh/uv/) for development. To get started:
+
+```bash
+# Create a virtualenv and install dev dependencies
+uv venv && uv pip install -e '.[dev]'
+
+# Run tests
+uv run pytest lithoxyl/tests/ -v
+
+# Run tests across Python versions with tox
+uvx --with tox-uv tox
+```
+
+Releases are managed with CalVer (`YY.MINOR.MICRO`) and published
+automatically to PyPI via GitHub Actions on tag push. See
+`.omp/skills/release/SKILL.md` for the full release procedure.

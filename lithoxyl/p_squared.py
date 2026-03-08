@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """\
 
 An implementation of P-Squared (Piecewise Parabolic) Quantile
@@ -13,7 +12,6 @@ Implemented by Kurt Rose and Mahmoud Hashemi.
 Copyright 2013, 3-clause BSD License
 """
 
-from __future__ import absolute_import
 import sys
 
 PY3 = sys.version_info[0] == 3

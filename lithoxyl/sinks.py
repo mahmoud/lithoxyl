@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
 import pdb
 import time
 import bisect
@@ -100,7 +97,7 @@ class RateAccumulator(object):
         return [round(x - first, ndigits) for x in self.times]
 
     def get_rate(self, start_time=None, end_time=None):
-        """\ Returns the per-second rate of the accumulator, taking into
+        """Returns the per-second rate of the accumulator, taking into
         account the window designated by start_time and
         end_time.
 

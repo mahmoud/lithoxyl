@@ -2,6 +2,7 @@ docs/_build
 htmlcov
 
 *.py[cod]
+__pycache__/
 .cache/
 # emacs
 *~
