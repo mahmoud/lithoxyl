@@ -134,14 +134,6 @@ def test_stream_emitter(tmpdir):
         io.RawIOBase: get_bw(tmpdir, 'raw').detach(),
         io.BytesIO: io.BytesIO(),
     }
-    try:
-        if file in stream_types:
-            examples[file] = open('%s/tmp_file.txt' % (tmpdir,), 'wb')  # py2
-
-            import StringIO
-            examples[StringIO.StringIO] = StringIO.StringIO()
-    except NameError:
-        pass  # py3
 
     passing_types = []
 
