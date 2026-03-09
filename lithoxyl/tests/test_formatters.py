@@ -1,3 +1,5 @@
+import pytest
+
 import datetime
 import time
 
@@ -7,6 +9,8 @@ from lithoxyl import DeferredValue
 from lithoxyl.logger import Logger, Action
 from lithoxyl.sensible import SensibleFormatter as SF
 from lithoxyl.sensible import timestamp2iso8601_noms, timestamp2iso8601
+from lithoxyl import SensibleSink, SensibleFilter
+from lithoxyl.sensible import SensibleMessageFormatter as SMF
 
 template = ('{status_char}{action_warn_char}{begin_timestamp}'
             ' - {iso_begin_local} - {iso_begin}'
@@ -39,7 +43,6 @@ def test_formatter_basic():
     act.success('Mr. Wolf')
     ret = robf.on_end(act.end_event)
     print(ret)
-    return ret
 
 
 def test_individual_fields():
@@ -102,3 +105,117 @@ Formatter tests todos
 * type mismatch kwargs
 * usage of "builtin" fields
 """
+
+
+def test_sensible_sink_single_string_event():
+    from lithoxyl.emitters import AggregateEmitter
+    emtr = AggregateEmitter()
+    sink = SensibleSink(formatter=SF('{status_char}'), emitter=emtr, on='begin')
+    log = Logger('ss_test', [sink])
+    with log.debug('test') as act:
+        act.success()
+    # begin event should have been emitted
+    assert len(emtr.items) >= 1
+
+
+def test_sensible_sink_bad_event():
+    from lithoxyl.emitters import AggregateEmitter
+    with pytest.raises(ValueError, match='unrecognized events'):
+        SensibleSink(formatter=SF('{status_char}'), emitter=AggregateEmitter(), on=['bogus'])
+
+
+def test_sensible_filter_block_comments():
+    fltr = SensibleFilter(block_comments=True)
+    # on_comment should return False
+    assert fltr.on_comment(None) is False
+
+
+def test_sensible_filter_custom_verbose_flag():
+    fltr = SensibleFilter(verbose_flag='custom_verbose')
+    # The verbose_check lambda should look for 'custom_verbose' in data_map
+    assert fltr.verbose_check is not None
+
+
+def test_sensible_filter_verbose_begin():
+    fltr = SensibleFilter(begin='critical')  # high threshold
+    log = Logger('filter_test', [])
+    act = log.debug('test')  # debug < critical, should fail base check
+    act.begin()
+    # Without verbose flag, begin should be filtered
+    assert fltr.on_begin(act.begin_event) is False
+    # With verbose flag set
+    act['verbose'] = True
+    assert fltr.on_begin(act.begin_event) is True
+    act.success()
+
+
+def test_sensible_filter_verbose_end():
+    fltr = SensibleFilter(success='critical')
+    log = Logger('filter_test2', [])
+    act = log.debug('test')
+    act.begin()
+    act.success()
+    # success event at debug level < critical threshold
+    assert fltr.on_end(act.end_event) is False
+    act['verbose'] = True
+    assert fltr.on_end(act.end_event) is True
+
+
+def test_sensible_filter_verbose_warn():
+    fltr = SensibleFilter(warn='critical')
+    log = Logger('filter_test3', [])
+    act = log.debug('test')
+    act.begin()
+    act.warn('oops')
+    assert fltr.on_warn(act.warn_events[0]) is False
+    act['verbose'] = True
+    assert fltr.on_warn(act.warn_events[0]) is True
+    act.success()
+
+
+def test_sensible_field_unexpected_kwargs():
+    from lithoxyl.sensible import SensibleField
+    with pytest.raises(TypeError, match='unexpected keyword'):
+        SensibleField('x', bogus=True)
+
+
+def test_smf_quoter_false():
+    fmtr = SMF('{status_str}', quoter=False)
+    log = Logger('qf_test', [])
+    act = log.debug('test')
+    act.success()
+    result = fmtr.format(act.end_event)
+    assert result == 'success'  # no quotes
+
+
+def test_smf_quoter_invalid():
+    with pytest.raises(TypeError, match='expected callable or False'):
+        SMF('{status_str}', quoter=42)
+
+
+def test_smf_defaulter_invalid():
+    with pytest.raises(TypeError, match='expected callable for defaulter'):
+        SMF('{status_str}', defaulter=42)
+
+
+def test_formatter_per_event_override():
+    fmtr = SF('{status_str}', end='custom {status_str}')
+    log = Logger('override_test', [])
+    act = log.debug('test')
+    act.success()
+    result = fmtr.on_end(act.end_event)
+    assert 'custom' in result
+
+
+def test_timestamp_local_notz():
+    ts = 1635115925.0
+    result = timestamp2iso8601(ts, local=True, with_tz=False)
+    assert 'T' in result
+    assert '+' not in result  # no timezone
+
+
+def test_timestamp_noms_local_notz():
+    ts = 1635115925.0
+    result = timestamp2iso8601_noms(ts, local=True, with_tz=False)
+    assert 'T' in result
+    assert '.' not in result  # no milliseconds

@@ -26,3 +26,31 @@ def test_level_getting():
 def test_level_adjacency():
     assert get_next_level(DEBUG) > DEBUG
     assert get_prev_level(CRITICAL) < CRITICAL
+
+
+
+def test_register_level_type_error():
+    from lithoxyl.common import register_level
+    import pytest
+    with pytest.raises(TypeError, match='expected Level object'):
+        register_level('not-a-level')
+
+
+def test_level_hash():
+    assert hash(DEBUG) == hash(Level('debug', 20))
+    assert hash(DEBUG) != hash(INFO)
+
+
+def test_level_eq_by_value():
+    new_level = Level('debug', 20)
+    assert DEBUG == new_level
+
+
+def test_level_eq_by_name():
+    assert DEBUG == 'debug'
+    assert DEBUG != 'info'
+
+
+def test_level_lt_fallback():
+    # When comparing with non-Level without _value, uses default 100
+    assert DEBUG < 'zzz'  # getattr(other, '_value', 100) = 100, DEBUG._value=20 < 100

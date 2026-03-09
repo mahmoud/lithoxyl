@@ -1,6 +1,10 @@
 import io
 import json
 import errno
+import sys
+import time
+
+import pytest
 
 from lithoxyl import (SensibleSink,
                       SensibleFilter,
@@ -189,3 +193,170 @@ def test_file_emitter(tmpdir):
     for i in range(23):
         logger.info('action').success('yäy{i}', i=i)
     _chk_linecount(45)
+
+
+
+def test_dev_debug_sink_basic():
+    from lithoxyl.sinks import DevDebugSink
+    sink = DevDebugSink()
+    assert sink.reraise is False
+    assert sink.post_mortem is False
+
+
+def test_dev_debug_sink_reraise():
+    from lithoxyl.sinks import DevDebugSink
+    sink = DevDebugSink(reraise=True)
+    assert sink.reraise is Exception
+    try:
+        raise ValueError('test')
+    except ValueError:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        with pytest.raises(ValueError, match='test'):
+            sink.on_exception(None, exc_type, exc_obj, exc_tb)
+
+
+def test_dev_debug_sink_post_mortem():
+    from lithoxyl.sinks import DevDebugSink
+    from unittest.mock import patch
+    sink = DevDebugSink(post_mortem=True)
+    assert sink.post_mortem is Exception
+    try:
+        raise RuntimeError('pm')
+    except RuntimeError:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        with patch('lithoxyl.sinks.pdb') as mock_pdb:
+            sink.on_exception(None, exc_type, exc_obj, exc_tb)
+            mock_pdb.post_mortem.assert_called_once()
+
+
+def test_rate_accumulator_repr():
+    from lithoxyl.sinks import RateAccumulator
+    ra = RateAccumulator()
+    assert 'RateAccumulator' in repr(ra)
+    assert 'rate=' in repr(ra)
+
+
+def test_rate_accumulator_empty_norm_times():
+    from lithoxyl.sinks import RateAccumulator
+    ra = RateAccumulator()
+    assert ra.get_norm_times() == []
+
+
+def test_rate_accumulator_get_rate_empty():
+    from lithoxyl.sinks import RateAccumulator
+    ra = RateAccumulator()
+    assert ra.get_rate() == 0.0
+
+
+def test_rate_accumulator_get_rate_with_data():
+    from lithoxyl.sinks import RateAccumulator
+    ra = RateAccumulator(sample_size=10)
+    base = time.time()
+    for i in range(5):
+        ra.add(base + i * 0.1)
+    rate = ra.get_rate()
+    assert rate > 0
+    assert ra.total_count == 5
+    assert len(ra.get_norm_times()) == 5
+
+
+def test_rate_accumulator_get_rate_with_start_time():
+    from lithoxyl.sinks import RateAccumulator
+    ra = RateAccumulator(sample_size=10)
+    base = ra.creation_time
+    for i in range(5):
+        ra.add(base + i * 0.01)
+    # start_time after creation_time triggers bisect path
+    rate = ra.get_rate(start_time=base + 0.005, end_time=base + 0.05)
+    assert rate >= 0
+    # Also test the reservoir-exhaustion fallback: start_time far in the future
+    rate2 = ra.get_rate(start_time=base + 1.0, end_time=base + 2.0)
+    assert rate2 >= 0
+
+
+def test_rate_sink_basic():
+    from lithoxyl.sinks import RateSink
+    rs = RateSink()
+    log = Logger('rate_test', [rs])
+    for i in range(10):
+        log.info('task').success()
+    rates = rs.get_rates()
+    assert '__all__' in rates
+    assert rates['__all__'] > 0
+    counts = rs.get_total_counts()
+    assert counts['__all__'] == 10
+    assert 'RateSink' in repr(rs)
+
+
+def test_rate_sink_max_time():
+    from lithoxyl.sinks import RateSink
+    rs = RateSink()
+    log = Logger('rate_test2', [rs])
+    log.info('task').success()
+    rates = rs.get_rates(max_time=60)
+    assert '__all__' in rates
+
+
+def test_ewma_sink_basic():
+    from lithoxyl.sinks import EWMASink
+    es = EWMASink()
+    log = Logger('ewma_test', [es])
+    with log.info('task') as act:
+        pass
+    vals = es.get_values()
+    assert '__all__' in vals
+    assert 'EWMASink' in repr(es)
+
+
+def test_quantile_sink_basic():
+    from lithoxyl.sinks import QuantileSink
+    qs = QuantileSink()
+    log = Logger('q_test', [qs])
+    for i in range(50):
+        with log.info('task') as act:
+            pass
+    d = qs.to_dict()
+    assert 'q_test' in d
+    assert 'QuantileSink' in repr(qs)
+
+
+def test_quantile_sink_p2():
+    from lithoxyl.sinks import QuantileSink
+    qs = QuantileSink(use_p2=True)
+    log = Logger('q_test_p2', [qs])
+    for i in range(50):
+        with log.info('task') as act:
+            pass
+    d = qs.to_dict()
+    assert 'q_test_p2' in d
+
+
+def test_stream_emitter_non_stream_type_error():
+    with pytest.raises(TypeError):
+        StreamEmitter(42)
+
+
+def test_stream_emitter_text_mode_value_error(tmpdir):
+    path = '%s/text_mode.log' % (tmpdir,)
+    with open(path, 'w') as f:
+        with pytest.raises(ValueError, match='binary mode'):
+            StreamEmitter(f)
+
+
+def test_stream_emitter_flush_exception():
+    from unittest.mock import MagicMock
+    stream = io.BytesIO()
+    emitter = StreamEmitter(stream)
+    # Mock flush to raise
+    stream.flush = MagicMock(side_effect=OSError('flush failed'))
+    # flush should swallow the exception (note it, not raise)
+    emitter.flush()  # should not raise
+
+
+def test_file_emitter_close_exception(tmpdir):
+    path = '%s/close_exc.log' % (tmpdir,)
+    fe = FileEmitter(path)
+    # Close the underlying stream first to cause an error on second close
+    fe.stream.close()
+    fe.stream = None  # set to None to exercise the early return path
+    fe.close()  # should not raise (early return)

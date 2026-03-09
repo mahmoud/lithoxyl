@@ -45,7 +45,6 @@ def test_momentacc_basic():
             _assert_round_cmp(ctl_val, ma_val, mag=4, name=m_name)
 
         assert ma.count == len(data)
-    return True
 
 
 def test_momentacc_norm():
@@ -66,7 +65,6 @@ def test_quantacc_basic(data=None):
     assert qa.median == statsutils.median(data)
     q1, q2, q3 = qa.quartiles
     assert q1 < q2 < q3
-    return True
 
 
 def test_quantacc():

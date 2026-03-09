@@ -146,3 +146,109 @@ def test_comment():
     assert len(events) == 2
     for event in events:
         assert repr(event).startswith('<')
+
+
+
+def test_duration_before_begin():
+    log = _get_logger()
+    act = log.debug('test')
+    # duration before begin should return 0.0
+    assert act.duration == 0.0
+
+
+def test_elapsed_time_before_begin():
+    log = _get_logger()
+    act = log.debug('test')
+    assert act.get_elapsed_time() == 0.0
+
+
+def test_begin_auto_message():
+    log = _get_logger()
+    act = log.debug('mytask')
+    act.begin()
+    assert act.begin_event.raw_message == 'mytask beginning'
+    act.success()
+
+
+def test_success_with_data_no_message():
+    log = _get_logger()
+    act = log.debug('test', data={'key': 'val'})
+    act.success()
+    assert 'data_map_repr' in act.end_event.raw_message
+
+
+def test_failure_with_data_no_message():
+    log = _get_logger()
+    act = log.debug('test', data={'key': 'val'})
+    act.failure()
+    assert 'data_map_repr' in act.end_event.raw_message
+
+
+def test_failure_no_data_no_message():
+    log = _get_logger()
+    act = log.debug('test')
+    act.failure()
+    assert 'failed' in act.end_event.raw_message
+
+
+def test_explicit_parent():
+    log = _get_logger()
+    parent = log.debug('parent')
+    parent.begin()
+    child = log.debug('child', parent_action=parent)
+    assert child.parent_action is parent
+    child.success()
+    parent.success()
+
+
+def test_parent_depth():
+    log = _get_logger()
+    with log.debug('l1') as a1:
+        with log.debug('l2') as a2:
+            with log.debug('l3') as a3:
+                assert a3.parent_depth >= 2
+                a3.success()
+            a2.success()
+        a1.success()
+
+
+def test_explicit_exception_call():
+    log = _get_logger()
+    with log.debug('exc_test', reraise=False) as act:
+        try:
+            raise RuntimeError('explicit')
+        except RuntimeError:
+            act.exception('caught it')
+    assert act.exc_event is not None
+    assert act.exc_event.exc_info.exc_type == 'RuntimeError'
+
+
+def test_oserror_with_errno():
+    log = _get_logger()
+    with log.debug('os_test', reraise=False) as act:
+        raise OSError(2, 'No such file')
+    assert 'errno' in act.end_event.raw_message or 'OSError' in act.end_event.raw_message
+
+
+def test_action_dict_access():
+    log = _get_logger()
+    act = log.debug('test')
+    act['key1'] = 'val1'
+    assert act['key1'] == 'val1'
+    act.success()
+
+
+def test_action_non_trans_status_char():
+    log = _get_logger()
+    act = log.debug('test')
+    act.success()  # non-trans (no __enter__)
+    # status_char should be lowercase for non-trans
+    assert act.end_event.status_char == 's'
+
+
+def test_action_trans_status_char():
+    log = _get_logger()
+    with log.debug('test') as act:
+        act.success()
+    # status_char should be uppercase for trans
+    assert act.end_event.status_char == 'S'
