@@ -72,8 +72,8 @@ jobs:
       - name: Install from PyPI and verify
         run: |
           TAG=${GITHUB_REF#refs/tags/}
-          uv pip install lithoxyl==$TAG --index-url https://pypi.org/simple/
-          INSTALLED=$(python -c "import lithoxyl; print(lithoxyl.__version__)")
+          uv pip install --system lithoxyl==$TAG --index-url https://pypi.org/simple/
+          INSTALLED=$(cd /tmp && python -c "import lithoxyl; print(lithoxyl.__version__)")
           echo "Installed version: $INSTALLED"
           if [ "$INSTALLED" != "$TAG" ]; then
             echo "::error::Installed version $INSTALLED does not match tag $TAG"
@@ -81,5 +81,5 @@ jobs:
           fi
       - name: Run tests
         run: |
-          uv pip install pytest boltons
+          uv pip install --system pytest boltons
           pytest lithoxyl/tests/ -v
