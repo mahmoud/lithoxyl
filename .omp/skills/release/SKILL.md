@@ -124,8 +124,9 @@ This triggers two GitHub Actions workflows:
 - `Publish to PyPI` (on the tag)
 
 The publish workflow validates that `__version__` on the tagged commit does
-not contain `dev` and matches the tag. If either check fails, publishing
-is blocked.
+not contain `dev` and matches the tag. It parses `__version__` from the file
+with `sed` rather than importing the module (the build job does not install
+dependencies). If either check fails, publishing is blocked.
 
 ## Post-publish verification
 
@@ -136,6 +137,7 @@ shadowing the installed package):
 ```bash
 python3 -m venv /tmp/lithoxyl-verify && source /tmp/lithoxyl-verify/bin/activate
 pip install lithoxyl==26.0.1 --index-url https://pypi.org/simple/
+cd /tmp  # MUST leave repo root so local lithoxyl/ does not shadow the install
 python -c "import lithoxyl; print(lithoxyl.__version__)"
 # Should print: 26.0.1
 deactivate && rm -rf /tmp/lithoxyl-verify
