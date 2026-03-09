@@ -10,11 +10,6 @@ from lithoxyl.common import to_unicode, get_level
 from lithoxyl.context import note
 from lithoxyl.sensible import SensibleMessageFormatter
 
-try:
-    unicode
-except NameError:
-    unicode = str  # py3
-
 
 _ACT_ID_ITER = itertools.count()
 
@@ -75,7 +70,7 @@ class Action(object):
         self.logger = logger
         self.level = get_level(level)
         try:
-            self.name = unicode(name)
+            self.name = str(name)
         except Exception:
             self.name = repr(name)
 

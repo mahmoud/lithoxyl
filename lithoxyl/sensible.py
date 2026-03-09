@@ -13,12 +13,6 @@ from boltons.formatutils import tokenize_format_str
 
 from lithoxyl.common import EVENTS, IMPORT_TIME, MAX_LEVEL, get_level, to_unicode
 
-try:
-    basestring
-except NameError:
-    basestring = str  # py3
-
-
 __all__ = ['SensibleFormatter', 'SensibleSink']
 
 
@@ -41,7 +35,7 @@ class SensibleSink(object):
     def __init__(self, formatter=None, emitter=None, filters=None, on=EVENTS):
         # TODO: get_level for this
         events = on
-        if isinstance(events, basestring):
+        if isinstance(events, str):
             events = [events]
         unknown_events = [e for e in events if e not in EVENTS]
         if unknown_events:

@@ -5,16 +5,8 @@ from boltons.funcutils import total_ordering
 EVENTS = ('begin', 'warn', 'end', 'exception', 'comment')
 IMPORT_TIME = time.time()
 
-try:
-    unicode
-except NameError:
-    unicode = str  # py3
-
-def to_unicode(obj, encoding='utf8'):
-    try:
-        return unicode(obj)
-    except UnicodeDecodeError:
-        return unicode(obj, encoding=encoding, errors='replace')
+def to_unicode(obj):
+    return str(obj)
 
 
 @total_ordering

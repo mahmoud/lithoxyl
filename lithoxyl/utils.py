@@ -1,20 +1,12 @@
 import os
 import sys
 import time
-import types
 import socket
 import hashlib
-import binascii
 from os import getpid
 
-PY3 = sys.version_info[0] == 3
 
-try:
-    basestring
-    type_types = (type, types.ClassType)
-except NameError:
-    basestring = str
-    type_types = (type,)
+type_types = (type,)
 
 class EncodingLookupError(LookupError):
     pass
@@ -112,7 +104,7 @@ def wrap_all(logger, level='info', target=None, skip=None,
 
     if skip is None:
         skip = '_'
-    if isinstance(skip, basestring):
+    if isinstance(skip, str):
         skip_func = lambda attr_name: skip and attr_name.startswith(skip)
     elif callable(skip):
         skip_func = skip
@@ -184,11 +176,7 @@ def reseed_guid():
     global _GUID_SALT
     global _GUID_START
 
-    try:
-        random_hex = os.urandom(4).hex()
-    except AttributeError:
-        # py2
-        random_hex = binascii.hexlify(os.urandom(4))
+    random_hex = os.urandom(4).hex()
 
     _PID = getpid()
     _GUID_SALT = '-'.join([str(getpid()),
@@ -246,40 +234,14 @@ inside of a function and/or relying on closures and/or functools.wraps
 interface.
 """
 
-# from six, handling the change in py3's raise keyword
-if PY3:
+
+def reraise(tp, value, tb=None):
     try:
-        exec_ = getattr(__builtins__, 'exec')
-    except AttributeError:
-        exec_ = __builtins__.get('exec')
-
-    def reraise(tp, value, tb=None):
-        try:
-            if value is None:
-                value = tp()
-            if value.__traceback__ is not tb:
-                raise value.with_traceback(tb)
-            raise value
-        finally:
-            value = None
-            tb = None
-
-else:
-    def exec_(_code_, _globs_=None, _locs_=None):
-        """Execute code in a namespace."""
-        if _globs_ is None:
-            frame = sys._getframe(1)
-            _globs_ = frame.f_globals
-            if _locs_ is None:
-                _locs_ = frame.f_locals
-            del frame
-        elif _locs_ is None:
-            _locs_ = _globs_
-        exec("""exec _code_ in _globs_, _locs_""")
-
-    exec_("""def reraise(tp, value, tb=None):
-    try:
-        raise tp, value, tb
+        if value is None:
+            value = tp()
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
     finally:
+        value = None
         tb = None
-""")

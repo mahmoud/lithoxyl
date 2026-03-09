@@ -7,7 +7,6 @@ import pytest
 from lithoxyl import Logger, AggregateSink
 from lithoxyl.utils import wrap_all, unwrap_all
 
-IS_PY3 = sys.version_info[0] == 3
 IS_PYPY = '__pypy__' in sys.builtin_module_names
 
 
@@ -34,7 +33,7 @@ def test_wrap_all_json():
     return
 
 
-@pytest.mark.skipif(IS_PY3, reason='no old-style classes and elementree is a builtin type/cannot setattr on it')
+@pytest.mark.skip(reason='no old-style classes and elementree is a builtin type/cannot setattr on it')
 def test_wrap_all_element_tree():
     log = Logger('test', sinks=[])
 

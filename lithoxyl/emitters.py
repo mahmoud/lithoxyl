@@ -92,14 +92,7 @@ class StreamEmitter(object):
         self._reopen_stale = kwargs.pop('reopen_stale', True)
 
     def emit_entry(self, event, entry):
-        try:
-            entry = entry.encode(self.encoding, self.errors)
-        except UnicodeDecodeError as ude:
-            # Note that this is a *decode* error, meaning a bytestring
-            # found its way through and implicit decoding is happening.
-            note('emit_encode', 'got %r on %s.emit_entry();'
-                 ' expected decoded text, not %r', ude, self, entry)
-            raise
+        entry = entry.encode(self.encoding, self.errors)
         try:
             self.stream.write(entry + self.sep if self.sep else entry)
             self.flush()
