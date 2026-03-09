@@ -12,3 +12,7 @@ source =
 	../lithoxyl
 	*/lib/python*/site-packages/lithoxyl
 	*/Lib/site-packages/lithoxyl
+
+[report]
+show_missing = True
+fail_under = 90
