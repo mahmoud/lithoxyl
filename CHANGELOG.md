@@ -2,7 +2,7 @@
 
 ## 26.0.0
 
-_(Unreleased)_
+_(March 9, 2026)_
 
 - Migrate build system from setup.py to pyproject.toml with flit
 - Add GitHub Actions CI (Python 3.10-3.13, Linux/Windows/Mac)
@@ -11,6 +11,8 @@ _(Unreleased)_
 - Drop Python 2.x and 3.5-3.9 support
 - Remove Python 2 artifacts (future imports, coding cookies)
 - Add CHANGELOG.md
+- Fix timezone-dependent test and invalid escape sequences
+- Fix CI failures on Windows and macOS
 
 ## 21.0.0
 

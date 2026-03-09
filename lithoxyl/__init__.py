@@ -1,4 +1,4 @@
-__version__ = '26.0.0dev'
+__version__ = '26.0.0'
 
 from lithoxyl.context import get_context, set_context
 
