@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - name: Validate version
         run: |
-          VERSION=$(python -c "import lithoxyl; print(lithoxyl.__version__)")
+          VERSION=$(sed -n "s/^__version__ = '\(.*\)'/\1/p" lithoxyl/__init__.py)
           echo "Package version: $VERSION"
           if echo "$VERSION" | grep -qi 'dev'; then
             echo "::error::Version $VERSION contains dev suffix."
