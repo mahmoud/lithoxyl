@@ -5,15 +5,18 @@ from lithoxyl.common import DEBUG, INFO, CRITICAL, get_level
 
 class SyslogEmitter(object):
 
-    default_priority_map = {DEBUG: {'success': syslog.LOG_DEBUG,
+    default_priority_map = {DEBUG: {'begin': syslog.LOG_DEBUG,
+                                    'success': syslog.LOG_DEBUG,
                                     'failure': syslog.LOG_INFO,
                                     'warn': syslog.LOG_INFO,
                                     'exception': syslog.LOG_NOTICE},
-                            INFO: {'success': syslog.LOG_INFO,
+                            INFO: {'begin': syslog.LOG_INFO,
+                                   'success': syslog.LOG_INFO,
                                    'failure': syslog.LOG_NOTICE,
                                    'warn': syslog.LOG_NOTICE,
                                    'exception': syslog.LOG_WARNING},
-                            CRITICAL: {'success': syslog.LOG_NOTICE,
+                            CRITICAL: {'begin': syslog.LOG_NOTICE,
+                                       'success': syslog.LOG_NOTICE,
                                        'failure': syslog.LOG_WARNING,
                                        'warn': syslog.LOG_WARNING,
                                        'exception': syslog.LOG_ERR}}

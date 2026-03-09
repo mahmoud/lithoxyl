@@ -163,7 +163,7 @@ class LithoxylContext(object):
     def remove_logger(self, logger):
         try:
             self.loggers.pop(logger)
-        except ValueError:
+        except KeyError:
             pass
         return
 
