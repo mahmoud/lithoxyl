@@ -9,6 +9,9 @@ on:
       - "docs/**"
       - "*.md"
 
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: ${{ matrix.name }}
