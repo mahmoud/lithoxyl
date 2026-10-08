@@ -31,6 +31,8 @@ class EWMAAccumulator(object):
         rate_map = self._rate_map
         cur_time = time.time()
         interval = cur_time - self._last_update
+        if interval <= 0:
+            return
 
         for period in rate_map:
             new_rate = self._uncounted / interval
@@ -41,13 +43,13 @@ class EWMAAccumulator(object):
                 rate_map[period] += alpha * (new_rate - rate_map[period])
         self._uncounted = 0
         self._last_update = cur_time
+        self._force_next_update = False
 
     def get_rates(self):
         "Conditionally updates and returns a copy of the rate map"
         if (time.time() - self._last_update) >= self._interval:
             self._update()
         elif self._force_next_update:
-            self._force_next_update = False
             self._update()
         return dict(self._rate_map)
 
