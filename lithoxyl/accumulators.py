@@ -12,18 +12,11 @@ class MaxAccumulator(object):
 
     def add(self, val):
         max_list, max_len = self.max_list, self.max_len
-        if max_list and val <= max_list[0]:
+        if len(max_list) >= max_len and (not max_list or val <= max_list[0]):
             return
-        if len(max_list) < max_len:
-            insort(max_list, val)
-            return
-
-        idx = bisect_right(max_list, val)
-        if idx == max_len:
-            max_list.append(val)
+        insort(max_list, val)
+        if len(max_list) > max_len:
             max_list.pop(0)
-        else:
-            max_list[idx] = val
         return
 
 
@@ -35,18 +28,11 @@ class MinAccumulator(object):
 
     def add(self, val):
         min_list, max_len = self.min_list, self.max_len
-        if min_list and val >= min_list[-1]:
+        if len(min_list) >= max_len and (not min_list or val >= min_list[-1]):
             return
-        if len(min_list) < max_len:
-            insort(min_list, val)
-            return
-
-        idx = bisect_right(min_list, val)
-        if idx == 0:
-            min_list.insert(0, val)
+        insort(min_list, val)
+        if len(min_list) > max_len:
             min_list.pop()
-        else:
-            min_list[idx] = val
         return
 
 

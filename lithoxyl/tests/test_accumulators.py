@@ -4,8 +4,6 @@ from lithoxyl.accumulators import MaxAccumulator, MinAccumulator, HistogramCount
 
 
 # --- MaxAccumulator ---
-# Guard: val <= max_list[0] => return (even if not full)
-# So values must be added in ascending order to fill, or larger-than-min values.
 
 class TestMaxAccumulator:
     def test_max_default_empty(self):
@@ -25,12 +23,12 @@ class TestMaxAccumulator:
         ma.add(5)
         assert ma.max_list == [1, 3, 5]
 
-    def test_max_add_below_capacity_rejects_lte_min(self):
-        """Guard fires even when not full: val <= max_list[0] => no-op."""
+    def test_max_add_below_capacity_keeps_smaller_value(self):
+        """Keep all observations until capacity is reached."""
         ma = MaxAccumulator(count=5)
         ma.add(10)
-        ma.add(5)  # 5 <= 10, rejected
-        assert ma.max_list == [10]
+        ma.add(5)
+        assert ma.max_list == [5, 10]
 
     def test_max_add_fills_capacity(self):
         ma = MaxAccumulator(count=3)
@@ -60,13 +58,12 @@ class TestMaxAccumulator:
         assert ma.max_list == [20, 30, 40]
 
     def test_max_add_val_in_middle_when_full(self):
-        """Lines 25-26: idx < max_len => overwrite max_list[idx]."""
+        """A middle insertion must evict the smallest observation."""
         ma = MaxAccumulator(count=3)
         for v in [10, 20, 30]:
             ma.add(v)
-        # 25 > 10, bisect_right([10,20,30], 25) = 2, != 3 => max_list[2] = 25
         ma.add(25)
-        assert ma.max_list == [10, 20, 25]
+        assert ma.max_list == [20, 25, 30]
 
     def test_max_add_first_element(self):
         """Empty list: guard 'if max_list' is False, falls through to insort."""
@@ -75,11 +72,11 @@ class TestMaxAccumulator:
         assert ma.max_list == [42]
 
     def test_max_add_duplicate_at_min(self):
-        """Duplicate equal to min is rejected by guard."""
+        """Duplicate observations count toward capacity."""
         ma = MaxAccumulator(count=3)
         ma.add(5)
-        ma.add(5)  # 5 <= 5, rejected
-        assert ma.max_list == [5]
+        ma.add(5)
+        assert ma.max_list == [5, 5]
 
     def test_max_sequential_ascending(self):
         """Stress the append+pop path repeatedly."""
@@ -88,21 +85,18 @@ class TestMaxAccumulator:
             ma.add(v)
         assert ma.max_list == [7, 8, 9]
 
-    def test_max_overwrite_path_multiple(self):
-        """Exercise overwrite path (idx < max_len) multiple times."""
+    def test_max_insert_between_smaller_values(self):
+        """Preserve larger observations when inserting in the middle."""
         ma = MaxAccumulator(count=3)
         ma.add(1)
         ma.add(5)
         ma.add(10)
         assert ma.max_list == [1, 5, 10]
-        # 3 > 1, bisect_right([1,5,10], 3) = 1, != 3 => overwrite [1] = 3
         ma.add(3)
-        assert ma.max_list == [1, 3, 10]
+        assert ma.max_list == [3, 5, 10]
 
 
 # --- MinAccumulator ---
-# Guard: val >= min_list[-1] => return (even if not full)
-# Values must be added in descending order to fill, or smaller-than-max values.
 
 class TestMinAccumulator:
     def test_min_default_empty(self):
@@ -122,12 +116,12 @@ class TestMinAccumulator:
         mi.add(1)
         assert mi.min_list == [1, 3, 5]
 
-    def test_min_add_below_capacity_rejects_gte_max(self):
-        """Guard fires even when not full: val >= min_list[-1] => no-op."""
+    def test_min_add_below_capacity_keeps_larger_value(self):
+        """Keep all observations until capacity is reached."""
         mi = MinAccumulator(count=5)
         mi.add(1)
-        mi.add(5)  # 5 >= 1, rejected
-        assert mi.min_list == [1]
+        mi.add(5)
+        assert mi.min_list == [1, 5]
 
     def test_min_add_fills_capacity(self):
         mi = MinAccumulator(count=3)
@@ -157,13 +151,12 @@ class TestMinAccumulator:
         assert mi.min_list == [5, 10, 20]
 
     def test_min_add_val_in_middle_when_full(self):
-        """Lines 48-49: idx != 0 => overwrite min_list[idx]."""
+        """A middle insertion must evict the largest observation."""
         mi = MinAccumulator(count=3)
         for v in [30, 20, 10]:
             mi.add(v)
-        # 15 < 30, bisect_right([10,20,30], 15) = 1, != 0 => min_list[1] = 15
         mi.add(15)
-        assert mi.min_list == [10, 15, 30]
+        assert mi.min_list == [10, 15, 20]
 
     def test_min_add_first_element(self):
         mi = MinAccumulator(count=3)
@@ -171,11 +164,11 @@ class TestMinAccumulator:
         assert mi.min_list == [42]
 
     def test_min_add_duplicate_at_max(self):
-        """Duplicate equal to max is rejected by guard."""
+        """Duplicate observations count toward capacity."""
         mi = MinAccumulator(count=3)
         mi.add(5)
-        mi.add(5)  # 5 >= 5, rejected
-        assert mi.min_list == [5]
+        mi.add(5)
+        assert mi.min_list == [5, 5]
 
     def test_min_sequential_descending(self):
         """Stress the insert+pop path repeatedly."""
@@ -184,14 +177,13 @@ class TestMinAccumulator:
             mi.add(v)
         assert mi.min_list == [0, 1, 2]
 
-    def test_min_overwrite_path_multiple(self):
-        """Exercise overwrite path (idx != 0) multiple times."""
+    def test_min_insert_between_larger_values(self):
+        """Preserve smaller observations when inserting in the middle."""
         mi = MinAccumulator(count=3)
         mi.add(10)
         mi.add(5)
         mi.add(1)
         assert mi.min_list == [1, 5, 10]
-        # 8 < 10, bisect_right([1,5,10], 8) = 2, != 0 => overwrite [2] = 8
         mi.add(8)
         assert mi.min_list == [1, 5, 8]
 
