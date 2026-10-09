@@ -360,3 +360,20 @@ def test_file_emitter_close_exception(tmpdir):
     fe.stream.close()
     fe.stream = None  # set to None to exercise the early return path
     fe.close()  # should not raise (early return)
+
+
+@pytest.mark.parametrize('selector,error,expected', [
+    (ValueError, KeyError('unselected'), False),
+    ((ValueError, TypeError), KeyError('unselected'), False),
+    (ValueError, ValueError('selected'), True),
+    ((ValueError, TypeError), TypeError('selected'), True),
+    (True, KeyError('all exceptions'), True),
+    (False, ValueError('disabled'), False),
+])
+def test_dev_debug_sink_selective_post_mortem(selector, error, expected):
+    from unittest.mock import patch
+    from lithoxyl.sinks import DevDebugSink
+    sink = DevDebugSink(post_mortem=selector)
+    with patch('lithoxyl.sinks.pdb.post_mortem') as post_mortem:
+        sink.on_exception(None, type(error), error, None)
+    assert post_mortem.call_count == int(expected)
