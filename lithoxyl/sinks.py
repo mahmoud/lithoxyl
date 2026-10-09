@@ -118,12 +118,7 @@ class RateAccumulator(object):
             target_idx = bisect.bisect_left(self.times, start_time)
             count = len(self.times) - target_idx
             if not count:
-                # if our reservoir has nothing to offer, i.e., the
-                # rate is high enough to have lost all real datapoints
-                # for the window described, we just return the current
-                # rate of everything in the reservoir.
-                count = len(self.times)
-                start_time, end_time = self.times[0], self.times[-1]
+                return 0.0
             elif not target_idx:
                 start_time = self.times[0]
         return count / (end_time - start_time)

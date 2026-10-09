@@ -269,9 +269,9 @@ def test_rate_accumulator_get_rate_with_start_time():
     # start_time after creation_time triggers bisect path
     rate = ra.get_rate(start_time=base + 0.005, end_time=base + 0.05)
     assert rate >= 0
-    # Also test the reservoir-exhaustion fallback: start_time far in the future
+    # A window after the most recent event has no observations.
     rate2 = ra.get_rate(start_time=base + 1.0, end_time=base + 2.0)
-    assert rate2 >= 0
+    assert rate2 == 0.0
 
 
 def test_rate_sink_basic():
@@ -360,3 +360,22 @@ def test_file_emitter_close_exception(tmpdir):
     fe.stream.close()
     fe.stream = None  # set to None to exercise the early return path
     fe.close()  # should not raise (early return)
+
+
+@pytest.mark.parametrize('timestamps', [(101,), (101, 102)])
+def test_rate_accumulator_window_after_last_event(timestamps):
+    from lithoxyl.sinks import RateAccumulator
+    accumulator = RateAccumulator()
+    accumulator.creation_time = 100
+    for timestamp in timestamps:
+        accumulator.add(timestamp)
+    assert accumulator.get_rate(start_time=103, end_time=104) == 0.0
+
+
+def test_rate_accumulator_nonempty_window():
+    from lithoxyl.sinks import RateAccumulator
+    accumulator = RateAccumulator()
+    accumulator.creation_time = 100
+    for timestamp in (101, 102, 103):
+        accumulator.add(timestamp)
+    assert accumulator.get_rate(start_time=102, end_time=104) == 1.0

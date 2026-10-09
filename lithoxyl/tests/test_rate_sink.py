@@ -69,9 +69,9 @@ def test_rate_acc():
     rate = acc.get_rate(start_time=start_time, end_time=cur_time)
     assert target_rate - 2.5 <= rate <= target_rate + 2.5
 
-    new_rate = acc.get_rate(start_time=start_time + 0.5, end_time=cur_time)
-    assert round(new_rate - rate, -2) == 0
-    # TODO: check the math on the above. It's the "if not count" block
-    # in the RateAccumulator. might have an off-by-one
+    # No events occurred in this later window, even with a full reservoir.
+    new_rate = acc.get_rate(start_time=start_time + 0.5,
+                            end_time=start_time + 0.6)
+    assert new_rate == 0.0
 
     assert repr(acc)
